@@ -1,0 +1,161 @@
+'use client'
+
+import { useEffect } from 'react'
+import type { GameSpec, GameState, MechanicId, MechanicBinding } from '@dsa/game-schema'
+import { ACTION_TO_MECHANIC } from '@/lib/contract'
+import { cn } from '@/lib/format'
+import { AssignValue } from './AssignValue'
+import { ComparePair } from './ComparePair'
+import { ConnectNodes } from './ConnectNodes'
+import { ChoosePath } from './ChoosePath'
+import { MoveObject } from './MoveObject'
+import { PushPop } from './PushPop'
+import { SelectObject } from './SelectObject'
+import { SubmitAnswer } from './SubmitAnswer'
+import { SwapPair } from './SwapPair'
+import { TraverseNode } from './TraverseNode'
+import type { MechanicProps } from './types'
+
+/**
+ * Dispatches on the mechanic the player is currently attempting.
+ *
+ * A player can only drive one interaction at a time, so the host is a tab strip
+ * over `spec.mechanics` plus the one renderer for the active tab. Which tab
+ * starts active is decided by the player's own last trace action, or by the
+ * store's explicit override when the server corrected a move — so the board
+ * never shows a control the player did not ask for.
+ */
+export interface MechanicHostProps extends Omit<MechanicProps, 'binding'> {
+  activeMechanicId: MechanicId
+  onSelectMechanic: (id: MechanicId) => void
+}
+function Renderer(props: MechanicProps): React.ReactNode {
+  switch (props.binding.id) {
+    case 'selectObject':
+      return <SelectObject {...props} />
+    case 'moveObject':
+      return <MoveObject {...props} />
+    case 'comparePair':
+      return <ComparePair {...props} />
+    case 'swapPair':
+      return <SwapPair {...props} />
+    case 'pushPop':
+      return <PushPop {...props} />
+    case 'choosePath':
+      return <ChoosePath {...props} />
+    case 'traverseNode':
+      return <TraverseNode {...props} />
+    case 'connectNodes':
+      return <ConnectNodes {...props} />
+    case 'assignValue':
+      return <AssignValue {...props} />
+    case 'submitAnswer':
+      return <SubmitAnswer {...props} />
+    default:
+      return null
+  }
+}
+
+/**
+ * Picks the mechanic a player most plausibly wants next.
+ *
+ * Priority: the store's explicit override (the server corrected a move and told
+ * us which control can express the expected action), then the mechanic the turn
+ * prompt says is coming, then the last action they took so `comparePair` is
+ * followed by another `comparePair` until they switch, then the first mechanic
+ * the spec enabled.
+ */
+export function deriveActiveMechanic(args: {
+  spec: GameSpec
+  state: GameState
+  override: MechanicId | null
+  /** The mechanic the current turn prompt is about, when we have one. */
+  suggested?: MechanicId | null
+}): MechanicId {
+  const { spec, state, override, suggested } = args
+  const enabled = new Set<MechanicId>(spec.mechanics.map((m) => m.id))
+  if (override && enabled.has(override)) return override
+  if (suggested && enabled.has(suggested)) return suggested
+  const last = state.trace[state.trace.length - 1]
+  if (last) {
+    // Going through ACTION_TO_MECHANIC rather than asserting that the action
+    // type *is* the mechanic id: the mapping is the contract's, not a guess.
+    const fromAction = ACTION_TO_MECHANIC[last.action.type]
+    if (enabled.has(fromAction)) return fromAction
+  }
+  return spec.mechanics[0]?.id ?? 'selectObject'
+}
+
+export function MechanicHost({
+  spec,
+  state,
+  model,
+  activeMechanicId,
+  onSelectMechanic,
+  disabled,
+  picked,
+  setPicked,
+  dispatch,
+  markers,
+  prompt,
+}: MechanicHostProps) {
+  const active: MechanicBinding | null =
+    spec.mechanics.find((m) => m.id === activeMechanicId) ?? spec.mechanics[0] ?? null
+
+  // The staged pick is scoped to the mechanic that made it: switching tabs with
+  // a half-built comparePair would otherwise emit a nonsense action.
+  useEffect(() => {
+    setPicked([])
+  }, [activeMechanicId, setPicked])
+
+  if (!active) return null
+
+  const props: MechanicProps = {
+    spec,
+    state,
+    model,
+    binding: active,
+    disabled,
+    picked,
+    setPicked,
+    dispatch,
+    markers,
+    prompt,
+  }
+
+  return (
+    <div className="min-w-0">
+      {spec.mechanics.length > 1 ? (
+        <div
+          className="board-scroll -mx-1 mb-3 flex gap-1.5 px-1 pb-1"
+          role="tablist"
+          aria-label="Available operations"
+        >
+          {spec.mechanics.map((mechanic) => {
+            const isActive = mechanic.id === active.id
+            return (
+              <button
+                key={mechanic.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => onSelectMechanic(mechanic.id)}
+                className={cn(
+                  'btn min-h-11 shrink-0 px-3.5 text-left',
+                  isActive &&
+                    'border-[var(--dsa-accent)] bg-[color-mix(in_oklab,var(--dsa-accent)_18%,var(--dsa-surface-2))] text-[var(--dsa-ink)]',
+                )}
+              >
+                {mechanic.label}
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
+
+      <div role="tabpanel" aria-label={active.label} className="min-w-0">
+        <Renderer {...props} />
+      </div>
+    </div>
+  )
+}

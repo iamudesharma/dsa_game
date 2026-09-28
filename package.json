@@ -1,0 +1,29 @@
+{
+  "name": "dsa-game",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.15.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @dsa/api dev",
+    "dev:api": "pnpm --filter @dsa/api dev",
+    "dev:web": "pnpm --filter @dsa/web dev",
+    "dev:laya": "bash scripts/laya.sh start",
+    "dev:llm": "bash scripts/local-llm.sh start",
+    "build": "pnpm -r --filter=./packages/** --filter=./services/** build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -b --pretty"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

@@ -1,0 +1,359 @@
+@import 'tailwindcss';
+
+/*
+  DESIGN NOTES — read before editing.
+
+  The redesign brief is cognitive-load driven (Sweller). Three consequences are
+  baked into this file rather than left to each component:
+
+  1. ONE LOUD COLOUR. `--dsa-accent` is reserved for "your turn, touch this".
+     Nothing else may use it as decoration, so the eye learns in one session
+     that accent == act now. `--dsa-primary` is reserved for the ALGORITHM's own
+     structure (the lo…hi window, the cursor). `--dsa-danger` means discarded
+     and is never used for a state the learner should want.
+
+  2. SHAPE CARRIES STATE. Eliminated things recede (hatch + opacity), live things
+     are solid, and the search window is drawn with literal brackets — CSS rails
+     on the cells plus caps on the first and last — so a learner can see the
+     range without reading a number. That is a shape difference, not a colour
+     difference, which is what makes it survive the palette being generated.
+
+  3. NOTHING DECORATES. Every animation here clarifies a state change. There is
+     no confetti, no bounce, no mascot. Motion is either "this changed" or "this
+     is what to touch".
+
+  The palette itself is still owned by `GameSpec.visual.palette` and injected by
+  `ThemeScope`; everything below is the default before a spec has loaded, plus
+  the structural classes that must not vary per game.
+*/
+@theme {
+  --color-shell: #060a14;
+  --color-shell-2: #0b1224;
+  --color-panel: #101a30;
+  --color-panel-2: #16223c;
+  --color-edge: #26355a;
+  --color-ink: #eef2fb;
+  --color-ink-dim: #9fb0d0;
+  --color-ink-faint: #6b7c9e;
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* Cards are round and generous; tiles are rounder than the old 14px chip. */
+  --radius-card: 20px;
+  --radius-tile: 14px;
+
+  /* The single source of truth for board cell spacing. The range-window rails
+     bridge exactly this much, so the bracket reads as one unbroken line. */
+  --tile-gap: 0.5rem;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* Defaults; overridden per-game from `GameSpec.visual.palette`. */
+  --dsa-bg: #060a14;
+  --dsa-primary: #7c8cff;
+  --dsa-accent: #35e0d4;
+  --dsa-success: #4ade80;
+  --dsa-danger: #fb7185;
+  --dsa-warn: #fbbf24;
+
+  --dsa-surface: #101a30;
+  --dsa-surface-2: #17233f;
+  --dsa-border: #26355a;
+  --dsa-ink: #eef2fb;
+  --dsa-muted: #9fb0d0;
+  --dsa-faint: #6b7c9e;
+
+  /* Focus ring: thicker than a hairline, because the whole board is a keyboard
+     surface and a 1px ring is invisible against the tile borders. */
+  --dsa-focus: 0 0 0 3px var(--dsa-bg), 0 0 0 6px var(--dsa-accent);
+}
+
+html,
+body {
+  background:
+    radial-gradient(90rem 50rem at 50% -22rem, color-mix(in oklab, var(--dsa-primary) 16%, transparent), transparent),
+    radial-gradient(60rem 40rem at 110% 10%, color-mix(in oklab, var(--dsa-accent) 8%, transparent), transparent),
+    var(--dsa-bg);
+  background-attachment: fixed;
+  color: var(--dsa-ink);
+  font-family: var(--font-sans);
+  min-height: 100%;
+  /* Adolescents on phones read a lot of body copy. 17px base keeps 14px UI
+     labels from feeling like footnotes. */
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+body {
+  /* The play board must never bounce-scroll on iOS while dragging. */
+  overscroll-behavior-y: none;
+  /* The board is scrolled horizontally by touch; long-press text selection on a
+     tile makes dragging feel broken. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+  Focus is the keyboard affordance for the whole board, so it must always be
+  obvious. `:focus-visible` only (not `:focus`) so pointer users do not see it.
+*/
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--dsa-focus);
+  border-radius: 12px;
+  position: relative;
+  z-index: 3;
+}
+
+@layer components {
+  .panel {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--dsa-surface) 96%, white 4%) 0%,
+        color-mix(in oklab, var(--dsa-surface) 92%, transparent) 100%
+      );
+    border: 1px solid color-mix(in oklab, var(--dsa-border) 82%, transparent);
+    border-radius: var(--radius-card);
+    box-shadow:
+      0 1px 0 0 color-mix(in oklab, white 6%, transparent) inset,
+      0 18px 40px -32px rgb(0 0 0 / 0.9);
+  }
+
+  .panel-quiet {
+    background: color-mix(in oklab, var(--dsa-surface-2) 62%, transparent);
+    border: 1px solid color-mix(in oklab, var(--dsa-border) 60%, transparent);
+    border-radius: 12px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 999px;
+    border: 1px solid var(--dsa-border);
+    background: color-mix(in oklab, var(--dsa-surface-2) 80%, transparent);
+    padding: 0.2rem 0.7rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    border-radius: 12px;
+    border: 1px solid var(--dsa-border);
+    background: color-mix(in oklab, var(--dsa-surface-2) 90%, transparent);
+    padding: 0.55rem 1rem;
+    /* 44px is the minimum comfortable thumb target, and this board is played on
+       phones. Every button in the app inherits it. */
+    min-height: 44px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition:
+      background-color 130ms ease,
+      border-color 130ms ease,
+      transform 130ms ease;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--dsa-primary) 26%, var(--dsa-surface-2));
+  }
+
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  .btn:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: color-mix(in oklab, var(--dsa-primary) 82%, black);
+    border-color: color-mix(in oklab, var(--dsa-primary) 70%, white 12%);
+    color: #fff;
+    box-shadow: 0 10px 26px -16px color-mix(in oklab, var(--dsa-primary) 90%, transparent);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--dsa-primary) 100%, white 8%);
+  }
+
+  .btn-accent {
+    background: color-mix(in oklab, var(--dsa-accent) 24%, var(--dsa-surface-2));
+    border-color: color-mix(in oklab, var(--dsa-accent) 52%, transparent);
+    color: var(--dsa-ink);
+  }
+
+  .btn-danger {
+    background: color-mix(in oklab, var(--dsa-danger) 22%, var(--dsa-surface-2));
+    border-color: color-mix(in oklab, var(--dsa-danger) 48%, transparent);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--dsa-muted);
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--dsa-surface-2) 80%, transparent);
+    color: var(--dsa-ink);
+  }
+
+  .input {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--dsa-border);
+    background: color-mix(in oklab, #020617 55%, var(--dsa-surface-2));
+    padding: 0.6rem 0.8rem;
+    min-height: 44px;
+    font-size: 0.95rem;
+    color: var(--dsa-ink);
+  }
+
+  .input::placeholder {
+    color: var(--dsa-faint);
+  }
+
+  .prose-block {
+    white-space: pre-wrap;
+    line-height: 1.7;
+    color: var(--dsa-muted);
+  }
+
+  .mono {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+  }
+
+  /* Board scroll containers: horizontal on phones, so the data stays readable
+     instead of being squeezed into unreadable slivers. */
+  .board-scroll {
+    overflow-x: auto;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .board-scroll::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .board-scroll::-webkit-scrollbar-thumb {
+    background: var(--dsa-border);
+    border-radius: 999px;
+  }
+
+  /* ---------------------------------------------------------------------
+     THE SEARCH WINDOW.
+
+     `lo`, `mid` and `hi` are brackets around a range, so they are drawn as
+     brackets. Each in-window cell gets a top and a bottom rail that bridge the
+     flex gap (`--tile-gap`), and the first and last cell of the range get a
+     vertical cap, so the whole window reads as one continuous `[ … ]` with no
+     measuring, no ResizeObserver, and no SVG overlay to break on scroll.
+     --------------------------------------------------------------------- */
+  .range-cell {
+    position: relative;
+  }
+
+  .range-cell::before,
+  .range-cell::after {
+    content: '';
+    position: absolute;
+    left: calc(var(--tile-gap) * -1);
+    right: calc(var(--tile-gap) * -1);
+    height: 2px;
+    background: color-mix(in oklab, var(--dsa-primary) 78%, transparent);
+    pointer-events: none;
+  }
+
+  .range-cell::before {
+    top: 0;
+  }
+
+  .range-cell::after {
+    bottom: 0;
+  }
+
+  /* The end cells stop the rails at their own edge, forming the cap. */
+  .range-cell.range-start::before,
+  .range-cell.range-start::after {
+    left: 0;
+  }
+
+  .range-cell.range-end::before,
+  .range-cell.range-end::after {
+    right: 0;
+  }
+
+  /* Ruled out by the algorithm. A hatch is a shape signal: it survives
+     greyscale, colour-blindness, and the generated palettes. */
+  .hatch-out {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      color-mix(in oklab, var(--dsa-faint) 22%, transparent) 0 2px,
+      transparent 2px 7px
+    );
+  }
+
+  /* The pulsing outline on `turnPrompt.targets`. Slow enough to read as a
+     breath rather than a flash, which would be both distracting and a
+     photosensitivity risk. */
+  @keyframes dsa-target-breathe {
+    0%,
+    100% {
+      box-shadow:
+        0 0 0 2px color-mix(in oklab, var(--dsa-accent) 55%, transparent),
+        0 0 0 0 color-mix(in oklab, var(--dsa-accent) 40%, transparent);
+    }
+    50% {
+      box-shadow:
+        0 0 0 2px color-mix(in oklab, var(--dsa-accent) 95%, transparent),
+        0 0 0 9px color-mix(in oklab, var(--dsa-accent) 0%, transparent);
+    }
+  }
+
+  .target-breathe {
+    animation: dsa-target-breathe 2.1s ease-in-out infinite;
+  }
+
+  /* A quiet stripe for "held by the client" (a staged pick) versus "held by the
+     engine" (a validated selection). Same idea as the old underline, but
+     readable at 390px. */
+  .stage-tab {
+    position: absolute;
+    inset-inline: 22%;
+    bottom: -7px;
+    height: 4px;
+    border-radius: 999px;
+  }
+}
+
+/* Respect the OS-level motion preference for every CSS transition/animation we
+   own. Framer Motion is handled separately via <MotionConfig reducedMotion="user">.
+   The pulsing target outline is the one thing that must stop dead: it is
+   repetitive motion, which is the exact case this setting exists for. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .target-breathe {
+    animation: none !important;
+    box-shadow: 0 0 0 2px var(--dsa-accent) !important;
+  }
+}

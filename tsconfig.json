@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      "@dsa/game-schema": ["./packages/game-schema/src/index.ts"],
+      "@dsa/game-engine": ["./packages/game-engine/src/index.ts"],
+      "@dsa/dsa-oracles": ["./packages/dsa-oracles/src/index.ts"],
+      "@dsa/provider-chain": ["./packages/provider-chain/src/index.ts"],
+      "@dsa/decision-layer": ["./packages/decision-layer/src/index.ts"]
+    }
+  },
+  "include": [
+    "packages/*/src/**/*.ts",
+    "services/api/src/**/*.ts",
+    "vitest.config.ts"
+  ],
+  "exclude": ["node_modules", "**/dist", "apps/web", "apps/mobile"]
+}

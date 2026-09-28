@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+.DS_Store
+.env
+.env.local
+.venv/
+__pycache__/
+*.pyc
+services/laya/models/
+services/local-llm/models/
+run/

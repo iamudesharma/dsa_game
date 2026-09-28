@@ -1,0 +1,83 @@
+/// Mobile client for the DSA learning game.
+///
+/// The whole app is two controllers — the catalogue, and the game in flight —
+/// over one [ApiClient]. `main()` reads the base URL from
+/// `--dart-define=API_BASE_URL=...` (defaulting to `http://127.0.0.1:8787`, which
+/// is right for the iOS simulator, the desktop builds and `flutter run` on the
+/// laptop itself) and installs the neutral shell theme, which each generated
+/// game then overrides with its own palette.
+library;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+
+import 'screens/topic_screen.dart';
+import 'services/api_client.dart';
+import 'state/catalogue_controller.dart';
+import 'state/game_controller.dart';
+import 'theme/palette.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations(const [
+    // Portrait-first: the board, the action bar and the debrief are all laid
+    // out for a thumb on a phone, and landscape would strand the controls at
+    // the top of the screen.
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+  runApp(const DsaGameApp());
+}
+
+class DsaGameApp extends StatefulWidget {
+  const DsaGameApp({this.api, super.key});
+
+  /// Injected by tests so the whole tree can run against a mocked transport;
+  /// production leaves it null and gets a client built from [ApiConfig].
+  final ApiClient? api;
+
+  @override
+  State<DsaGameApp> createState() => _DsaGameAppState();
+}
+
+class _DsaGameAppState extends State<DsaGameApp> {
+  late final ApiClient _api;
+  late final bool _ownsApi;
+  late final CatalogueController _catalogue;
+  late final GameController _game;
+
+  @override
+  void initState() {
+    super.initState();
+    _ownsApi = widget.api == null;
+    _api = widget.api ?? ApiClient(config: ApiConfig.defaults);
+    _catalogue = CatalogueController(_api);
+    _game = GameController(_api);
+  }
+
+  @override
+  void dispose() {
+    _game.dispose();
+    _catalogue.dispose();
+    if (_ownsApi) _api.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        Provider<ApiClient>.value(value: _api),
+        ChangeNotifierProvider<CatalogueController>.value(value: _catalogue),
+        ChangeNotifierProvider<GameController>.value(value: _game),
+      ],
+      child: MaterialApp(
+        title: 'DSA by playing',
+        debugShowCheckedModeBanner: false,
+        theme: buildShellTheme(),
+        home: const TopicScreen(),
+      ),
+    );
+  }
+}

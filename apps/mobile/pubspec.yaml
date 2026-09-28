@@ -1,0 +1,31 @@
+name: dsa_game_mobile
+description: "Mobile client for the DSA learning game — learn algorithms by playing generated mini-games."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.0
+
+# Dependency budget is deliberately tiny. See README.md "Dependencies" for the
+# justification of each entry.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  # Typed JSON over HTTP. Chosen over dio: dio's interceptors/retries are not
+  # needed for a 6-endpoint client, and `http` keeps the cold-start bundle small.
+  http: ^1.2.2
+  # ChangeNotifier is in the Flutter SDK, but the widget layer needs a way to
+  # rebuild on state change without a code-gen dependency.
+  provider: ^6.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

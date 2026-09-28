@@ -1,0 +1,390 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "specVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "problemId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "language": {
+      "default": "en",
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 10
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 400
+    },
+    "theme": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "story": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        },
+        "genre": {
+          "type": "string",
+          "enum": [
+            "fantasy",
+            "sci-fi",
+            "detective",
+            "everyday",
+            "sport",
+            "cooking",
+            "space",
+            "nature"
+          ]
+        },
+        "tone": {
+          "type": "string",
+          "enum": [
+            "playful",
+            "tense",
+            "calm",
+            "mysterious"
+          ]
+        }
+      },
+      "required": [
+        "title",
+        "story",
+        "genre",
+        "tone"
+      ],
+      "additionalProperties": false
+    },
+    "visual": {
+      "type": "object",
+      "properties": {
+        "palette": {
+          "type": "object",
+          "properties": {
+            "background": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            },
+            "primary": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            },
+            "accent": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            },
+            "success": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            },
+            "danger": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            }
+          },
+          "required": [
+            "background",
+            "primary",
+            "accent",
+            "success",
+            "danger"
+          ],
+          "additionalProperties": false
+        },
+        "objectGlyphs": {
+          "default": {},
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 24
+          }
+        },
+        "boardLabel": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        }
+      },
+      "required": [
+        "palette",
+        "objectGlyphs"
+      ],
+      "additionalProperties": false
+    },
+    "vocabulary": {
+      "type": "object",
+      "properties": {
+        "object": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "objectPlural": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "place": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "actionVerb": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "lowerWord": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "equalWord": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "higherWord": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        }
+      },
+      "required": [
+        "object",
+        "objectPlural",
+        "place",
+        "actionVerb",
+        "target",
+        "lowerWord",
+        "equalWord",
+        "higherWord"
+      ],
+      "additionalProperties": false
+    },
+    "mechanics": {
+      "minItems": 1,
+      "maxItems": 4,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "selectObject",
+              "moveObject",
+              "comparePair",
+              "swapPair",
+              "pushPop",
+              "choosePath",
+              "traverseNode",
+              "connectNodes",
+              "assignValue",
+              "submitAnswer"
+            ]
+          },
+          "boundDsaOp": {
+            "type": "string",
+            "enum": [
+              "compare",
+              "traverse",
+              "move",
+              "insert",
+              "swap",
+              "push",
+              "pop",
+              "choose-path",
+              "read",
+              "assign",
+              "terminate",
+              "link",
+              "unlink"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "hint": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        },
+        "required": [
+          "id",
+          "boundDsaOp",
+          "label"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "narration": {
+      "type": "object",
+      "properties": {
+        "intro": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        },
+        "hintPool": {
+          "minItems": 2,
+          "maxItems": 6,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        },
+        "win": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        },
+        "lose": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        },
+        "correctFlavour": {
+          "default": [],
+          "maxItems": 4,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        }
+      },
+      "required": [
+        "intro",
+        "hintPool",
+        "win",
+        "lose",
+        "correctFlavour"
+      ],
+      "additionalProperties": false
+    },
+    "debrief": {
+      "type": "object",
+      "properties": {
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        },
+        "actionMeaning": {
+          "default": {},
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        },
+        "mapping": {
+          "default": [],
+          "maxItems": 12,
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "codeLanguages": {
+          "default": [
+            "javascript",
+            "python"
+          ],
+          "maxItems": 4,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20
+          }
+        }
+      },
+      "required": [
+        "summary",
+        "actionMeaning",
+        "mapping",
+        "codeLanguages"
+      ],
+      "additionalProperties": false
+    },
+    "generatedBy": {
+      "default": "unknown",
+      "type": "string",
+      "maxLength": 40
+    }
+  },
+  "required": [
+    "specVersion",
+    "problemId",
+    "seed",
+    "language",
+    "objective",
+    "theme",
+    "visual",
+    "vocabulary",
+    "mechanics",
+    "narration",
+    "debrief",
+    "generatedBy"
+  ],
+  "additionalProperties": false
+}
