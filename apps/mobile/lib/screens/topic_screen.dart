@@ -1,4 +1,4 @@
-/// The adventure map: six illustrated world destinations with mission nodes.
+/// The adventure map: illustrated world destinations with mission nodes.
 ///
 /// Replaces the old topic-card grid. Every mission stays accessible from the
 /// start — completion stamps, the collection sheet and the suggested next
@@ -20,7 +20,9 @@ import '../state/catalogue_controller.dart';
 import '../theme/palette.dart';
 import '../widgets/common.dart';
 import 'learn_screen.dart';
+import 'patterns_screen.dart';
 import 'problem_screen.dart';
+import 'tracks_screen.dart';
 
 class TopicScreen extends StatefulWidget {
   const TopicScreen({super.key});
@@ -57,6 +59,20 @@ class _TopicScreenState extends State<TopicScreen> {
             ),
             icon: const Icon(Icons.menu_book_outlined),
             tooltip: 'Field notebook',
+          ),
+          IconButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const PatternsScreen()),
+            ),
+            icon: const Icon(Icons.pattern_rounded),
+            tooltip: 'Patterns',
+          ),
+          IconButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const TracksScreen()),
+            ),
+            icon: const Icon(Icons.route_rounded),
+            tooltip: 'Tracks',
           ),
           IconButton(
             onPressed: catalogue == null ? null : () => _openCollection(context, catalogue),

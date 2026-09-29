@@ -75,6 +75,13 @@ void main() {
     await _bootMap(tester);
     await tester.tap(find.byTooltip('Your collection'));
     await tester.pumpAndSettle();
+    // Sixteen world rows push the frame picker below the fold of the sheet's
+    // lazy list, so it is not built until scrolled to. Drag the sheet's own
+    // (always built) title upward until the picker materialises.
+    for (var i = 0; i < 10 && find.text('Original').evaluate().isEmpty; i++) {
+      await tester.drag(find.text('Your collection'), const Offset(0, -400));
+      await tester.pumpAndSettle();
+    }
     // Only the original frame is offered; no world is complete.
     expect(find.text('Original'), findsOneWidget);
     expect(find.text('Collected!'), findsNothing);

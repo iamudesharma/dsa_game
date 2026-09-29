@@ -59,6 +59,26 @@ class _WorldPainter extends CustomPainter {
         _observatory(canvas, w, h, ink);
       case DsaTopic.linkedList:
         _railway(canvas, w, h, ink);
+      case DsaTopic.hashTable:
+        _bazaar(canvas, w, h, ink);
+      case DsaTopic.strings:
+        _atelier(canvas, w, h, ink);
+      case DsaTopic.trees:
+        _canopy(canvas, w, h, ink);
+      case DsaTopic.heap:
+        _foundry(canvas, w, h, ink);
+      case DsaTopic.graphs:
+        _archipelago(canvas, w, h, ink);
+      case DsaTopic.dp:
+        _observatorySteps(canvas, w, h, ink);
+      case DsaTopic.backtracking:
+        _maze(canvas, w, h, ink);
+      case DsaTopic.greedy:
+        _frontier(canvas, w, h, ink);
+      case DsaTopic.bitManip:
+        _forge(canvas, w, h, ink);
+      case DsaTopic.trie:
+        _grove(canvas, w, h, ink);
     }
   }
 
@@ -149,6 +169,140 @@ class _WorldPainter extends CustomPainter {
         c.drawLine(Offset(x + w * 0.255, y + 5), Offset(x + w * 0.28, y), ink);
       }
     }
+  }
+
+  /// Market buckets: some hold a count, some stand empty.
+  void _bazaar(Canvas c, double w, double h, Paint ink) {
+    const fills = [Color(0xFFE8C87E), Color(0xFFD9B36A), Color(0xFFE8C87E), Color(0xFFD9B36A)];
+    for (var i = 0; i < 4; i++) {
+      final x = w * (0.1 + 0.2 * i);
+      _rr(c, Rect.fromLTWH(x, h * 0.5, w * 0.15, h * 0.3), 6, fills[i], ink);
+      if (i.isEven) {
+        c.drawCircle(Offset(x + w * 0.075, h * 0.62), 3.5, Paint()..color = const Color(0xFF7A5C2E));
+      }
+    }
+  }
+
+  /// Letter beads on a string, read from both ends toward the middle.
+  void _atelier(Canvas c, double w, double h, Paint ink) {
+    c.drawLine(Offset(w * 0.08, h * 0.55), Offset(w * 0.92, h * 0.55), ink);
+    for (var i = 0; i < 5; i++) {
+      final x = w * (0.16 + 0.17 * i);
+      final middle = i == 2;
+      c.drawCircle(Offset(x, h * 0.55), middle ? 11 : 8, Paint()..color = middle ? const Color(0xFF9FC7A8) : const Color(0xFFFFF3DB));
+      c.drawCircle(Offset(x, h * 0.55), middle ? 11 : 8, ink);
+    }
+  }
+
+  /// One canopy triangle over a trunk: branch down from the root.
+  void _canopy(Canvas c, double w, double h, Paint ink) {
+    c.drawLine(Offset(w * 0.5, h * 0.82), Offset(w * 0.5, h * 0.5), ink);
+    final canopy = Path()
+      ..moveTo(w * 0.5, h * 0.12)
+      ..lineTo(w * 0.78, h * 0.55)
+      ..lineTo(w * 0.22, h * 0.55)
+      ..close();
+    c.drawPath(canopy, Paint()..color = const Color(0xFF9FC7A8));
+    c.drawPath(canopy, ink);
+    c.drawCircle(Offset(w * 0.5, h * 0.34), 4, Paint()..color = const Color(0xFFFFF3DB));
+    c.drawCircle(Offset(w * 0.5, h * 0.34), 4, ink);
+  }
+
+  /// A foundry pile: the k largest stay on top.
+  void _foundry(Canvas c, double w, double h, Paint ink) {
+    const rows = [1, 2, 3];
+    for (var row = 0; row < 3; row++) {
+      for (var i = 0; i < rows[row]; i++) {
+        final x = w * (0.5 + (i - (rows[row] - 1) / 2) * 0.18);
+        final y = h * (0.3 + row * 0.2);
+        c.drawCircle(Offset(x, y), 9, Paint()..color = const Color(0xFFE3A9BC));
+        c.drawCircle(Offset(x, y), 9, ink);
+      }
+    }
+  }
+
+  /// Three islands joined by dotted bridges.
+  void _archipelago(Canvas c, double w, double h, Paint ink) {
+    final islands = [Offset(w * 0.2, h * 0.6), Offset(w * 0.5, h * 0.42), Offset(w * 0.8, h * 0.6)];
+    for (var i = 0; i + 1 < islands.length; i++) {
+      final a = islands[i];
+      final b = islands[i + 1];
+      for (var t = 0.15; t < 0.9; t += 0.18) {
+        c.drawCircle(Offset(a.dx + (b.dx - a.dx) * t, a.dy + (b.dy - a.dy) * t), 1.8, Paint()..color = const Color(0xFF24344B));
+      }
+    }
+    for (final spot in islands) {
+      c.drawOval(Rect.fromCenter(center: spot, width: w * 0.22, height: h * 0.16), Paint()..color = const Color(0xFFA9CCE8));
+      c.drawOval(Rect.fromCenter(center: spot, width: w * 0.22, height: h * 0.16), ink);
+    }
+  }
+
+  /// Observatory steps: small answers climbing to a big one.
+  void _observatorySteps(Canvas c, double w, double h, Paint ink) {
+    for (var i = 0; i < 4; i++) {
+      final step = Rect.fromLTWH(w * (0.14 + 0.17 * i), h * (0.72 - 0.12 * i), w * 0.15, h * (0.1 + 0.12 * i));
+      _rr(c, step, 4, Color.lerp(const Color(0xFFD9CFF0), const Color(0xFF5D4A7D), i / 3)!, ink);
+    }
+    c.drawCircle(Offset(w * 0.82, h * 0.2), 5, Paint()..color = const Color(0xFFF6CD79));
+    c.drawCircle(Offset(w * 0.82, h * 0.2), 5, ink);
+  }
+
+  /// A fork with one path crossed out: choose, explore, undo.
+  void _maze(Canvas c, double w, double h, Paint ink) {
+    c.drawLine(Offset(w * 0.2, h * 0.8), Offset(w * 0.45, h * 0.5), ink);
+    c.drawLine(Offset(w * 0.45, h * 0.5), Offset(w * 0.3, h * 0.2), ink);
+    c.drawLine(Offset(w * 0.45, h * 0.5), Offset(w * 0.72, h * 0.3), ink);
+    final bad = Offset(w * 0.3, h * 0.2);
+    c.drawLine(Offset(bad.dx - 7, bad.dy - 7), Offset(bad.dx + 7, bad.dy + 7), ink);
+    c.drawLine(Offset(bad.dx - 7, bad.dy + 7), Offset(bad.dx + 7, bad.dy - 7), ink);
+    c.drawCircle(Offset(w * 0.72, h * 0.3), 6, Paint()..color = const Color(0xFF9FC7A8));
+    c.drawCircle(Offset(w * 0.72, h * 0.3), 6, ink);
+  }
+
+  /// One long arrow to a flag: how far can you reach?
+  void _frontier(Canvas c, double w, double h, Paint ink) {
+    c.drawLine(Offset(w * 0.12, h * 0.6), Offset(w * 0.78, h * 0.6), ink);
+    c.drawLine(Offset(w * 0.7, h * 0.53), Offset(w * 0.78, h * 0.6), ink);
+    c.drawLine(Offset(w * 0.7, h * 0.67), Offset(w * 0.78, h * 0.6), ink);
+    c.drawLine(Offset(w * 0.82, h * 0.6), Offset(w * 0.82, h * 0.3), ink);
+    final flag = Path()
+      ..moveTo(w * 0.82, h * 0.3)
+      ..lineTo(w * 0.94, h * 0.36)
+      ..lineTo(w * 0.82, h * 0.42)
+      ..close();
+    c.drawPath(flag, Paint()..color = const Color(0xFF9FC7A8));
+    c.drawPath(flag, ink);
+  }
+
+  /// Bit blocks: filled and outline squares folding down to one.
+  void _forge(Canvas c, double w, double h, Paint ink) {
+    for (var i = 0; i < 5; i++) {
+      final r = Rect.fromLTWH(w * (0.12 + 0.15 * i), h * 0.45, w * 0.11, h * 0.22);
+      if (i.isEven) {
+        c.drawRect(r, Paint()..color = const Color(0xFF9AA1B5));
+      }
+      c.drawRect(r, ink);
+    }
+    c.drawCircle(Offset(w * 0.5, h * 0.78), 5, Paint()..color = const Color(0xFFF6CD79));
+    c.drawCircle(Offset(w * 0.5, h * 0.78), 5, ink);
+  }
+
+  /// A grove sapling: one root, shared branches, leaf completions.
+  void _grove(Canvas c, double w, double h, Paint ink) {
+    final root = Offset(w * 0.5, h * 0.78);
+    final forks = [Offset(w * 0.3, h * 0.5), Offset(w * 0.5, h * 0.44), Offset(w * 0.7, h * 0.5)];
+    for (final fork in forks) {
+      c.drawLine(root, fork, ink);
+      c.drawLine(fork, Offset(fork.dx - 0.08 * w, fork.dy - h * 0.18), ink);
+      c.drawLine(fork, Offset(fork.dx + 0.08 * w, fork.dy - h * 0.18), ink);
+      for (final dx in [-0.08, 0.08]) {
+        final leaf = Offset(fork.dx + dx * w, fork.dy - h * 0.18);
+        c.drawCircle(leaf, 4, Paint()..color = const Color(0xFF9FC7A8));
+        c.drawCircle(leaf, 4, ink);
+      }
+    }
+    c.drawCircle(root, 5, Paint()..color = const Color(0xFFFFF3DB));
+    c.drawCircle(root, 5, ink);
   }
 
   @override
