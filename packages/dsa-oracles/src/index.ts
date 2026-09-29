@@ -39,6 +39,14 @@ export {
 } from './problems/trees.js'
 export { createKthLargestHeapOracle } from './problems/heap.js'
 export {
+  createGraphOracle,
+  createMaxAreaIslandOracle,
+  createNumIslandsOracle,
+  createRottingOrangesOracle,
+  createUnionFindConnectOracle,
+  createWordSearchOracle,
+} from './problems/graphs.js'
+export {
   createLinkedListTraversalOracle,
   createMoveZeroesOracle,
   createQueueOperationsOracle,

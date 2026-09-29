@@ -27,13 +27,19 @@ export interface BoardLaneViewProps {
 }
 
 /**
- * One horizontal run of cells.
+ * One horizontal run of cells — or a fixed-column grid when the lane says so.
  *
  * `board-scroll` + `min-w-max` is what keeps this playable on a 390px phone:
  * the board scrolls sideways instead of crushing 16 cells into unreadable
  * slivers. The tile gap is `var(--tile-gap)` rather than a Tailwind token
  * because the range-window rails in globals.css bridge exactly that much, and
  * the two must agree or the bracket breaks apart.
+ *
+ * A grid lane (`lane.columns`) keeps the same cells in the same order and only
+ * changes the wrapping: row-major ids mean row r starts at cell r × columns,
+ * so neighbours left/right stay adjacent and up/down sit exactly one row
+ * apart. SlotCell itself is untouched — selection, markers and window roles
+ * all key off ids, never off layout.
  */
 export function BoardLaneView({
   lane,
@@ -60,9 +66,11 @@ export function BoardLaneView({
       <div className="board-scroll -mx-1 px-1 pb-2">
         <div
           className={cn(
-            'flex min-w-max items-stretch gap-[var(--tile-gap)] pt-1',
-            lane.kind === 'loose' && 'flex-wrap',
+            'min-w-max items-stretch gap-[var(--tile-gap)] pt-1',
+            lane.columns !== undefined ? 'grid w-max' : 'flex',
+            lane.kind === 'loose' && lane.columns === undefined && 'flex-wrap',
           )}
+          style={lane.columns !== undefined ? { gridTemplateColumns: `repeat(${lane.columns}, minmax(0, 1fr))` } : undefined}
         >
           {lane.cells.map((cell) => {
             if (cell.slotId) {

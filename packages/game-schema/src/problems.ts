@@ -7,7 +7,9 @@
  * two pointers, prefix sum, Kadane, intervals), monotonic stack, rotated
  * binary search, linked-list cycle detection, hash-table frequency counting,
  * anagrams, palindrome checking, binary trees (traversals, BST validation,
- * level order, BST search), and heaps (kth largest via a size-k min-heap).
+ * level order, BST search), heaps (kth largest via a size-k min-heap), and
+ * graphs (islands, max area, rotting oranges, word search, union-find) — the
+ * grid games render through a columns-aware slots lane on both clients.
  *
  * `instanceHints` tells the instance generator how to build valid data
  * (e.g. "sorted, unique, target present") and `allowedMechanics` is the
@@ -27,6 +29,7 @@ export type DsaTopic =
   | 'strings'
   | 'trees'
   | 'heap'
+  | 'graphs'
 
 export const DSA_TOPICS: readonly DsaTopic[] = [
   'arrays',
@@ -39,6 +42,7 @@ export const DSA_TOPICS: readonly DsaTopic[] = [
   'strings',
   'trees',
   'heap',
+  'graphs',
 ] as const
 
 export const TOPIC_LABELS: Readonly<Record<DsaTopic, string>> = {
@@ -52,6 +56,7 @@ export const TOPIC_LABELS: Readonly<Record<DsaTopic, string>> = {
   strings: 'Strings',
   trees: 'Trees',
   heap: 'Heap',
+  graphs: 'Graphs',
 }
 
 export type Difficulty = 'easy' | 'medium' | 'hard'
@@ -490,6 +495,81 @@ export const PROBLEMS: readonly ProblemMeta[] = [
       'Heapify the first k values into a min-heap. For each remaining value, if it exceeds the heap minimum, replace the root and sift down. The root is the kth largest.',
     instanceHints: { minLength: 6, maxLength: 9, unique: true, valueRange: [1, 99] },
     complexity: { time: 'O(n log k)', space: 'O(k)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'num-islands',
+    allowedMechanics: ['selectObject', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'submitAnswer'],
+
+    topic: 'graphs',
+    title: 'Number of islands (grid DFS)',
+    learningObjective:
+      'One depth-first walk claims exactly one island: every reachable land cell belongs to it, so the next unvisited land starts a new one.',
+    canonicalAlgorithm:
+      'Scan row by row. On an unvisited land cell, flood through its land neighbours and count one island. Water and visited cells are skipped.',
+    instanceHints: { minLength: 16, maxLength: 30, valueRange: [0, 1] },
+    complexity: { time: 'O(rows × cols)', space: 'O(rows × cols)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'max-area-island',
+    allowedMechanics: ['selectObject', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'submitAnswer'],
+
+    topic: 'graphs',
+    title: 'Max area of island',
+    learningObjective:
+      'Area is just the size of one flood: measure each island as you claim it and keep the largest.',
+    canonicalAlgorithm:
+      'Flood each island exactly as in counting, but record how many cells the flood covered. The largest cover is the answer.',
+    instanceHints: { minLength: 16, maxLength: 30, valueRange: [0, 1] },
+    complexity: { time: 'O(rows × cols)', space: 'O(rows × cols)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'rotting-oranges',
+    allowedMechanics: ['selectObject', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'submitAnswer'],
+
+    topic: 'graphs',
+    title: 'Rotting oranges (multi-source BFS)',
+    learningObjective:
+      'Breadth-first search from every rotten orange at once measures minutes: each wave rots the neighbours, and unreachable fresh means impossible.',
+    canonicalAlgorithm:
+      'Queue all rotten cells at minute 0. Repeatedly rot their fresh neighbours at the next minute. The last minute with a rotting is the answer, or -1 when fresh cells remain.',
+    instanceHints: { minLength: 16, maxLength: 25, valueRange: [0, 2] },
+    complexity: { time: 'O(rows × cols)', space: 'O(rows × cols)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'word-search',
+    allowedMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+
+    topic: 'graphs',
+    title: 'Word search (backtracking on a grid)',
+    learningObjective:
+      'Backtracking is DFS with an undo: mark the cell, explore, and unmark when the path dies — so every attempt leaves the board as it found it.',
+    canonicalAlgorithm:
+      'Try every cell as a start. Walk letter by letter through unvisited neighbours, marking the path. On a dead end unmark and back up. Finding every letter in order means the word exists.',
+    instanceHints: { minLength: 16, maxLength: 25, tokenAlphabet: ['a', 'b', 'c', 'd', 'e'] },
+    complexity: { time: 'O(rows × cols × 4^L)', space: 'O(L)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'union-find-connect',
+    allowedMechanics: ['selectObject', 'comparePair', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'comparePair', 'assignValue', 'submitAnswer'],
+
+    topic: 'graphs',
+    title: 'Connected components (union-find)',
+    learningObjective:
+      'Each set keeps one root: find climbs parent pointers to compare sets, and union attaches one root under the other, dropping the component count by one.',
+    canonicalAlgorithm:
+      'Start with every node its own parent. For each edge, find both roots by climbing. Different roots union (one fewer component); equal roots are already connected.',
+    instanceHints: { minLength: 6, maxLength: 9, valueRange: [0, 8] },
+    complexity: { time: 'O(n α(n))', space: 'O(n)' },
     defaultDifficulty: 'medium',
   },
 ] as const

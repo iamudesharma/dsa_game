@@ -189,6 +189,36 @@ const PROMPTS: Record<string, SelfExplanationPrompts> = {
     integration:
       'What stayed true about the k values sitting in the heap zone after every step, from the first scan to the last?',
   },
+  'num-islands': {
+    retention:
+      'When you started a flood on an unvisited land cell, why did that mean a new island rather than part of the previous one?',
+    integration:
+      'What stayed true about every cell your floods had already claimed, each time you started a new one?',
+  },
+  'max-area-island': {
+    retention:
+      'You measured each island as you claimed it instead of recounting at the end. Why was the running best trustworthy rather than not?',
+    integration:
+      'What stayed true about the largest area you had recorded, from the first island to the last?',
+  },
+  'rotting-oranges': {
+    retention:
+      'The wave rotted neighbours minute by minute rather than all at once. Why does the minute a cell rotted equal its distance rather than not?',
+    integration:
+      'What stayed true about the order cells rotted in, from minute zero to the last wave?',
+  },
+  'word-search': {
+    retention:
+      'When a path died you unmarked its cells instead of leaving them marked. Why was undoing necessary rather than optional?',
+    integration:
+      'What stayed true about the marked path every time you were one letter deeper?',
+  },
+  'union-find-connect': {
+    retention:
+      'When two roots differed you attached one under the other; when they matched you did nothing. Why attach there rather than not — or the reverse?',
+    integration:
+      'What stayed true about nodes that shared a root, from the first edge to the last?',
+  },
 }
 
 /** Generic fallback for a problem id the catalogue does not know yet. */

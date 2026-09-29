@@ -43,6 +43,7 @@ const CONTAINER_TERM: Record<DsaTopic, string> = {
   strings: 'the string',
   trees: 'the level-order array',
   heap: 'the array with its heap zone',
+  graphs: 'the grid',
 }
 
 const SCOPE_TERM: Record<DsaTopic, string> = {
@@ -56,6 +57,7 @@ const SCOPE_TERM: Record<DsaTopic, string> = {
   strings: 'the pair of positions still unchecked',
   trees: 'the subtree still under consideration',
   heap: 'the heap zone at the front of the array',
+  graphs: 'the cells not visited yet',
 }
 
 /**

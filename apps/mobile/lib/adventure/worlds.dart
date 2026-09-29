@@ -25,7 +25,7 @@ class WorldDefinition {
   final String subtitle;
   final Color color;
 
-  /// The printed world number on the map ("01" … "10").
+  /// The printed world number on the map ("01" … "11").
   final String mark;
 }
 
@@ -99,6 +99,13 @@ const List<WorldDefinition> worlds = [
     subtitle: 'Keep the k largest, drop the rest.',
     color: Color(0xFF6B3A4D),
     mark: '10',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.graphs,
+    name: 'Graph Archipelago',
+    subtitle: 'Islands, waves, and wandering words.',
+    color: Color(0xFF2B5D7D),
+    mark: '11',
   ),
 ];
 

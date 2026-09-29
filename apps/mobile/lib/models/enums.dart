@@ -208,7 +208,8 @@ enum DsaTopic {
   hashTable('hash-table'),
   strings('strings'),
   trees('trees'),
-  heap('heap');
+  heap('heap'),
+  graphs('graphs');
 
   const DsaTopic(this.wire);
 
@@ -226,6 +227,7 @@ enum DsaTopic {
     DsaTopic.strings => 'Strings',
     DsaTopic.trees => 'Trees',
     DsaTopic.heap => 'Heap',
+    DsaTopic.graphs => 'Graphs',
   };
 
   String get blurb => switch (this) {
@@ -239,6 +241,7 @@ enum DsaTopic {
     DsaTopic.strings => 'Read from both ends toward the middle.',
     DsaTopic.trees => 'Branch down from the root, visit every node.',
     DsaTopic.heap => 'Keep the k largest, let the rest go.',
+    DsaTopic.graphs => 'Flood islands, ride waves, trace words.',
   };
 
   /// `Icons` lives in the Flutter SDK; the model layer is allowed to depend on
@@ -255,6 +258,7 @@ enum DsaTopic {
     DsaTopic.strings => Icons.text_fields,
     DsaTopic.trees => Icons.account_tree,
     DsaTopic.heap => Icons.filter_list,
+    DsaTopic.graphs => Icons.hub,
   };
 
   static final Map<String, DsaTopic> _byWire = {for (final v in values) v.wire: v};

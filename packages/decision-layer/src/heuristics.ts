@@ -470,6 +470,58 @@ const KEYWORDS: Readonly<Record<string, { specific: readonly string[]; topic: re
     ],
     topic: ['heap', 'largest', 'kth', 'top', 'minimum'],
   },
+  'num-islands': {
+    specific: [
+      'number of islands',
+      'islands',
+      'island count',
+      'grid dfs',
+      'flood fill island',
+      'connected ones',
+      'surrounded regions',
+    ],
+    topic: ['island', 'grid', 'land', 'water', 'flood', 'matrix'],
+  },
+  'max-area-island': {
+    specific: ['max area', 'maximum area', 'largest island', 'biggest island', 'area of island'],
+    topic: ['area', 'island', 'grid', 'land', 'largest', 'matrix'],
+  },
+  'rotting-oranges': {
+    specific: [
+      'rotting oranges',
+      'rotten oranges',
+      'rotting',
+      'minutes to rot',
+      'multi source bfs',
+      'walls and gates',
+      'oranges rotting',
+    ],
+    topic: ['rot', 'orange', 'minute', 'fresh', 'grid', 'bfs', 'wave'],
+  },
+  'word-search': {
+    specific: [
+      'word search',
+      'find the word',
+      'word in grid',
+      'backtracking grid',
+      'letter path',
+      'search a 2d board',
+    ],
+    topic: ['word', 'search', 'grid', 'letters', 'board', 'path', 'backtrack'],
+  },
+  'union-find-connect': {
+    specific: [
+      'union find',
+      'disjoint set',
+      'dsu',
+      'connected components',
+      'number of provinces',
+      'find root',
+      'union operation',
+      'path compression',
+    ],
+    topic: ['union', 'find', 'components', 'connected', 'sets', 'root', 'parent'],
+  },
 }
 
 const W_TOPIC = 2
@@ -583,6 +635,7 @@ const TOPIC_ENTRY: Readonly<Record<DsaTopic, string>> = {
   strings: 'valid-palindrome',
   trees: 'tree-traversals',
   heap: 'kth-largest-heap',
+  graphs: 'num-islands',
 }
 
 /** Score at which a match is considered as strong as it plausibly gets. */

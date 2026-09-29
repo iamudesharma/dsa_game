@@ -12,6 +12,7 @@ export const WORLDS: WorldDefinition[] = [
   { id: 'strings', name: 'String Atelier', subtitle: 'Read from both ends.', color: '#3f6b4f', pale: '#d7ecd9', mark: '08' },
   { id: 'trees', name: 'Tree Canopy', subtitle: 'Branch down, visit every node.', color: '#2e5d50', pale: '#cfe8d8', mark: '09' },
   { id: 'heap', name: 'Heap Foundry', subtitle: 'Keep the k largest, drop the rest.', color: '#6b3a4d', pale: '#f2d3de', mark: '10' },
+  { id: 'graphs', name: 'Graph Archipelago', subtitle: 'Islands, waves, and wandering words.', color: '#2b5d7d', pale: '#cfe4f2', mark: '11' },
 ]
 export function worldForProblem(id?: string) { return WORLDS.find(w => w.id === PROBLEMS.find(p => p.id === id)?.topic) ?? WORLDS[0]! }
 export interface PlayerPreferences { mapFrame: DsaTopic | 'default' }

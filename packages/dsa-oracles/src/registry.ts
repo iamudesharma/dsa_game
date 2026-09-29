@@ -53,6 +53,13 @@ import {
   createTreeTraversalsOracle,
 } from './problems/trees.js'
 import { createKthLargestHeapOracle } from './problems/heap.js'
+import {
+  createMaxAreaIslandOracle,
+  createNumIslandsOracle,
+  createRottingOrangesOracle,
+  createUnionFindConnectOracle,
+  createWordSearchOracle,
+} from './problems/graphs.js'
 import { createSortOracle } from './problems/sorts.js'
 import {
   createLinkedListTraversalOracle,
@@ -97,6 +104,11 @@ export const ORACLES: Readonly<Record<string, Oracle>> = {
   'tree-level-order': createTreeLevelOrderOracle(),
   'bst-search': createBstSearchOracle(),
   'kth-largest-heap': createKthLargestHeapOracle(),
+  'num-islands': createNumIslandsOracle(),
+  'max-area-island': createMaxAreaIslandOracle(),
+  'rotting-oranges': createRottingOrangesOracle(),
+  'word-search': createWordSearchOracle(),
+  'union-find-connect': createUnionFindConnectOracle(),
 }
 
 const IMPLEMENTED_IDS: ReadonlySet<string> = new Set(Object.keys(ORACLES))
