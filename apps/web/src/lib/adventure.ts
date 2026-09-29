@@ -13,6 +13,11 @@ export const WORLDS: WorldDefinition[] = [
   { id: 'trees', name: 'Tree Canopy', subtitle: 'Branch down, visit every node.', color: '#2e5d50', pale: '#cfe8d8', mark: '09' },
   { id: 'heap', name: 'Heap Foundry', subtitle: 'Keep the k largest, drop the rest.', color: '#6b3a4d', pale: '#f2d3de', mark: '10' },
   { id: 'graphs', name: 'Graph Archipelago', subtitle: 'Islands, waves, and wandering words.', color: '#2b5d7d', pale: '#cfe4f2', mark: '11' },
+  { id: 'dp', name: 'DP Observatory', subtitle: 'Small answers build big ones.', color: '#5d4a7d', pale: '#e3d8f5', mark: '12' },
+  { id: 'backtracking', name: 'Backtrack Maze', subtitle: 'Choose, explore, undo.', color: '#7d5a2b', pale: '#f2e3c8', mark: '13' },
+  { id: 'greedy', name: 'Greedy Frontier', subtitle: 'How far can you reach?', color: '#3d6b35', pale: '#d5ebc9', mark: '14' },
+  { id: 'bit-manip', name: 'Bit Forge', subtitle: 'Fold bits until one survives.', color: '#555a6b', pale: '#dfe1ea', mark: '15' },
+  { id: 'trie', name: 'Trie Grove', subtitle: 'Shared prefixes, shared paths.', color: '#2f6b5e', pale: '#cde9dd', mark: '16' },
 ]
 export function worldForProblem(id?: string) { return WORLDS.find(w => w.id === PROBLEMS.find(p => p.id === id)?.topic) ?? WORLDS[0]! }
 export interface PlayerPreferences { mapFrame: DsaTopic | 'default' }

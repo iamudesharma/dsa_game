@@ -522,6 +522,34 @@ const KEYWORDS: Readonly<Record<string, { specific: readonly string[]; topic: re
     ],
     topic: ['union', 'find', 'components', 'connected', 'sets', 'root', 'parent'],
   },
+  'climbing-stairs': {
+    specific: ['climbing stairs', 'climb stairs', 'fibonacci dp', 'ways to climb', 'steps 1 or 2'],
+    topic: ['stairs', 'climb', 'dp', 'dynamic', 'ways', 'fibonacci'],
+  },
+  'house-robber': {
+    specific: ['house robber', 'rob houses', 'take or skip', 'maximum loot', 'robber', 'non adjacent sum'],
+    topic: ['rob', 'houses', 'loot', 'dp', 'maximum', 'adjacent'],
+  },
+  'subsets': {
+    specific: ['subsets', 'all subsets', 'power set', 'include exclude', 'choose unchoose', 'generate subsets'],
+    topic: ['subset', 'backtrack', 'enumerate', 'include', 'exclude', 'combinations'],
+  },
+  'permutations': {
+    specific: ['permutations', 'all permutations', 'arrangements', 'used flag', 'permute', 'ordering'],
+    topic: ['permutation', 'backtrack', 'arrange', 'order', 'used'],
+  },
+  'jump-game': {
+    specific: ['jump game', 'can jump', 'reachable', 'farthest reach', 'jump lengths', 'gas station'],
+    topic: ['jump', 'reach', 'greedy', 'reachable', 'farthest'],
+  },
+  'single-number': {
+    specific: ['single number', 'xor', 'xor accumulate', 'unpaired', 'appears once', 'bit manipulation', 'twice except one'],
+    topic: ['xor', 'single', 'bits', 'accumulate', 'cancel', 'unique'],
+  },
+  'trie-prefix-search': {
+    specific: ['trie', 'prefix tree', 'prefix search', 'autocomplete', 'starts with', 'shared prefix', 'implement trie'],
+    topic: ['trie', 'prefix', 'words', 'letters', 'completions', 'dictionary'],
+  },
 }
 
 const W_TOPIC = 2
@@ -636,6 +664,11 @@ const TOPIC_ENTRY: Readonly<Record<DsaTopic, string>> = {
   trees: 'tree-traversals',
   heap: 'kth-largest-heap',
   graphs: 'num-islands',
+  dp: 'climbing-stairs',
+  backtracking: 'subsets',
+  greedy: 'jump-game',
+  'bit-manip': 'single-number',
+  trie: 'trie-prefix-search',
 }
 
 /** Score at which a match is considered as strong as it plausibly gets. */

@@ -25,7 +25,7 @@ class WorldDefinition {
   final String subtitle;
   final Color color;
 
-  /// The printed world number on the map ("01" … "11").
+  /// The printed world number on the map ("01" … "16").
   final String mark;
 }
 
@@ -106,6 +106,41 @@ const List<WorldDefinition> worlds = [
     subtitle: 'Islands, waves, and wandering words.',
     color: Color(0xFF2B5D7D),
     mark: '11',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.dp,
+    name: 'DP Observatory',
+    subtitle: 'Small answers build big ones.',
+    color: Color(0xFF5D4A7D),
+    mark: '12',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.backtracking,
+    name: 'Backtrack Maze',
+    subtitle: 'Choose, explore, undo.',
+    color: Color(0xFF7D5A2B),
+    mark: '13',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.greedy,
+    name: 'Greedy Frontier',
+    subtitle: 'How far can you reach?',
+    color: Color(0xFF3D6B35),
+    mark: '14',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.bitManip,
+    name: 'Bit Forge',
+    subtitle: 'Fold bits until one survives.',
+    color: Color(0xFF555A6B),
+    mark: '15',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.trie,
+    name: 'Trie Grove',
+    subtitle: 'Shared prefixes, shared paths.',
+    color: Color(0xFF2F6B5E),
+    mark: '16',
   ),
 ];
 

@@ -46,6 +46,11 @@ export {
   createUnionFindConnectOracle,
   createWordSearchOracle,
 } from './problems/graphs.js'
+export { createClimbingStairsOracle, createDpOracle, createHouseRobberOracle } from './problems/dp.js'
+export { createBacktrackingOracle, createPermutationsOracle, createSubsetsOracle } from './problems/backtracking.js'
+export { createJumpGameOracle } from './problems/greedy.js'
+export { createSingleNumberOracle } from './problems/bit-manip.js'
+export { createTriePrefixSearchOracle } from './problems/trie.js'
 export {
   createLinkedListTraversalOracle,
   createMoveZeroesOracle,

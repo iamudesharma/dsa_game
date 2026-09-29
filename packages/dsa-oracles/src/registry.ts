@@ -60,6 +60,11 @@ import {
   createUnionFindConnectOracle,
   createWordSearchOracle,
 } from './problems/graphs.js'
+import { createClimbingStairsOracle, createHouseRobberOracle } from './problems/dp.js'
+import { createPermutationsOracle, createSubsetsOracle } from './problems/backtracking.js'
+import { createJumpGameOracle } from './problems/greedy.js'
+import { createSingleNumberOracle } from './problems/bit-manip.js'
+import { createTriePrefixSearchOracle } from './problems/trie.js'
 import { createSortOracle } from './problems/sorts.js'
 import {
   createLinkedListTraversalOracle,
@@ -109,6 +114,13 @@ export const ORACLES: Readonly<Record<string, Oracle>> = {
   'rotting-oranges': createRottingOrangesOracle(),
   'word-search': createWordSearchOracle(),
   'union-find-connect': createUnionFindConnectOracle(),
+  'climbing-stairs': createClimbingStairsOracle(),
+  'house-robber': createHouseRobberOracle(),
+  'subsets': createSubsetsOracle(),
+  'permutations': createPermutationsOracle(),
+  'jump-game': createJumpGameOracle(),
+  'single-number': createSingleNumberOracle(),
+  'trie-prefix-search': createTriePrefixSearchOracle(),
 }
 
 const IMPLEMENTED_IDS: ReadonlySet<string> = new Set(Object.keys(ORACLES))

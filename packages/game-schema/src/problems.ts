@@ -9,7 +9,10 @@
  * anagrams, palindrome checking, binary trees (traversals, BST validation,
  * level order, BST search), heaps (kth largest via a size-k min-heap), and
  * graphs (islands, max area, rotting oranges, word search, union-find) — the
- * grid games render through a columns-aware slots lane on both clients.
+ * grid games render through a columns-aware slots lane on both clients —
+ * plus dynamic programming (climbing stairs, house robber), backtracking
+ * (subsets, permutations), greedy (jump game), bit manipulation (single
+ * number), and tries (prefix search on a static trie).
  *
  * `instanceHints` tells the instance generator how to build valid data
  * (e.g. "sorted, unique, target present") and `allowedMechanics` is the
@@ -30,6 +33,11 @@ export type DsaTopic =
   | 'trees'
   | 'heap'
   | 'graphs'
+  | 'dp'
+  | 'backtracking'
+  | 'greedy'
+  | 'bit-manip'
+  | 'trie'
 
 export const DSA_TOPICS: readonly DsaTopic[] = [
   'arrays',
@@ -43,6 +51,11 @@ export const DSA_TOPICS: readonly DsaTopic[] = [
   'trees',
   'heap',
   'graphs',
+  'dp',
+  'backtracking',
+  'greedy',
+  'bit-manip',
+  'trie',
 ] as const
 
 export const TOPIC_LABELS: Readonly<Record<DsaTopic, string>> = {
@@ -57,6 +70,11 @@ export const TOPIC_LABELS: Readonly<Record<DsaTopic, string>> = {
   trees: 'Trees',
   heap: 'Heap',
   graphs: 'Graphs',
+  dp: 'Dynamic Programming',
+  backtracking: 'Backtracking',
+  greedy: 'Greedy',
+  'bit-manip': 'Bit Manipulation',
+  trie: 'Trie',
 }
 
 export type Difficulty = 'easy' | 'medium' | 'hard'
@@ -570,6 +588,111 @@ export const PROBLEMS: readonly ProblemMeta[] = [
       'Start with every node its own parent. For each edge, find both roots by climbing. Different roots union (one fewer component); equal roots are already connected.',
     instanceHints: { minLength: 6, maxLength: 9, valueRange: [0, 8] },
     complexity: { time: 'O(n α(n))', space: 'O(n)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'climbing-stairs',
+    allowedMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+
+    topic: 'dp',
+    title: 'Climbing stairs (Fibonacci DP)',
+    learningObjective:
+      'The ways to reach step i reuse smaller answers: step 1 or 2 at a time means ways[i] is the sum of the two previous counts.',
+    canonicalAlgorithm:
+      'Set dp[0]=1, dp[1]=1. For each step i from 2 to n, record dp[i]=dp[i-1]+dp[i-2]. dp[n] is the answer.',
+    instanceHints: { minLength: 6, maxLength: 11, valueRange: [0, 10] },
+    complexity: { time: 'O(n)', space: 'O(1)' },
+    defaultDifficulty: 'easy',
+  },
+  {
+    id: 'house-robber',
+    allowedMechanics: ['selectObject', 'comparePair', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'comparePair', 'assignValue', 'submitAnswer'],
+
+    topic: 'dp',
+    title: 'House robber (take-or-skip DP)',
+    learningObjective:
+      'At each house decide take or skip: robbing it adds its money to the best from two doors down, skipping keeps the best so far.',
+    canonicalAlgorithm:
+      'Keep dp[-1]=0, dp[0]=money[0]. For each house i, take=money[i]+dp[i-2] and skip=dp[i-1]; record dp[i]=max(take, skip). The last dp is the answer.',
+    instanceHints: { minLength: 5, maxLength: 8, valueRange: [1, 20] },
+    complexity: { time: 'O(n)', space: 'O(1)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'subsets',
+    allowedMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+
+    topic: 'backtracking',
+    title: 'Subsets (choose / unchoose)',
+    learningObjective:
+      'Every element is a fork: include it and enumerate the rest, then unmark it and enumerate without it — the undo is what makes it backtracking.',
+    canonicalAlgorithm:
+      'Walk positions in order. At each one, mark include and recurse, then unmark (exclude) and recurse. Each root-to-leaf path is one subset.',
+    instanceHints: { minLength: 3, maxLength: 4, unique: true, valueRange: [1, 9] },
+    complexity: { time: 'O(n × 2^n)', space: 'O(n)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'permutations',
+    allowedMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+
+    topic: 'backtracking',
+    title: 'Permutations (used-flag backtracking)',
+    learningObjective:
+      'Each open position tries every unused value: mark it used, fill the rest, then free it — freeing is what lets the next branch reuse the value.',
+    canonicalAlgorithm:
+      'At each open position, try every unused value in order: mark it used, recurse, then unmark it. Each full path is one permutation.',
+    instanceHints: { minLength: 3, maxLength: 4, unique: true, valueRange: [1, 9] },
+    complexity: { time: 'O(n × n!)', space: 'O(n)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'jump-game',
+    allowedMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+
+    topic: 'greedy',
+    title: 'Jump game (greedy reach)',
+    learningObjective:
+      'One running number decides everything: the farthest reachable index. A cell beyond it ends the run; otherwise it may extend it.',
+    canonicalAlgorithm:
+      'Track reach=0. For each index i in order, if i is beyond reach the end is unreachable; otherwise extend reach to max(reach, i+jumps[i]). Reaching the last index wins.',
+    instanceHints: { minLength: 5, maxLength: 8, valueRange: [0, 4] },
+    complexity: { time: 'O(n)', space: 'O(1)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'single-number',
+    allowedMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+
+    topic: 'bit-manip',
+    title: 'Single number (XOR accumulation)',
+    learningObjective:
+      'XOR cancels pairs: a number XOR itself is zero, so folding the whole array leaves exactly the unpaired value.',
+    canonicalAlgorithm:
+      'Fold an accumulator starting at 0: acc = acc XOR value for each value. Pairs cancel to zero and the survivor is the single number.',
+    instanceHints: { minLength: 5, maxLength: 9, valueRange: [1, 30] },
+    complexity: { time: 'O(n)', space: 'O(1)' },
+    defaultDifficulty: 'easy',
+  },
+  {
+    id: 'trie-prefix-search',
+    allowedMechanics: ['selectObject', 'traverseNode', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'traverseNode', 'submitAnswer'],
+
+    topic: 'trie',
+    title: 'Prefix search on a trie',
+    learningObjective:
+      'Shared prefixes share nodes: walking the query letter by letter either falls off (no words) or lands where every completion hangs below.',
+    canonicalAlgorithm:
+      'Follow one link per query letter from the root. If a link is missing the prefix matches nothing; otherwise every word-end in the landed subtree is a completion.',
+    instanceHints: { minLength: 4, maxLength: 8, tokenAlphabet: ['a', 'b', 'c', 'd', 'e'] },
+    complexity: { time: 'O(L + C)', space: 'O(1)' },
     defaultDifficulty: 'medium',
   },
 ] as const

@@ -219,6 +219,48 @@ const PROMPTS: Record<string, SelfExplanationPrompts> = {
     integration:
       'What stayed true about nodes that shared a root, from the first edge to the last?',
   },
+  'climbing-stairs': {
+    retention:
+      'Each count was the sum of the two before it. Why add those two rather than count the paths from scratch?',
+    integration:
+      'What stayed true about what dp[i] meant after every step, from the ground to the top?',
+  },
+  'house-robber': {
+    retention:
+      'Think of one house where you took the money — or skipped it. Why take there rather than skip, or the reverse?',
+    integration:
+      'What stayed true about the best loot so far, even on the nights you skipped?',
+  },
+  'subsets': {
+    retention:
+      'For one element you explored both including it and excluding it. Why was the unmarking step necessary rather than optional?',
+    integration:
+      'What stayed true about the marked elements every time you went one level deeper?',
+  },
+  'permutations': {
+    retention:
+      'You tried every unused value in each open position. Why was freeing a value after its branch necessary rather than optional?',
+    integration:
+      'What stayed true about the used flags along any single root-to-leaf path?',
+  },
+  'jump-game': {
+    retention:
+      'You kept one running reach instead of rechecking every earlier cell. Why was that number trustworthy rather than not?',
+    integration:
+      'What stayed true about every index at or below the reach, the whole way through?',
+  },
+  'single-number': {
+    retention:
+      'Each fold cancelled at most one pair. Why does the survivor have to be the unpaired value rather than anything else?',
+    integration:
+      'What stayed true about the accumulator after every pair had cancelled, from the first fold to the last?',
+  },
+  'trie-prefix-search': {
+    retention:
+      'You followed one link per query letter instead of scanning all words. Why was following enough rather than not?',
+    integration:
+      'What stayed true about every word below the node you landed on?',
+  },
 }
 
 /** Generic fallback for a problem id the catalogue does not know yet. */

@@ -209,7 +209,12 @@ enum DsaTopic {
   strings('strings'),
   trees('trees'),
   heap('heap'),
-  graphs('graphs');
+  graphs('graphs'),
+  dp('dp'),
+  backtracking('backtracking'),
+  greedy('greedy'),
+  bitManip('bit-manip'),
+  trie('trie');
 
   const DsaTopic(this.wire);
 
@@ -228,6 +233,11 @@ enum DsaTopic {
     DsaTopic.trees => 'Trees',
     DsaTopic.heap => 'Heap',
     DsaTopic.graphs => 'Graphs',
+    DsaTopic.dp => 'Dynamic Programming',
+    DsaTopic.backtracking => 'Backtracking',
+    DsaTopic.greedy => 'Greedy',
+    DsaTopic.bitManip => 'Bit Manipulation',
+    DsaTopic.trie => 'Trie',
   };
 
   String get blurb => switch (this) {
@@ -242,6 +252,11 @@ enum DsaTopic {
     DsaTopic.trees => 'Branch down from the root, visit every node.',
     DsaTopic.heap => 'Keep the k largest, let the rest go.',
     DsaTopic.graphs => 'Flood islands, ride waves, trace words.',
+    DsaTopic.dp => 'Small answers build big ones.',
+    DsaTopic.backtracking => 'Choose, explore, undo.',
+    DsaTopic.greedy => 'How far can you reach?',
+    DsaTopic.bitManip => 'Fold bits until one survives.',
+    DsaTopic.trie => 'Shared prefixes, shared paths.',
   };
 
   /// `Icons` lives in the Flutter SDK; the model layer is allowed to depend on
@@ -259,6 +274,11 @@ enum DsaTopic {
     DsaTopic.trees => Icons.account_tree,
     DsaTopic.heap => Icons.filter_list,
     DsaTopic.graphs => Icons.hub,
+    DsaTopic.dp => Icons.table_rows,
+    DsaTopic.backtracking => Icons.route,
+    DsaTopic.greedy => Icons.bolt,
+    DsaTopic.bitManip => Icons.memory,
+    DsaTopic.trie => Icons.park,
   };
 
   static final Map<String, DsaTopic> _byWire = {for (final v in values) v.wire: v};

@@ -166,9 +166,9 @@ Two further measured constraints, both found by calling the live endpoint:
 
 ## Status
 
-- **32 problems** are in the catalogue (`packages/game-schema/src/problems.ts`),
+- **39 problems** are in the catalogue (`packages/game-schema/src/problems.ts`),
   each with `allowedMechanics` and `requiredMechanics`.
-- **All 32 catalogue problems have deterministic oracles**: arrays (maximum /
+- **All 39 catalogue problems have deterministic oracles**: arrays (maximum /
   minimum, Two Sum, move zeroes, sliding-window max sum, sorted two-pointers
   pair, prefix-sum range, Kadane's max subarray, merge intervals), sorting
   (bubble and selection), stack (valid parentheses, push / pop, next greater
@@ -176,9 +176,11 @@ Two further measured constraints, both found by calling the live endpoint:
   lists (traversal, reversal, and cycle detection), hash tables (frequency
   count, valid anagram), strings (valid palindrome), trees (pre/in/post-order
   traversals, BST validation, level order, BST search), heaps (kth largest
-  via a size-k min-heap), and graphs (number of islands, max area, rotting
-  oranges, word search, union-find components). The same registry drives both
-  clients and the API.
+  via a size-k min-heap), graphs (number of islands, max area, rotting
+  oranges, word search, union-find components), dynamic programming (climbing
+  stairs, house robber), backtracking (subsets, permutations), greedy (jump
+  game), bit manipulation (single number), and tries (prefix search). The
+  same registry drives both clients and the API.
 - Grid games (`num-islands`, `max-area-island`, `rotting-oranges`,
   `word-search`) declare `gridCols` in their instance extras; both clients lay
   the slots lane out as fixed rows from it, so row-major ids read as a real

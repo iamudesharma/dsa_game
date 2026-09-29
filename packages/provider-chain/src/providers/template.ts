@@ -44,6 +44,11 @@ const CONTAINER_TERM: Record<DsaTopic, string> = {
   trees: 'the level-order array',
   heap: 'the array with its heap zone',
   graphs: 'the grid',
+  dp: 'the table of smaller answers',
+  backtracking: 'the decision tree',
+  greedy: 'the reachable frontier',
+  'bit-manip': 'the accumulator',
+  trie: 'the shared prefixes',
 }
 
 const SCOPE_TERM: Record<DsaTopic, string> = {
@@ -58,6 +63,11 @@ const SCOPE_TERM: Record<DsaTopic, string> = {
   trees: 'the subtree still under consideration',
   heap: 'the heap zone at the front of the array',
   graphs: 'the cells not visited yet',
+  dp: 'the subproblems already solved',
+  backtracking: 'the branch currently explored',
+  greedy: 'how far can be reached so far',
+  'bit-manip': 'the bits folded so far',
+  trie: 'the letters matched so far',
 }
 
 /**
