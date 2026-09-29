@@ -185,6 +185,18 @@ Two further measured constraints, both found by calling the live endpoint:
   `word-search`) declare `gridCols` in their instance extras; both clients lay
   the slots lane out as fixed rows from it, so row-major ids read as a real
   2D board with no per-problem renderer.
+
+## Learning library (web)
+
+- `/patterns` — the 20-pattern library (`apps/web/src/lib/patterns.ts`):
+  when to use it, a reusable template, LeetCode practice references (name +
+  number, never fabricated links), deep-dives verbatim from
+  awesome-leetcode-resources, and a straight line into every playable game.
+- `/tracks` — curated checklists (`apps/web/src/lib/tracks.ts`): an
+  Interview Classics list across every category mapped to the games that
+  train each item (study-only items show their LeetCode number, never a play
+  button), plus a Full Tour derived from the catalogue so it cannot drift.
+  Progress is the adventure store's own completion map.
 - Low, medium, and high choose increasing instance sizes within each problem's
   declared bounds. The template provider can generate every game without model
   keys or sidecars, so the full catalogue remains playable offline.
