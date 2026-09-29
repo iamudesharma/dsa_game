@@ -33,6 +33,19 @@ import { PROBLEM_IDS } from '@dsa/game-schema'
 import type { Oracle } from '@dsa/game-schema'
 import { createArrayMaxMinOracle } from './problems/array-max-min.js'
 import { createBinarySearchOracle } from './problems/binary-search.js'
+import {
+  createFrequencyCountOracle,
+  createKadaneMaxSubarrayOracle,
+  createLinkedListCycleOracle,
+  createMergeIntervalsOracle,
+  createNextGreaterElementOracle,
+  createPrefixSumRangeOracle,
+  createRotatedSearchOracle,
+  createSlidingWindowMaxSumOracle,
+  createTwoPointersPairOracle,
+  createValidAnagramOracle,
+  createValidPalindromeOracle,
+} from './problems/patterns.js'
 import { createSortOracle } from './problems/sorts.js'
 import {
   createLinkedListTraversalOracle,
@@ -61,6 +74,17 @@ export const ORACLES: Readonly<Record<string, Oracle>> = {
   'queue-operations': createQueueOperationsOracle(),
   'linked-list-traversal': createLinkedListTraversalOracle(),
   'reverse-linked-list': createReverseLinkedListOracle(),
+  'sliding-window-max-sum': createSlidingWindowMaxSumOracle(),
+  'two-pointers-pair': createTwoPointersPairOracle(),
+  'prefix-sum-range': createPrefixSumRangeOracle(),
+  'kadane-max-subarray': createKadaneMaxSubarrayOracle(),
+  'merge-intervals': createMergeIntervalsOracle(),
+  'next-greater-element': createNextGreaterElementOracle(),
+  'rotated-search': createRotatedSearchOracle(),
+  'linked-list-cycle': createLinkedListCycleOracle(),
+  'frequency-count': createFrequencyCountOracle(),
+  'valid-anagram': createValidAnagramOracle(),
+  'valid-palindrome': createValidPalindromeOracle(),
 }
 
 const IMPLEMENTED_IDS: ReadonlySet<string> = new Set(Object.keys(ORACLES))

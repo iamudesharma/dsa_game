@@ -8,6 +8,8 @@ export const WORLDS: WorldDefinition[] = [
   { id: 'queue', name: 'Queue Station', subtitle: 'Everyone gets their turn.', color: '#246b75', pale: '#c9e9e8', mark: '04' },
   { id: 'binary-search', name: 'Search Observatory', subtitle: 'Narrow the sky. Find your star.', color: '#425c96', pale: '#d9e3ff', mark: '05' },
   { id: 'linked-list', name: 'Linked-list Railway', subtitle: 'Follow the connections.', color: '#8c4b65', pale: '#f4d4df', mark: '06' },
+  { id: 'hash-table', name: 'Hash Bazaar', subtitle: 'Count everything once.', color: '#7a5c2e', pale: '#f3e5c3', mark: '07' },
+  { id: 'strings', name: 'String Atelier', subtitle: 'Read from both ends.', color: '#3f6b4f', pale: '#d7ecd9', mark: '08' },
 ]
 export function worldForProblem(id?: string) { return WORLDS.find(w => w.id === PROBLEMS.find(p => p.id === id)?.topic) ?? WORLDS[0]! }
 export interface PlayerPreferences { mapFrame: DsaTopic | 'default' }

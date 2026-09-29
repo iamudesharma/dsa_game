@@ -300,6 +300,112 @@ const KEYWORDS: Readonly<Record<string, { specific: readonly string[]; topic: re
     ],
     topic: ['linked list', 'list', 'node', 'pointer', 'reverse', 'head'],
   },
+  'sliding-window-max-sum': {
+    specific: [
+      'sliding window',
+      'window sum',
+      'window of size k',
+      'maximum sum subarray of size k',
+      'fixed window',
+      'slide the window',
+    ],
+    topic: ['window', 'subarray', 'contiguous', 'sum', 'slide'],
+  },
+  'two-pointers-pair': {
+    specific: [
+      'two pointers',
+      'two pointers pair',
+      'sorted array pair',
+      'two sum sorted',
+      'converging pointers',
+      'opposite ends',
+    ],
+    topic: ['pair', 'sorted', 'sum', 'target', 'pointers'],
+  },
+  'prefix-sum-range': {
+    specific: [
+      'prefix sum',
+      'prefix array',
+      'range sum',
+      'range query',
+      'cumulative sum',
+      'subarray sum query',
+    ],
+    topic: ['prefix', 'range', 'sum', 'query', 'cumulative'],
+  },
+  'kadane-max-subarray': {
+    specific: [
+      'kadane',
+      'maximum subarray',
+      'max subarray',
+      'extend or restart',
+      'maximum subarray sum',
+    ],
+    topic: ['subarray', 'maximum', 'contiguous', 'sum'],
+  },
+  'merge-intervals': {
+    specific: [
+      'merge intervals',
+      'overlapping intervals',
+      'interval overlap',
+      'meeting rooms',
+      'insert interval',
+    ],
+    topic: ['interval', 'overlap', 'merge', 'schedule'],
+  },
+  'next-greater-element': {
+    specific: [
+      'next greater',
+      'next greater element',
+      'monotonic stack',
+      'monotone stack',
+      'decreasing stack',
+      'daily temperatures',
+    ],
+    topic: ['greater', 'stack', 'monotonic', 'next'],
+  },
+  'rotated-search': {
+    specific: [
+      'rotated',
+      'rotated array',
+      'rotated sorted',
+      'search in rotated',
+      'pivot',
+      'find minimum in rotated',
+    ],
+    topic: ['search', 'rotated', 'sorted', 'target', 'pivot'],
+  },
+  'linked-list-cycle': {
+    specific: [
+      'cycle detection',
+      'linked list cycle',
+      'tortoise and hare',
+      'fast and slow pointers',
+      'floyd',
+      'cycle in linked list',
+      'has cycle',
+    ],
+    topic: ['cycle', 'linked list', 'node', 'pointer', 'slow', 'fast'],
+  },
+  'frequency-count': {
+    specific: [
+      'frequency',
+      'frequency count',
+      'most frequent',
+      'count occurrences',
+      'hash map count',
+      'top k frequent',
+    ],
+    topic: ['frequency', 'count', 'hash', 'map', 'occurrences'],
+  },
+  'valid-anagram': {
+    specific: ['anagram', 'valid anagram', 'group anagrams', 'letter counts match', 'same letters'],
+    topic: ['anagram', 'letters', 'string', 'count', 'characters'],
+  },
+  'valid-palindrome': {
+    specific: ['palindrome', 'valid palindrome', 'symmetric string', 'reads the same', 'outside in'],
+    topic: ['palindrome', 'string', 'symmetric', 'mirror'],
+  },
 }
 
 const W_TOPIC = 2
@@ -409,6 +515,8 @@ const TOPIC_ENTRY: Readonly<Record<DsaTopic, string>> = {
   stack: 'valid-parentheses',
   queue: 'queue-operations',
   'linked-list': 'linked-list-traversal',
+  'hash-table': 'frequency-count',
+  strings: 'valid-palindrome',
 }
 
 /** Score at which a match is considered as strong as it plausibly gets. */

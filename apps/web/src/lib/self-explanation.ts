@@ -93,6 +93,72 @@ const PROMPTS: Record<string, SelfExplanationPrompts> = {
     integration:
       'What stayed true about the part of the list behind you — the part already reversed — at every step?',
   },
+  'sliding-window-max-sum': {
+    retention:
+      'When you slid the window one step, you added one value and dropped one value instead of re-adding everything. Why was that enough rather than not?',
+    integration:
+      'What stayed true about the best window sum you had recorded, from the first window to the last?',
+  },
+  'two-pointers-pair': {
+    retention:
+      'When the pair sum missed the target, you moved exactly one pointer. Why that pointer rather than the other one?',
+    integration:
+      'What stayed true about where the answer could still be every time you moved a pointer inward?',
+  },
+  'prefix-sum-range': {
+    retention:
+      'You answered the range query with one subtraction instead of re-adding the range. Why does prefix[r+1] − prefix[l] give the right total rather than not?',
+    integration:
+      'What stayed true about what prefix[i] held after each step of the build, from the first element to the last?',
+  },
+  'kadane-max-subarray': {
+    retention:
+      'Think of one step where you extended the running sum — or restarted it at the current value. Why extend there rather than restart, or the reverse?',
+    integration:
+      'What stayed true about the best sum you had seen so far, even while the running sum kept changing?',
+  },
+  'merge-intervals': {
+    retention:
+      'When the next interval started inside the running one, you extended the end instead of emitting. Why extend rather than emit — or the reverse?',
+    integration:
+      'What stayed true about the intervals already emitted, every time you moved to the next one?',
+  },
+  'next-greater-element': {
+    retention:
+      'When a new value arrived, you popped every smaller value off the stack before pushing. Why pop those rather than keep them?',
+    integration:
+      'What stayed true about the values left sitting on the stack, from the first element to the last?',
+  },
+  'rotated-search': {
+    retention:
+      'Think of one turn where you kept one half and discarded the other. How did you know that half was sorted — and why did that decide it rather than not?',
+    integration:
+      'From the first midpoint to the last, what stayed true about where the target could still be?',
+  },
+  'linked-list-cycle': {
+    retention:
+      'The fast pointer moved two links for every one of the slow pointer. Why does meeting prove a cycle, rather than just a coincidence?',
+    integration:
+      'What stayed true about the distance between the two pointers each round when a cycle was there — and when it was not?',
+  },
+  'frequency-count': {
+    retention:
+      'Each time you saw a value you bumped its count instead of rescanning the array. Why was the stored count trustworthy rather than not?',
+    integration:
+      'What stayed true about the counts map after every element, from the first to the last?',
+  },
+  'valid-anagram': {
+    retention:
+      'You added the first string and subtracted the second instead of sorting either one. Why does all-zeroes at the end mean anagram rather than not?',
+    integration:
+      'What stayed true about what a nonzero count meant, at any point in the game?',
+  },
+  'valid-palindrome': {
+    retention:
+      'You compared the outermost unchecked pair first. Why was one mismatch enough to decide the whole answer rather than not?',
+    integration:
+      'What stayed true about the pairs you had already checked, all the way toward the middle?',
+  },
 }
 
 /** Generic fallback for a problem id the catalogue does not know yet. */

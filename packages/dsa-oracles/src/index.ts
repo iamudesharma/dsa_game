@@ -17,6 +17,20 @@ export { createBinarySearchOracle, annotatedCode } from './problems/binary-searc
 export { createArrayMaxMinOracle } from './problems/array-max-min.js'
 export { createBubbleSortOracle, createSelectionSortOracle, createSortOracle } from './problems/sorts.js'
 export {
+  createFrequencyCountOracle,
+  createKadaneMaxSubarrayOracle,
+  createLinkedListCycleOracle,
+  createMergeIntervalsOracle,
+  createNextGreaterElementOracle,
+  createPatternOracle,
+  createPrefixSumRangeOracle,
+  createRotatedSearchOracle,
+  createSlidingWindowMaxSumOracle,
+  createTwoPointersPairOracle,
+  createValidAnagramOracle,
+  createValidPalindromeOracle,
+} from './problems/patterns.js'
+export {
   createLinkedListTraversalOracle,
   createMoveZeroesOracle,
   createQueueOperationsOracle,

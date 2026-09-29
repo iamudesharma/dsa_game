@@ -84,7 +84,7 @@ void main() {
     await _bootApp(tester);
 
     expect(find.text('Play the Algorithms'), findsOneWidget);
-    // Six illustrated destinations with algorithm names alongside world names.
+    // Eight illustrated destinations with algorithm names alongside world names.
     expect(find.text('Search Observatory'), findsOneWidget);
     expect(find.text('Linked-list Railway'), findsOneWidget);
     expect(find.text('Find the target in a sorted array'), findsOneWidget);

@@ -1,7 +1,12 @@
 /**
- * The MVP problem registry: eleven problems across six topics, matching the
- * agreed scope exactly (3 arrays, 2 sorting, 2 stack, 1 queue, 1 binary
- * search, 2 linked list).
+ * The problem registry: twenty-two problems across eight topics.
+ *
+ * Scope follows the awesome-leetcode-resources fundamentals list: the original
+ * six topics (3 arrays, 2 sorting, 2 stack, 1 queue, 1 binary search,
+ * 2 linked list) plus the highest-yield gaps — array patterns (sliding window,
+ * two pointers, prefix sum, Kadane, intervals), monotonic stack, rotated
+ * binary search, linked-list cycle detection, hash-table frequency counting,
+ * anagrams, and palindrome checking.
  *
  * `instanceHints` tells the instance generator how to build valid data
  * (e.g. "sorted, unique, target present") and `allowedMechanics` is the
@@ -10,7 +15,15 @@
 
 import type { MechanicId } from './mechanics.js'
 
-export type DsaTopic = 'arrays' | 'sorting' | 'stack' | 'queue' | 'binary-search' | 'linked-list'
+export type DsaTopic =
+  | 'arrays'
+  | 'sorting'
+  | 'stack'
+  | 'queue'
+  | 'binary-search'
+  | 'linked-list'
+  | 'hash-table'
+  | 'strings'
 
 export const DSA_TOPICS: readonly DsaTopic[] = [
   'arrays',
@@ -19,6 +32,8 @@ export const DSA_TOPICS: readonly DsaTopic[] = [
   'queue',
   'binary-search',
   'linked-list',
+  'hash-table',
+  'strings',
 ] as const
 
 export const TOPIC_LABELS: Readonly<Record<DsaTopic, string>> = {
@@ -28,6 +43,8 @@ export const TOPIC_LABELS: Readonly<Record<DsaTopic, string>> = {
   queue: 'Queue',
   'binary-search': 'Binary Search',
   'linked-list': 'Linked List',
+  'hash-table': 'Hash Table',
+  strings: 'Strings',
 }
 
 export type Difficulty = 'easy' | 'medium' | 'hard'
@@ -227,6 +244,171 @@ export const PROBLEMS: readonly ProblemMeta[] = [
     instanceHints: { minLength: 4, maxLength: 6, unique: true, valueRange: [1, 99] },
     complexity: { time: 'O(n)', space: 'O(1)' },
     defaultDifficulty: 'hard',
+  },
+  {
+    id: 'sliding-window-max-sum',
+    allowedMechanics: ['selectObject', 'assignValue', 'comparePair', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+
+    topic: 'arrays',
+    title: 'Maximum sum of any window of size k',
+    learningObjective:
+      'A fixed-size sliding window reuses the previous sum instead of recomputing it: add the entrant, drop the leaver, track the best.',
+    canonicalAlgorithm:
+      'Sum the first k values. Then slide: add a[read], subtract a[read-k], and keep the largest window sum seen. The best is the answer.',
+    instanceHints: { minLength: 6, maxLength: 10, valueRange: [1, 20] },
+    complexity: { time: 'O(n)', space: 'O(1)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'two-pointers-pair',
+    allowedMechanics: ['selectObject', 'comparePair', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'comparePair', 'submitAnswer'],
+
+    topic: 'arrays',
+    title: 'Two Sum in a sorted array',
+    learningObjective:
+      'Two pointers converge from opposite ends: the pair sum tells you which pointer to move, so each step discards one index.',
+    canonicalAlgorithm:
+      'Set left=0, right=n-1. While left<right compare a[left]+a[right] with target: equal stops, smaller moves left right, larger moves right left.',
+    instanceHints: { minLength: 6, maxLength: 10, unique: true, sorted: true, targetGuaranteed: true, valueRange: [1, 40] },
+    complexity: { time: 'O(n)', space: 'O(1)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'prefix-sum-range',
+    allowedMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+
+    topic: 'arrays',
+    title: 'Range sum with a prefix array',
+    learningObjective:
+      'One preprocessing pass stores every prefix total, so any range sum is a single subtraction: prefix[r+1] - prefix[l].',
+    canonicalAlgorithm:
+      'Build prefix[0]=0, prefix[i+1]=prefix[i]+a[i]. Answer each query [l,r] as prefix[r+1]-prefix[l].',
+    instanceHints: { minLength: 6, maxLength: 10, valueRange: [1, 20] },
+    complexity: { time: 'O(n) build, O(1) query', space: 'O(n)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'kadane-max-subarray',
+    allowedMechanics: ['selectObject', 'comparePair', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'comparePair', 'submitAnswer'],
+
+    topic: 'arrays',
+    title: "Kadane's maximum subarray",
+    learningObjective:
+      'At each value decide extend-or-restart: carry the running sum forward only while it stays positive, and remember the best seen.',
+    canonicalAlgorithm:
+      'Keep current=a[0], best=a[0]. For each next value set current=max(value, current+value) and best=max(best, current). best is the answer.',
+    instanceHints: { minLength: 6, maxLength: 10, valueRange: [-9, 20] },
+    complexity: { time: 'O(n)', space: 'O(1)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'merge-intervals',
+    allowedMechanics: ['selectObject', 'comparePair', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'comparePair', 'submitAnswer'],
+
+    topic: 'arrays',
+    title: 'Merge overlapping intervals',
+    learningObjective:
+      'Sorted by start, overlap is one test: the next start is at or before the running end, so extend the end or emit the interval.',
+    canonicalAlgorithm:
+      'Sort by start. Walk the intervals keeping cur=[s,e]: if next.s<=cur.e set cur.e=max(cur.e,next.e), else emit cur and start next.',
+    instanceHints: { minLength: 4, maxLength: 7, valueRange: [1, 20] },
+    complexity: { time: 'O(n log n)', space: 'O(n)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'next-greater-element',
+    allowedMechanics: ['selectObject', 'comparePair', 'pushPop', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'pushPop', 'submitAnswer'],
+
+    topic: 'stack',
+    title: 'Next greater element (monotonic stack)',
+    learningObjective:
+      'A decreasing stack resolves each element the moment a larger value arrives: pop everything smaller, then push the current value.',
+    canonicalAlgorithm:
+      'Walk left to right with a decreasing stack of indices. While the stack top holds a smaller value, pop it and record the current value as its answer. Push the current index.',
+    instanceHints: { minLength: 5, maxLength: 8, unique: true, valueRange: [1, 99] },
+    complexity: { time: 'O(n)', space: 'O(n)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'rotated-search',
+    allowedMechanics: ['selectObject', 'comparePair', 'choosePath', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'comparePair', 'choosePath', 'submitAnswer'],
+
+    topic: 'binary-search',
+    title: 'Search in a rotated sorted array',
+    learningObjective:
+      'One half of a rotated array is always sorted: find which half, test whether the target lies inside it, and discard the other half.',
+    canonicalAlgorithm:
+      'With lo/hi, read mid. If a[mid]==target stop. If the left half is sorted and the target lies in it, search left; if the right half is sorted and holds the target, search right; otherwise search the other half.',
+    instanceHints: { minLength: 7, maxLength: 11, unique: true, targetGuaranteed: true, valueRange: [1, 99] },
+    complexity: { time: 'O(log n)', space: 'O(1)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'linked-list-cycle',
+    allowedMechanics: ['selectObject', 'traverseNode', 'submitAnswer'],
+    requiredMechanics: ['traverseNode', 'submitAnswer'],
+
+    topic: 'linked-list',
+    title: 'Detect a cycle (tortoise and hare)',
+    learningObjective:
+      'A fast pointer gains one node per round on a slow pointer, so on a cycle they must eventually meet; on a plain list the fast pointer runs off the end.',
+    canonicalAlgorithm:
+      'Advance slow by one and fast by two each round. If they land on the same node there is a cycle. If fast reaches null there is none.',
+    instanceHints: { minLength: 4, maxLength: 7, unique: true, valueRange: [1, 99] },
+    complexity: { time: 'O(n)', space: 'O(1)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'frequency-count',
+    allowedMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+
+    topic: 'hash-table',
+    title: 'Most frequent value (frequency map)',
+    learningObjective:
+      'Counting with a hash map trades space for time: one pass records every frequency, and the largest count is the answer.',
+    canonicalAlgorithm:
+      'Walk the array incrementing count[value] for each value. Then scan the map and return the value with the largest count.',
+    instanceHints: { minLength: 6, maxLength: 10, valueRange: [1, 9] },
+    complexity: { time: 'O(n)', space: 'O(n)' },
+    defaultDifficulty: 'easy',
+  },
+  {
+    id: 'valid-anagram',
+    allowedMechanics: ['selectObject', 'assignValue', 'comparePair', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+
+    topic: 'hash-table',
+    title: 'Valid anagram by counting letters',
+    learningObjective:
+      'Two strings are anagrams exactly when every letter count matches: add one string, subtract the other, and require all zeroes.',
+    canonicalAlgorithm:
+      'Count each letter of s, then subtract each letter of t. If every count returns to zero the strings are anagrams.',
+    instanceHints: { minLength: 4, maxLength: 8, tokenAlphabet: ['a', 'b', 'c', 'd', 'e'] },
+    complexity: { time: 'O(n)', space: 'O(1)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'valid-palindrome',
+    allowedMechanics: ['selectObject', 'comparePair', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'comparePair', 'submitAnswer'],
+
+    topic: 'strings',
+    title: 'Valid palindrome (two pointers)',
+    learningObjective:
+      'Symmetry is checked from the outside in: compare the outermost unmatched pair, and any mismatch decides the answer.',
+    canonicalAlgorithm:
+      'Set left=0, right=n-1. While left<right compare s[left] with s[right]: on mismatch return false, else move both inward. Equal all the way means palindrome.',
+    instanceHints: { minLength: 4, maxLength: 8, tokenAlphabet: ['a', 'b', 'c', 'd', 'e'] },
+    complexity: { time: 'O(n)', space: 'O(1)' },
+    defaultDifficulty: 'easy',
   },
 ] as const
 

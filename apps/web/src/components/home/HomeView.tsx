@@ -32,12 +32,12 @@ export function HomeView() {
   return <main className="adventure-home" style={frame ? { '--map-frame': frame.color } as CSSProperties : undefined}>
     <nav className="adventure-nav" aria-label="Main navigation">
       <Link href="/" className="brand"><span className="brand-icon" aria-hidden="true">✦</span> PLAY THE ALGORITHMS</Link>
-      <div className="flex flex-wrap gap-2"><Link href="/learn/linked-list" className="btn">Field notebook ↗</Link><a href="#collection" className="btn">✧ Collection · {Object.keys(progress.completed).length}/11</a></div>
+      <div className="flex flex-wrap gap-2"><Link href="/learn/linked-list" className="btn">Field notebook ↗</Link><a href="#collection" className="btn">✧ Collection · {Object.keys(progress.completed).length}/{catalogue?.topics.reduce((sum, t) => sum + t.problems.length, 0) ?? '…'}</a></div>
     </nav>
     <header className="adventure-hero">
       <div><p className="eyebrow">YOUR NEXT LITTLE BIG ADVENTURE</p><h1>Big ideas.<br/><span>Small adventures.</span></h1><p className="hero-copy">Swap, stack, search, and explore. Discover how algorithms work, one playful move at a time.</p>
         {catalogue && ready && <Link className="btn btn-primary hero-cta" href={next ? `/problem/${next.id}` : '/problem/array-max-min'}>{Object.keys(progress.completed).length ? 'Keep exploring' : 'Let’s play'} <span aria-hidden="true">→</span></Link>}
-        <p className="hero-note">6 worlds · 11 missions · your own pace</p>
+        <p className="hero-note">{WORLDS.length} worlds · {catalogue?.topics.reduce((sum, t) => sum + t.problems.length, 0) ?? '…'} missions · your own pace</p>
       </div>
       <div className="hero-diorama" aria-hidden="true"><span className="orbit-star star-one">✦</span><span className="orbit-star star-two">✧</span><div className="diorama-label">A WORLD OF AHA!</div><WorldScene world={WORLDS[0]!}/><div className="diorama-pieces"><span>3</span><span>1</span><span>7</span></div><RobotGuide/><span className="diorama-caption">Curiosity is your superpower.</span></div>
     </header>

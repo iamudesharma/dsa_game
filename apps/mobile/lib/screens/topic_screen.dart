@@ -216,7 +216,7 @@ class _Hero extends StatelessWidget {
             ),
           const SizedBox(height: 6),
           Text(
-            '6 worlds · ${catalogue.problemCount} missions · your own pace',
+            '${worlds.length} worlds · ${catalogue.problemCount} missions · your own pace',
             style: TextStyle(fontSize: 11, color: colors.muted),
           ),
         ],

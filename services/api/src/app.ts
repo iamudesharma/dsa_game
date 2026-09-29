@@ -346,7 +346,7 @@ export function createApp(deps: AppDeps): Hono {
    * "I want to practise something" -> the problem we think you meant.
    *
    * Deterministic keyword routing with a synonym map rather than an LLM call:
-   * the candidate set is 12 known problems, so a scored match is faster, free,
+   * the candidate set is the problem catalogue, so a scored match is faster, free,
    * reproducible, and cannot hallucinate a problem that does not exist. The
    * confidence reflects the margin between the best and second-best match, so
    * an ambiguous request reports low confidence and the client can ask.

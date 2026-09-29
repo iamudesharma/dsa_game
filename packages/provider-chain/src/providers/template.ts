@@ -39,6 +39,8 @@ const CONTAINER_TERM: Record<DsaTopic, string> = {
   stack: 'the stack',
   queue: 'the queue',
   'linked-list': 'the linked list',
+  'hash-table': 'the frequency table',
+  strings: 'the string',
 }
 
 const SCOPE_TERM: Record<DsaTopic, string> = {
@@ -48,6 +50,8 @@ const SCOPE_TERM: Record<DsaTopic, string> = {
   stack: 'the top of the stack, where every push and pop happens',
   queue: 'the ends of the queue, front and rear',
   'linked-list': 'the position the cursor has reached so far',
+  'hash-table': 'the counts recorded so far',
+  strings: 'the pair of positions still unchecked',
 }
 
 /**
