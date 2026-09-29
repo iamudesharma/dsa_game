@@ -54,11 +54,13 @@ import {
 } from './problems/trees.js'
 import { createKthLargestHeapOracle } from './problems/heap.js'
 import {
+  createKruskalMstOracle,
   createMaxAreaIslandOracle,
   createNetworkDelayTimeOracle,
   createNumIslandsOracle,
   createRottingOrangesOracle,
   createUnionFindConnectOracle,
+  createUniquePathsOracle,
   createWordSearchOracle,
 } from './problems/graphs.js'
 import { createClimbingStairsOracle, createCoinChangeOracle, createHouseRobberOracle } from './problems/dp.js'
@@ -116,6 +118,8 @@ export const ORACLES: Readonly<Record<string, Oracle>> = {
   'word-search': createWordSearchOracle(),
   'union-find-connect': createUnionFindConnectOracle(),
   'network-delay-time': createNetworkDelayTimeOracle(),
+  'kruskal-mst': createKruskalMstOracle(),
+  'unique-paths': createUniquePathsOracle(),
   'climbing-stairs': createClimbingStairsOracle(),
   'house-robber': createHouseRobberOracle(),
   'coin-change': createCoinChangeOracle(),

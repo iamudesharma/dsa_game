@@ -26,6 +26,12 @@
  *                     order (select), relax each outgoing edge (compare the
  *                     candidate against the known distance, assign on
  *                     improvement). Submit the largest distance.
+ *   kruskal-mst       same linear board, undirected weighted edges: walk both
+ *                     roots per edge in lightest-first order, union on mismatch
+ *                     (assign parent + add the weight to `mst`). Submit the total.
+ *   unique-paths      back on the grid: an obstacle board (0 open, 1 blocked)
+ *                     through the columns-aware lane, counts in `dp_{r}_{c}`
+ *                     variables. Row-major select + record; the finish submits.
  */
 import type {
   Action,
@@ -50,9 +56,9 @@ import {
 } from '@dsa/game-schema'
 import { buildBoard, finishIllegal, indexOf, num, type CodeLang } from '../shared/kernel.js'
 
-type GraphId = 'num-islands' | 'max-area-island' | 'rotting-oranges' | 'word-search' | 'union-find-connect' | 'network-delay-time'
+type GraphId = 'num-islands' | 'max-area-island' | 'rotting-oranges' | 'word-search' | 'union-find-connect' | 'network-delay-time' | 'kruskal-mst' | 'unique-paths'
 
-const IDS: readonly GraphId[] = ['num-islands', 'max-area-island', 'rotting-oranges', 'word-search', 'union-find-connect', 'network-delay-time']
+const IDS: readonly GraphId[] = ['num-islands', 'max-area-island', 'rotting-oranges', 'word-search', 'union-find-connect', 'network-delay-time', 'kruskal-mst', 'unique-paths']
 
 const LETTERS = ['a', 'b', 'c', 'd', 'e'] as const
 /** Up, right, down, left — the fixed exploration order every walk uses. */
@@ -271,6 +277,52 @@ function unionFindTrace(n: number, edges: readonly number[]): { comps: number } 
   return { comps }
 }
 
+/** One undirected weighted edge, by index into a flat [u, v, w] list. */
+function edgeAt(edges: readonly number[], i: number): { u: number; v: number; w: number } {
+  return { u: edges[3 * i]!, v: edges[3 * i + 1]!, w: edges[3 * i + 2]! }
+}
+
+/** Edge indices lightest-first, deterministic ties by instance order. */
+function sortedEdgeOrder(edges: readonly number[]): number[] {
+  const idx = Array.from({ length: Math.floor(edges.length / 3) }, (_, i) => i)
+  idx.sort((a, b) => edgeAt(edges, a).w - edgeAt(edges, b).w || a - b)
+  return idx
+}
+
+/** Kruskal's total over a connected graph. Shared by the plan and the answer. */
+function kruskalTotal(n: number, edges: readonly number[]): number {
+  const parent = Array.from({ length: n }, (_, i) => i)
+  const find = (x: number): number => {
+    while (parent[x] !== x) x = parent[x]!
+    return x
+  }
+  let total = 0
+  for (const e of sortedEdgeOrder(edges)) {
+    const { u, v, w } = edgeAt(edges, e)
+    const ru = find(u)
+    const rv = find(v)
+    if (ru !== rv) {
+      parent[ru] = rv
+      total += w
+    }
+  }
+  return total
+}
+
+/** Path counts per cell with obstacles (1 = blocked). Start needs no special case: its up/left terms are both zero, so seed dp[0] as open. */
+function countPaths(values: readonly number[], rows: number, cols: number): number[] {
+  const dp = new Array<number>(rows * cols).fill(0)
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const i = gridIndex(r, c, cols)
+      if (values[i] === 1) continue
+      if (r === 0 && c === 0) dp[i] = 1
+      else dp[i] = (r > 0 ? dp[gridIndex(r - 1, c, cols)]! : 0) + (c > 0 ? dp[gridIndex(r, c - 1, cols)]! : 0)
+    }
+  }
+  return dp
+}
+
 // ------------------------------------------------------------------ instances
 
 function randomLand(rng: () => number, rows: number, cols: number, p: number): number[] {
@@ -432,6 +484,53 @@ function buildInstance(id: GraphId, input: BuildInstanceInput): ProblemInstance 
     }
   }
 
+  // kruskal-mst: undirected weighted edges. A spanning tree first keeps the
+  // graph connected, so the answer is one tree's cost; extra edges add choices.
+  if (id === 'kruskal-mst') {
+    const n = Math.max(4, sized(id, input))
+    const seen = new Set<string>()
+    const edges: number[] = []
+    for (let i = 1; i < n; i++) {
+      const parent = randInt(rng, 0, i - 1)
+      seen.add(`${parent}-${i}`)
+      edges.push(parent, i, 1 + randInt(rng, 0, 8))
+    }
+    const m = n + 2
+    let guard = 0
+    while (edges.length < 3 * m && guard++ < 300) {
+      const u = randInt(rng, 0, n - 1)
+      const v = randInt(rng, 0, n - 1)
+      if (u === v) continue
+      const a = Math.min(u, v)
+      const b = Math.max(u, v)
+      const key = `${a}-${b}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      edges.push(a, b, 1 + randInt(rng, 0, 8))
+    }
+    return {
+      problemId: id, seed: input.seed,
+      values: Array.from({ length: n }, (_, i) => i),
+      slots: linearSlots(n),
+      extras: { difficulty: input.difficulty, edges },
+    }
+  }
+
+  // unique-paths: an obstacle board through the grid lane (0 open, 1 blocked).
+  // Start and finish stay open; a wall across the middle is a legitimate
+  // zero-path game, kept the way rotting-oranges keeps -1.
+  if (id === 'unique-paths') {
+    const { rows, cols } = dimsFor(input.difficulty)
+    const cells = rows * cols
+    const values = Array.from({ length: cells }, () => (rng() < 0.25 ? 1 : 0))
+    values[0] = 0
+    values[cells - 1] = 0
+    return {
+      problemId: id, seed: input.seed, values, slots: linearSlots(values.length),
+      extras: { difficulty: input.difficulty, rows, cols, gridCols: cols },
+    }
+  }
+
   // union-find-connect: a plain linear board of node labels plus an edge list.
   const n = Math.max(4, sized(id, input))
   const m = n + 1
@@ -478,6 +577,22 @@ function initState(id: GraphId, instance: ProblemInstance): GameState {
     const variables: GameState['variables'] = { i: 0, comps: n, n }
     for (let i = 0; i < n; i++) variables[`parent_${i}`] = i
     const state = buildBoard({ problemId: id, instance, variables })
+    state.internal = { planIndex: 0 }
+    return state
+  }
+  if (id === 'kruskal-mst') {
+    const n = instance.values.length
+    const variables: GameState['variables'] = { i: 0, comps: n, mst: 0, n }
+    for (let i = 0; i < n; i++) variables[`parent_${i}`] = i
+    const state = buildBoard({ problemId: id, instance, variables })
+    state.internal = { planIndex: 0 }
+    return state
+  }
+  if (id === 'unique-paths') {
+    const state = buildBoard({
+      problemId: id, instance,
+      variables: { r: 0, c: 0, ways: 0, n: instance.values.length },
+    })
     state.internal = { planIndex: 0 }
     return state
   }
@@ -567,6 +682,52 @@ function actionsFor(id: GraphId, instance: ProblemInstance): Action[] {
     return actions
   }
 
+  // kruskal-mst: lightest-first edges, union on mismatch, skip on match.
+  if (id === 'kruskal-mst') {
+    const kruskalN = v.length
+    const kruskalEdges = (instance.extras?.['edges'] as number[] | undefined) ?? []
+    const parent = Array.from({ length: kruskalN }, (_, i) => i)
+    const find = (x: number): { root: number; path: number[] } => {
+      const path = [x]
+      while (parent[x] !== x) {
+        x = parent[x]!
+        path.push(x)
+      }
+      return { root: x, path }
+    }
+    let total = 0
+    for (const e of sortedEdgeOrder(kruskalEdges)) {
+      const { u: eu, v: ev, w: ew } = edgeAt(kruskalEdges, e)
+      const fu = find(eu)
+      const fv = find(ev)
+      for (const node of fu.path) actions.push({ type: 'selectObject', objectId: `v${node}` })
+      for (const node of fv.path) actions.push({ type: 'selectObject', objectId: `v${node}` })
+      const rel = relation(fu.root, fv.root)
+      actions.push({ type: 'comparePair', aId: `v${fu.root}`, bId: `v${fv.root}`, relation: rel })
+      if (rel !== 'eq') {
+        actions.push({ type: 'assignValue', targetId: `parent_${fu.root}`, value: String(fv.root) })
+        parent[fu.root] = fv.root
+        total += ew
+        actions.push({ type: 'assignValue', targetId: 'mst', value: String(total) })
+      }
+    }
+    actions.push({ type: 'submitAnswer', targetId: 'v0', value: String(total) })
+    return actions
+  }
+
+  // unique-paths: row-major select + record; the finish submits.
+  if (id === 'unique-paths') {
+    const { rows, cols } = gridDims(instance)
+    const table = countPaths(v, rows, cols)
+    for (let i = 0; i < rows * cols; i++) {
+      const { r, c } = gridRC(i, cols)
+      actions.push({ type: 'selectObject', objectId: `v${i}` })
+      actions.push({ type: 'assignValue', targetId: `dp_${r}_${c}`, value: String(table[i]) })
+    }
+    actions.push({ type: 'submitAnswer', targetId: `v${rows * cols - 1}`, value: String(table[rows * cols - 1]) })
+    return actions
+  }
+
   // union-find-connect
   const n = v.length
   const edges = (instance.extras?.['edges'] as number[] | undefined) ?? []
@@ -601,18 +762,24 @@ function actionsFor(id: GraphId, instance: ProblemInstance): Action[] {
 function codeLine(id: GraphId, action: Action): number {
   if (action.type === 'submitAnswer') {
     if (id === 'word-search') return action.value === 'found' ? 3 : 5
+    if (id === 'kruskal-mst') return 12
+    if (id === 'unique-paths') return 7
     return 9
   }
   if (action.type === 'selectObject') {
     if (id === 'word-search') return 9
     if (id === 'union-find-connect') return 13
     if (id === 'network-delay-time') return 5
+    if (id === 'kruskal-mst') return 15
+    if (id === 'unique-paths') return 3
     return 6
   }
-  if (action.type === 'comparePair') return id === 'network-delay-time' ? 7 : 6
+  if (action.type === 'comparePair') return id === 'network-delay-time' || id === 'kruskal-mst' ? 7 : 6
   if (action.type === 'assignValue') {
     if (id === 'word-search') return action.value === '1' ? 9 : 14
     if (id === 'network-delay-time') return 8
+    if (id === 'kruskal-mst') return action.targetId === 'mst' ? 9 : 8
+    if (id === 'unique-paths') return 6
     return 7
   }
   return 1
@@ -626,6 +793,8 @@ function source(id: GraphId): string[] {
     case 'word-search': return ['function exist(board, word) {', '  for (let r = 0; r < rows; r++) {', '    for (let c = 0; c < cols; c++) if (dfs(r, c, 0)) return true', '  }', '  return false', '}', 'function dfs(r, c, k) {', '  if (board[r][c] !== word[k]) return false', '  mark (r, c) visited', '  if (k === word.length - 1) return true', '  for (const [nr, nc] of neighbours(r, c)) {', '    if (!visited && dfs(nr, nc, k + 1)) return true', '  }', '  unmark (r, c)', '  return false', '}']
     case 'union-find-connect': return ['function components(n, edges) {', '  parent = [0..n-1]', '  let comps = n', '  for (const [u, v] of edges) {', '    ru = find(u); rv = find(v)', '    if (ru !== rv) {', '      parent[ru] = rv', '      comps--', '    }', '  }', '  return comps', '}', 'function find(x) {', '  while (parent[x] !== x) x = parent[x]', '  return x', '}']
     case 'network-delay-time': return ['function networkDelay(n, edges, source) {', '  dist = [0, ∞, ...]; settled = none', '  repeat n times:', '    u = the closest unsettled node', '    settle u', '    for each edge u -> v with weight w:', '      if dist[u] + w < dist[v]:', '        dist[v] = dist[u] + w', '  return max(dist)', '}']
+    case 'kruskal-mst': return ['function minCost(n, edges) {', '  sort edges by weight, lightest first', '  parent = [0..n-1]; total = 0', '  for each edge in order {', '    u, v, w = edge', '    ru = find(u); rv = find(v)', '    if (ru !== rv) {', '      parent[ru] = rv', '      total += w', '    }', '  }', '  return total', '}', 'function find(x) {', '  while (parent[x] !== x) x = parent[x]', '  return x', '}']
+    case 'unique-paths': return ['function uniquePaths(grid) {', '  dp = zero table; dp[0][0] = open start ? 1 : 0', '  for each cell row by row, after the start:', '    if the cell is blocked: dp = 0', '    else: dp = paths from above + paths from the left', '    record dp for this cell', '  return dp at the finish', '}']
   }
 }
 
@@ -637,6 +806,8 @@ function pseudocode(id: GraphId): string[] {
     case 'word-search': return ['FUNCTION exist(board, word)', '    FOR each cell as a start', '        DFS letter by letter through unvisited neighbours', '        MARK the path; UNMARK on dead ends', '        IF every letter matched: RETURN true', '    END FOR', '    RETURN false', 'END FUNCTION']
     case 'union-find-connect': return ['FUNCTION components(n, edges)', '    parent[i] <- i, comps <- n', '    FOR each edge (u, v)', '        ru <- FIND(u); rv <- FIND(v)', '        IF ru != rv: parent[ru] <- rv, comps <- comps - 1', '    END FOR', '    RETURN comps', 'END FUNCTION']
     case 'network-delay-time': return ['FUNCTION networkDelay(n, edges, source)', '    dist[source] <- 0, rest <- ∞', '    REPEAT n times', '        u <- closest UNSETTLED node; SETTLE it', '        FOR each edge u -> v with weight w', '            IF dist[u] + w < dist[v]: dist[v] <- dist[u] + w', '    END REPEAT', '    RETURN max(dist)', 'END FUNCTION']
+    case 'kruskal-mst': return ['FUNCTION minCost(n, edges)', '    SORT edges lightest-first; parent[i] <- i, total <- 0', '    FOR each edge (u, v, w) in order', '        ru <- FIND(u); rv <- FIND(v)', '        IF ru != rv: parent[ru] <- rv, total <- total + w', '    END FOR', '    RETURN total', 'END FUNCTION']
+    case 'unique-paths': return ['FUNCTION uniquePaths(grid)', '    dp[start] <- 1 when open', '    FOR each cell row by row', '        IF blocked: dp <- 0', '        ELSE: dp <- paths from above + paths from the left', '    END FOR', '    RETURN dp at the finish', 'END FUNCTION']
   }
 }
 
@@ -674,6 +845,20 @@ function answerText(id: GraphId, instance: ProblemInstance): { text: string; val
     const delay = Math.max(...dist)
     return { text: `the signal reaches every node in ${delay}`, value: delay }
   }
+  if (id === 'kruskal-mst') {
+    const kruskalN = v.length
+    const kruskalEdges = (instance.extras?.['edges'] as number[] | undefined) ?? []
+    const total = kruskalTotal(kruskalN, kruskalEdges)
+    return { text: `minimum connection cost ${total}`, value: total }
+  }
+  if (id === 'unique-paths') {
+    const { rows, cols } = gridDims(instance)
+    const table = countPaths(v, rows, cols)
+    const ways = table[rows * cols - 1]!
+    return ways === 0
+      ? { text: 'no open path reaches the finish', value: 0 }
+      : { text: `${ways} unique paths reach the finish`, value: ways }
+  }
   const n = v.length
   const edges = (instance.extras?.['edges'] as number[] | undefined) ?? []
   const { comps } = unionFindTrace(n, edges)
@@ -693,19 +878,25 @@ function legalActions(id: GraphId, state: GameState): LegalActionDescriptor[] {
       : id === 'rotting-oranges' ? 'Visit the next cell the wave reaches'
       : id === 'word-search' ? 'Step onto the next matching letter'
       : id === 'network-delay-time' ? 'Settle the closest unsettled node'
+      : id === 'kruskal-mst' ? 'Walk up to the root'
+      : id === 'unique-paths' ? 'Walk to the next cell'
       : 'Walk up to the root'
     return [{ type: next.type, label, options: { objectIds: [next.objectId] } }]
   }
   if (next.type === 'comparePair') {
     const label =
-      id === 'network-delay-time' ? 'Is the path through the settled node shorter?' : 'Are these two roots the same set?'
+      id === 'network-delay-time' ? 'Is the path through the settled node shorter?'
+      : id === 'kruskal-mst' ? 'Are these two roots already connected?'
+      : 'Are these two roots the same set?'
     return [{ type: next.type, label, options: { objectIds: [next.aId, next.bId] }, expects: 'relation' }]
   }
   if (next.type === 'assignValue') {
     const label =
       id === 'word-search' ? 'Mark or unmark this path cell'
       : id === 'network-delay-time' ? 'Record the shorter distance'
-      : 'Attach the root under the other set'
+      : next.targetId === 'mst' ? 'Add this edge to the running total'
+      : next.targetId.startsWith('parent_') ? 'Attach the root under the other set'
+      : 'Record the table value'
     return [{ type: next.type, label, expects: 'value' }]
   }
   if (next.type === 'submitAnswer') {
@@ -775,9 +966,9 @@ function applyAction(id: GraphId, state: GameState, action: Action): { nextState
       if (position >= 0) {
         const { rows: _rows, cols } = gridDims(next.instance)
         void _rows
-        // Union-find and Dijkstra boards are linear node lines, not grids:
-        // row/column arithmetic would place them on phantom rows.
-        const linear = id === 'union-find-connect' || id === 'network-delay-time'
+        // Union-find, Dijkstra, and Kruskal boards are linear node lines, not
+        // grids: row/column arithmetic would place them on phantom rows.
+        const linear = id === 'union-find-connect' || id === 'network-delay-time' || id === 'kruskal-mst'
         const { r, c } = gridRC(position, linear ? Math.max(1, next.instance.values.length) : cols)
         next.variables['r'] = linear ? 0 : r
         next.variables['c'] = linear ? 0 : c
@@ -810,8 +1001,13 @@ function applyAction(id: GraphId, state: GameState, action: Action): { nextState
     case 'assignValue': {
       const numeric = Number(action.value)
       next.variables[action.targetId] = Number.isFinite(numeric) ? numeric : action.value
-      if (id === 'union-find-connect' && action.targetId.startsWith('parent_')) {
+      if ((id === 'union-find-connect' || id === 'kruskal-mst') && action.targetId.startsWith('parent_')) {
         next.variables['comps'] = num(next.variables['comps'], 1) - 1
+      }
+      if (id === 'unique-paths' && action.targetId.startsWith('dp_') && Number.isFinite(numeric)) {
+        // Row-major order, so the latest record is the frontier's newest count;
+        // at the finish it is the answer.
+        next.variables['ways'] = numeric
       }
       feedback = `${action.targetId} now records ${action.value}.`
       note = `Store ${action.value} in ${action.targetId}.`
@@ -825,9 +1021,13 @@ function applyAction(id: GraphId, state: GameState, action: Action): { nextState
           ? action.relation === 'lt'
             ? 'Shorter through the settled node — record it.'
             : 'No improvement — keep the known distance.'
-          : action.relation === 'eq'
-            ? 'Already the same set — no union.'
-            : 'Different sets — union them.'
+          : id === 'kruskal-mst'
+            ? action.relation === 'eq'
+              ? 'Already connected — skip this edge.'
+              : 'Cheapest link between two groups — take it.'
+            : action.relation === 'eq'
+              ? 'Already the same set — no union.'
+              : 'Different sets — union them.'
       break
     }
     case 'submitAnswer': {
@@ -897,6 +1097,8 @@ export const createRottingOrangesOracle = (): Oracle => createGraphOracle('rotti
 export const createWordSearchOracle = (): Oracle => createGraphOracle('word-search')
 export const createUnionFindConnectOracle = (): Oracle => createGraphOracle('union-find-connect')
 export const createNetworkDelayTimeOracle = (): Oracle => createGraphOracle('network-delay-time')
+export const createKruskalMstOracle = (): Oracle => createGraphOracle('kruskal-mst')
+export const createUniquePathsOracle = (): Oracle => createGraphOracle('unique-paths')
 
 /** Guard used by the registry test: every id must be in the catalogue. */
 if (!IDS.every((id) => PROBLEM_IDS.includes(id))) throw new Error('a graph oracle id is not in PROBLEM_IDS')

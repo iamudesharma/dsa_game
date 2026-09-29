@@ -166,9 +166,9 @@ Two further measured constraints, both found by calling the live endpoint:
 
 ## Status
 
-- **41 problems** are in the catalogue (`packages/game-schema/src/problems.ts`),
+- **43 problems** are in the catalogue (`packages/game-schema/src/problems.ts`),
   each with `allowedMechanics` and `requiredMechanics`.
-- **All 41 catalogue problems have deterministic oracles**: arrays (maximum /
+- **All 43 catalogue problems have deterministic oracles**: arrays (maximum /
   minimum, Two Sum, move zeroes, sliding-window max sum, sorted two-pointers
   pair, prefix-sum range, Kadane's max subarray, merge intervals), sorting
   (bubble and selection), stack (valid parentheses, push / pop, next greater
@@ -177,10 +177,11 @@ Two further measured constraints, both found by calling the live endpoint:
   count, valid anagram), strings (valid palindrome), trees (pre/in/post-order
   traversals, BST validation, level order, BST search), heaps (kth largest
   via a size-k min-heap), graphs (number of islands, max area, rotting
-  oranges, word search, union-find components, network delay via Dijkstra),
-  dynamic programming (climbing stairs, house robber, coin change),
-  backtracking (subsets, permutations), greedy (jump game), bit manipulation
-  (single number), and tries (prefix search). The same registry drives both
+  oranges, word search, union-find components, network delay via Dijkstra,
+  minimum connection cost via Kruskal), dynamic programming (climbing stairs,
+  house robber, coin change, unique paths through obstacles), backtracking
+  (subsets, permutations), greedy (jump game), bit manipulation (single
+  number), and tries (prefix search). The same registry drives both
   clients and the API.
 - Grid games (`num-islands`, `max-area-island`, `rotting-oranges`,
   `word-search`) declare `gridCols` in their instance extras; both clients lay
@@ -200,10 +201,14 @@ Two further measured constraints, both found by calling the live endpoint:
   Progress is the adventure store's own completion map.
 - Every problem page carries a Study resources drawer (`apps/web/src/lib/resources.ts`):
   which patterns train the game, which classics it stamps, and the verbatim
-  deep-dives — the same mappings the mobile client mirrors.
+  deep-dives — the mobile client mirrors the mappings with its own resource
+  card (`apps/mobile/lib/learn/resources.dart`, deep-dives as text since the
+  client has no link launcher).
 - First-visit onboarding tips (`apps/web/src/lib/onboarding.ts`): three
   sentences on the adventure map, dismissible forever, degradable to visible
-  when storage is unavailable.
+  when storage is unavailable. The mobile map carries the same three tips
+  (`apps/mobile/lib/learn/onboarding.dart`), persisted through the adventure
+  store under a separate key so tips can never mint or erase a stamp.
 - Low, medium, and high choose increasing instance sizes within each problem's
   declared bounds. The template provider can generate every game without model
   keys or sidecars, so the full catalogue remains playable offline.

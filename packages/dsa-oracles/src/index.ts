@@ -40,11 +40,13 @@ export {
 export { createKthLargestHeapOracle } from './problems/heap.js'
 export {
   createGraphOracle,
+  createKruskalMstOracle,
   createMaxAreaIslandOracle,
   createNetworkDelayTimeOracle,
   createNumIslandsOracle,
   createRottingOrangesOracle,
   createUnionFindConnectOracle,
+  createUniquePathsOracle,
   createWordSearchOracle,
 } from './problems/graphs.js'
 export { createClimbingStairsOracle, createCoinChangeOracle, createDpOracle, createHouseRobberOracle } from './problems/dp.js'

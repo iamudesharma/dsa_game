@@ -50,6 +50,8 @@ const Set<String> knownProblemIds = {
   'jump-game',
   'network-delay-time',
   'coin-change',
+  'kruskal-mst',
+  'unique-paths',
   'single-number',
   'trie-prefix-search',
 };
@@ -82,12 +84,13 @@ void main() {
     }
   });
 
-  test('leaves only the foundations and union-find unmapped, deliberately', () {
+  test('leaves only the foundations, union-find, and Kruskal unmapped, deliberately', () {
     final mapped = {for (final p in dsaPatterns) ...p.playIds};
     final unmapped = knownProblemIds.difference(mapped);
     expect(unmapped, {
       'array-max-min',
       'bubble-sort',
+      'kruskal-mst',
       'linked-list-traversal',
       'move-zeroes',
       'queue-operations',

@@ -3,7 +3,7 @@
 /// `interview-classics` is Blind-75-style coverage across every category with
 /// the same item mapping (LeetCode number + name text, never fabricated
 /// URLs). Like the web original it is deliberately NOT titled "Blind 75":
-/// the list holds 114 items. `full-tour` is built from the live catalogue at
+/// the list holds 118 items. `full-tour` is built from the live catalogue at
 /// runtime, so it cannot drift from the registry.
 library;
 
@@ -140,6 +140,7 @@ const List<TrackCategory> interviewClassicsCategories = [
     TrackItem(n: 286, name: 'Walls and Gates', playIds: ['rotting-oranges']),
     TrackItem(n: 261, name: 'Graph Valid Tree', playIds: ['union-find-connect']),
     TrackItem(n: 743, name: 'Network Delay Time', playIds: ['network-delay-time']),
+    TrackItem(n: 1584, name: 'Min Cost to Connect All Points', playIds: ['kruskal-mst']),
   ]),
   TrackCategory(title: '1D Dynamic Programming', items: [
     TrackItem(n: 70, name: 'Climbing Stairs', playIds: ['climbing-stairs']),
@@ -154,6 +155,11 @@ const List<TrackCategory> interviewClassicsCategories = [
     TrackItem(n: 139, name: 'Word Break', playIds: ['word-search', 'trie-prefix-search']),
     TrackItem(n: 300, name: 'Longest Increasing Subsequence'),
     TrackItem(n: 416, name: 'Partition Equal Subset Sum', playIds: ['subsets']),
+  ]),
+  TrackCategory(title: '2D Dynamic Programming', items: [
+    TrackItem(n: 63, name: 'Unique Paths II', playIds: ['unique-paths']),
+    TrackItem(n: 1143, name: 'Longest Common Subsequence'),
+    TrackItem(n: 72, name: 'Edit Distance'),
   ]),
   TrackCategory(title: 'Greedy', items: [
     TrackItem(n: 53, name: 'Maximum Subarray', playIds: ['kadane-max-subarray']),

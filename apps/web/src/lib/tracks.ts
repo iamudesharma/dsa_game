@@ -6,7 +6,7 @@
  *   interview-classics  Blind-75-style coverage across every category, each
  *             item mapped to the oracle ids that train it (`playIds`,
  *             possibly empty). It is deliberately NOT titled "Blind 75": this
- *             list holds 114 items and the canonical list holds 75, so that
+ *             list holds 118 items and the canonical list holds 75, so that
  *             title would be a false count. Items without a game are still
  *             listed — as study references with LeetCode numbers, never as
  *             playable — per the expansion rule that nothing unplayable is
@@ -181,6 +181,7 @@ const BLIND_75_CATEGORIES: readonly TrackCategory[] = [
       item(286, 'Walls and Gates', ['rotting-oranges']),
       item(261, 'Graph Valid Tree', ['union-find-connect']),
       item(743, 'Network Delay Time', ['network-delay-time']),
+      item(1584, 'Min Cost to Connect All Points', ['kruskal-mst']),
     ],
   },
   {
@@ -198,6 +199,14 @@ const BLIND_75_CATEGORIES: readonly TrackCategory[] = [
       item(139, 'Word Break', ['word-search', 'trie-prefix-search']),
       item(300, 'Longest Increasing Subsequence'),
       item(416, 'Partition Equal Subset Sum', ['subsets']),
+    ],
+  },
+  {
+    title: '2D Dynamic Programming',
+    items: [
+      item(63, 'Unique Paths II', ['unique-paths']),
+      item(1143, 'Longest Common Subsequence'),
+      item(72, 'Edit Distance'),
     ],
   },
   {

@@ -566,6 +566,22 @@ const KEYWORDS: Readonly<Record<string, { specific: readonly string[]; topic: re
     specific: ['coin change', 'fewest coins', 'minimum coins', 'coin denominations', 'change amount'],
     topic: ['coins', 'change', 'amount', 'denomination', 'fewest', 'dp', 'minimum'],
   },
+  'kruskal-mst': {
+    specific: [
+      'kruskal',
+      'minimum spanning tree',
+      'mst',
+      'minimum connection cost',
+      'connect all points',
+      'lightest edge',
+      'union by weight',
+    ],
+    topic: ['spanning', 'tree', 'minimum', 'connect', 'edges', 'weight', 'union'],
+  },
+  'unique-paths': {
+    specific: ['unique paths', 'paths through obstacles', 'grid dp', 'paths from above', 'robot grid', 'ways to reach'],
+    topic: ['paths', 'grid', 'obstacles', 'unique', 'dp', 'finish', 'blocked'],
+  },
 }
 
 const W_TOPIC = 2

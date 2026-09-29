@@ -32,18 +32,20 @@ describe('the pattern library', () => {
     }
   })
 
-  it('leaves only the foundations and union-find unmapped, deliberately', () => {
+  it('leaves only the foundations, union-find, and Kruskal unmapped, deliberately', () => {
     // Every catalogue problem is either mapped from a pattern or absent
     // deliberately: the eight original drills are pre-pattern foundations,
     // two-sum is the hash-lookup counterpart the 20-pattern list never named,
-    // and union-find has no pattern in that list (it is reachable from the
-    // Blind 75 graphs track instead). Adding a game must update this list.
+    // and union-find and Kruskal have no pattern in that list (both are
+    // reachable from the Blind 75 graphs track instead). Adding a game must
+    // update this list.
     const mapped = new Set(DSA_PATTERNS.flatMap((p) => [...p.playIds]))
     const unmapped = [...PROBLEM_IDS].filter((id) => !mapped.has(id)).sort()
     expect(unmapped).toEqual(
       [
         'array-max-min',
         'bubble-sort',
+        'kruskal-mst',
         'linked-list-traversal',
         'move-zeroes',
         'queue-operations',

@@ -15,6 +15,7 @@ import '../adventure/progress_store.dart';
 import '../adventure/robot_guide.dart';
 import '../adventure/world_scene.dart';
 import '../adventure/worlds.dart';
+import '../learn/onboarding.dart';
 import '../models/problem.dart';
 import '../state/catalogue_controller.dart';
 import '../theme/palette.dart';
@@ -151,6 +152,8 @@ class _TopicScreenState extends State<TopicScreen> {
             text: 'Progress storage is unavailable or was reset. You can keep playing; new stamps may not be kept.',
           ),
         _Hero(nextProblem: nextProblem, catalogue: catalogue),
+        const SizedBox(height: 12),
+        const _OnboardingCard(),
         const SizedBox(height: 16),
         const SectionHeading(title: 'the adventure map', icon: Icons.map_outlined),
         const SizedBox(height: 4),
@@ -250,6 +253,112 @@ class _Hero extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => ProblemScreen(topic: topic, initialProblemId: problem.id),
+      ),
+    );
+  }
+}
+
+/// First-visit tips, dismissible forever through the adventure store's own
+/// key-value surface (a separate key, so tips can never mint or erase a
+/// stamp). A missing store shows the tips; a dismissed card leaves a re-show
+/// affordance, mirroring the web map.
+class _OnboardingCard extends StatefulWidget {
+  const _OnboardingCard();
+
+  @override
+  State<_OnboardingCard> createState() => _OnboardingCardState();
+}
+
+class _OnboardingCardState extends State<_OnboardingCard> {
+  bool? _visible;
+
+  @override
+  void initState() {
+    super.initState();
+    shouldShowOnboarding(context.read<AdventureController>().keyValueStore).then((value) {
+      if (mounted) setState(() => _visible = value);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = _visible;
+    if (visible == null) return const SizedBox.shrink();
+    if (!visible) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton(
+          onPressed: () async {
+            await resetOnboarding(context.read<AdventureController>().keyValueStore);
+            if (mounted) setState(() => _visible = true);
+          },
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: const Text('Show the how-to-play tips', style: TextStyle(fontSize: 11.5)),
+        ),
+      );
+    }
+    final colors = context.gameColors;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.muted.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Three things, then go explore',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: colors.onSurface),
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  await dismissOnboarding(context.read<AdventureController>().keyValueStore);
+                  if (mounted) setState(() => _visible = false);
+                },
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('Got it', style: TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          for (final tip in onboardingTips)
+            Padding(
+              padding: const EdgeInsets.only(top: 5),
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '${tip.title}. ',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: colors.onSurface,
+                      ),
+                    ),
+                    TextSpan(
+                      text: tip.body,
+                      style: TextStyle(fontSize: 12, height: 1.35, color: colors.muted),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

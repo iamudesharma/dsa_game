@@ -1,5 +1,5 @@
 /**
- * The problem registry: forty-one problems across sixteen topics.
+ * The problem registry: forty-three problems across sixteen topics.
  *
  * Scope follows the awesome-leetcode-resources fundamentals list: the original
  * six topics (3 arrays, 2 sorting, 2 stack, 1 queue, 1 binary search,
@@ -9,12 +9,14 @@
  * anagrams, palindrome checking, binary trees (traversals, BST validation,
  * level order, BST search), heaps (kth largest via a size-k min-heap), and
  * graphs (islands, max area, rotting oranges, word search, union-find,
- * network delay via Dijkstra on a weighted edge list) — the grid games render
- * through a columns-aware slots lane on both clients, the weighted-graph game
- * reuses the linear node board with `dist_*` variables — plus dynamic
- * programming (climbing stairs, house robber, coin change), backtracking
- * (subsets, permutations), greedy (jump game), bit manipulation (single
- * number), and tries (prefix search on a static trie).
+ * network delay via Dijkstra and minimum connection cost via Kruskal, both on
+ * weighted edge lists) — the grid games render through a columns-aware slots
+ * lane on both clients, the weighted-graph games reuse the linear node board
+ * with `dist_*` / `parent_*` variables — plus dynamic programming (climbing
+ * stairs, house robber, coin change, unique paths on an obstacle grid through
+ * the same grid lane), backtracking (subsets, permutations), greedy (jump
+ * game), bit manipulation (single number), and tries (prefix search on a
+ * static trie).
  *
  * `instanceHints` tells the instance generator how to build valid data
  * (e.g. "sorted, unique, target present") and `allowedMechanics` is the
@@ -725,6 +727,36 @@ export const PROBLEMS: readonly ProblemMeta[] = [
       'Set dp[0]=0. For each amount x from 1 to the target, record dp[x] = 1 + min(dp[x-c]) over coins c no larger than x. dp[target] is the answer.',
     instanceHints: { minLength: 5, maxLength: 10, valueRange: [0, 10] },
     complexity: { time: 'O(amount × coins)', space: 'O(amount)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'kruskal-mst',
+    allowedMechanics: ['selectObject', 'comparePair', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'comparePair', 'assignValue', 'submitAnswer'],
+
+    topic: 'graphs',
+    title: 'Minimum connection cost (Kruskal)',
+    learningObjective:
+      'Kruskal takes edges lightest-first and keeps an edge exactly when it joins two different groups: the lightest safe edge is always part of some optimum.',
+    canonicalAlgorithm:
+      'Sort all edges by weight. Walk them in order, finding both roots: different roots union (add the weight to the total), equal roots skip. The total is the minimum connection cost.',
+    instanceHints: { minLength: 5, maxLength: 8, valueRange: [1, 9] },
+    complexity: { time: 'O(E log E)', space: 'O(V)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'unique-paths',
+    allowedMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+
+    topic: 'dp',
+    title: 'Unique paths through obstacles (grid DP)',
+    learningObjective:
+      'The ways to reach a cell reuse smaller answers: add the ways from above and from the left — a blocked cell contributes zero.',
+    canonicalAlgorithm:
+      'Set dp[0][0]=1 when the start is open. Walk row by row: a blocked cell records 0, any other cell records the ways from above plus the ways from the left. The finish cell is the answer.',
+    instanceHints: { minLength: 16, maxLength: 30, valueRange: [0, 1] },
+    complexity: { time: 'O(rows × cols)', space: 'O(rows × cols)' },
     defaultDifficulty: 'medium',
   },
 ] as const

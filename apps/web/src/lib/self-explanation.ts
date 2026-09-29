@@ -273,6 +273,18 @@ const PROMPTS: Record<string, SelfExplanationPrompts> = {
     integration:
       'What stayed true about what dp[x] meant after every amount, from zero to the target?',
   },
+  'kruskal-mst': {
+    retention:
+      'You took the lightest edge across two groups but skipped a light edge inside one group. Why was the skipped edge useless rather than just cheap?',
+    integration:
+      'What stayed true about nodes that shared a root, from the first edge to the last?',
+  },
+  'unique-paths': {
+    retention:
+      'Each open cell added the counts from above and the left instead of recounting routes from the start. Why was adding those two enough rather than not?',
+    integration:
+      'What stayed true about what a recorded cell meant every time you moved one step further along a row?',
+  },
 }
 
 /** Generic fallback for a problem id the catalogue does not know yet. */

@@ -84,12 +84,19 @@ void main() {
     await _bootApp(tester);
 
     expect(find.text('Play the Algorithms'), findsOneWidget);
-    // Eight illustrated destinations with algorithm names alongside world names.
+    // Illustrated destinations with algorithm names alongside world names.
+    // The map is a lazy list under the hero and the onboarding card, so each
+    // row is scrolled into view before asserting — an unbuilt row is not a
+    // missing row.
+    await _scrollTo(tester, find.text('Search Observatory'));
     expect(find.text('Search Observatory'), findsOneWidget);
+    await _scrollTo(tester, find.text('Linked-list Railway'));
     expect(find.text('Linked-list Railway'), findsOneWidget);
+    await _scrollTo(tester, find.text('Find the target in a sorted array'));
     expect(find.text('Find the target in a sorted array'), findsOneWidget);
     expect(find.text('Reverse a linked list'), findsOneWidget);
     // Suggested next mission orients the player.
+    await _scrollTo(tester, find.text('Suggested next adventure'));
     expect(find.text('Suggested next adventure'), findsOneWidget);
     // Provider availability is surfaced in diagnostics, not hidden.
     await _scrollTo(tester, find.text('Connection & diagnostics'));
@@ -116,8 +123,7 @@ void main() {
     await _bootApp(tester);
 
     // Topic -> problem.
-    await tester.tap(find.text('Find the target in a sorted array').first);
-    await tester.pumpAndSettle();
+    await _openMission(tester, 'Find the target in a sorted array');
     expect(find.text('The canonical algorithm'.toUpperCase()), findsOneWidget);
     expect(find.textContaining('Binary search halves'), findsOneWidget);
 
@@ -160,8 +166,7 @@ void main() {
     });
     await _bootApp(tester, client: client);
 
-    await tester.tap(find.text('Find the target in a sorted array').first);
-    await tester.pumpAndSettle();
+    await _openMission(tester, 'Find the target in a sorted array');
     await tester.tap(find.text('Start mission'));
     await tester.pumpAndSettle();
 
@@ -203,8 +208,7 @@ void main() {
     });
     await _bootApp(tester, client: client);
 
-    await tester.tap(find.text('Find the target in a sorted array').first);
-    await tester.pumpAndSettle();
+    await _openMission(tester, 'Find the target in a sorted array');
     await tester.tap(find.text('Start mission'));
     await tester.pumpAndSettle();
 
@@ -243,8 +247,7 @@ void main() {
     });
     await _bootApp(tester, client: client);
 
-    await tester.tap(find.text('Find the target in a sorted array').first);
-    await tester.pumpAndSettle();
+    await _openMission(tester, 'Find the target in a sorted array');
     await tester.tap(find.text('Start mission'));
     await tester.pumpAndSettle();
 
@@ -274,8 +277,7 @@ void main() {
     });
     await _bootApp(tester, client: client);
 
-    await tester.tap(find.text('Find the target in a sorted array').first);
-    await tester.pumpAndSettle();
+    await _openMission(tester, 'Find the target in a sorted array');
     await tester.tap(find.text('Start mission'));
     await tester.pumpAndSettle();
 
@@ -337,8 +339,7 @@ void main() {
 
   testWidgets('the hint affordance shows its source', (tester) async {
     await _bootApp(tester);
-    await tester.tap(find.text('Find the target in a sorted array').first);
-    await tester.pumpAndSettle();
+    await _openMission(tester, 'Find the target in a sorted array');
     await tester.tap(find.text('Start mission'));
     await tester.pumpAndSettle();
 
@@ -357,6 +358,18 @@ Future<void> _scrollTo(WidgetTester tester, Finder finder) async {
     await tester.drag(find.byType(ListView).last, const Offset(0, -280));
     await tester.pumpAndSettle();
   }
+}
+
+/// Opens a mission from the adventure map. The map is a lazy list under a
+/// hero and an onboarding card, so the mission is scrolled into view first —
+/// tapping blind assumes a viewport the card no longer guarantees.
+Future<void> _openMission(WidgetTester tester, String title) async {
+  final mission = find.text(title);
+  await _scrollTo(tester, mission);
+  await tester.ensureVisible(mission.first);
+  await tester.pumpAndSettle();
+  await tester.tap(mission.first);
+  await tester.pumpAndSettle();
 }
 
 /// The single `GameController` installed by the app under test.
