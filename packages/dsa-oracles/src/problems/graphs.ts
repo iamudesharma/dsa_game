@@ -32,6 +32,14 @@
  *   unique-paths      back on the grid: an obstacle board (0 open, 1 blocked)
  *                     through the columns-aware lane, counts in `dp_{r}_{c}`
  *                     variables. Row-major select + record; the finish submits.
+ *   lcs-length        a string table through the same lane: headers spell the
+ *                     two strings, interior cells show match bits. Matches copy
+ *                     diagonal+1; mismatches compare above vs left (naming the
+ *                     exact cells) and take the larger.
+ *   edit-distance     the same table, borders counting deletions/insertions:
+ *                     matches copy the diagonal free, mismatches compare above
+ *                     vs left, the winner vs the diagonal, and pay one plus the
+ *                     smallest.
  */
 import type {
   Action,
@@ -56,9 +64,9 @@ import {
 } from '@dsa/game-schema'
 import { buildBoard, finishIllegal, indexOf, num, type CodeLang } from '../shared/kernel.js'
 
-type GraphId = 'num-islands' | 'max-area-island' | 'rotting-oranges' | 'word-search' | 'union-find-connect' | 'network-delay-time' | 'kruskal-mst' | 'unique-paths'
+type GraphId = 'num-islands' | 'max-area-island' | 'rotting-oranges' | 'word-search' | 'union-find-connect' | 'network-delay-time' | 'kruskal-mst' | 'unique-paths' | 'lcs-length' | 'edit-distance'
 
-const IDS: readonly GraphId[] = ['num-islands', 'max-area-island', 'rotting-oranges', 'word-search', 'union-find-connect', 'network-delay-time', 'kruskal-mst', 'unique-paths']
+const IDS: readonly GraphId[] = ['num-islands', 'max-area-island', 'rotting-oranges', 'word-search', 'union-find-connect', 'network-delay-time', 'kruskal-mst', 'unique-paths', 'lcs-length', 'edit-distance']
 
 const LETTERS = ['a', 'b', 'c', 'd', 'e'] as const
 /** Up, right, down, left — the fixed exploration order every walk uses. */
@@ -323,6 +331,85 @@ function countPaths(values: readonly number[], rows: number, cols: number): numb
   return dp
 }
 
+/** String lengths per difficulty: tables of 16, 20, and 25 cells. */
+function stringTableDims(difficulty: BuildInstanceInput['difficulty']): { m: number; n: number } {
+  if (difficulty === 'easy') return { m: 3, n: 3 }
+  if (difficulty === 'hard') return { m: 4, n: 4 }
+  return { m: 3, n: 4 }
+}
+
+function randomWord(rng: () => number, len: number): string {
+  return Array.from({ length: len }, () => LETTERS[Math.floor(rng() * LETTERS.length)]!).join('')
+}
+
+interface StringTableBoard {
+  rows: number
+  cols: number
+  /** Match bits (borders 0): the engine-readable input. */
+  values: number[]
+  /** Headers spell the strings; interior echoes the bits: the display input. */
+  tokens: string[]
+}
+
+/** Headers spell s down the first column and t across the first row; the
+ *  interior shows whether that prefix pair matches. Borders carry 0. */
+function stringTableBoard(s: string, t: string): StringTableBoard {
+  const rows = s.length + 1
+  const cols = t.length + 1
+  const values: number[] = []
+  const tokens: string[] = []
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (r === 0 && c === 0) {
+        values.push(0)
+        tokens.push('•')
+      } else if (r === 0) {
+        values.push(0)
+        tokens.push(t[c - 1]!)
+      } else if (c === 0) {
+        values.push(0)
+        tokens.push(s[r - 1]!)
+      } else {
+        const match = s[r - 1] === t[c - 1] ? 1 : 0
+        values.push(match)
+        tokens.push(String(match))
+      }
+    }
+  }
+  return { rows, cols, values, tokens }
+}
+
+/** LCS lengths per cell, borders 0. */
+function lcsTable(s: string, t: string): number[] {
+  const rows = s.length + 1
+  const cols = t.length + 1
+  const dp = new Array<number>(rows * cols).fill(0)
+  for (let r = 1; r < rows; r++) {
+    for (let c = 1; c < cols; c++) {
+      const i = gridIndex(r, c, cols)
+      dp[i] = s[r - 1] === t[c - 1] ? dp[gridIndex(r - 1, c - 1, cols)]! + 1 : Math.max(dp[i - cols]!, dp[i - 1]!)
+    }
+  }
+  return dp
+}
+
+/** Edit distances per cell; borders count deletions and insertions. */
+function editTable(s: string, t: string): number[] {
+  const rows = s.length + 1
+  const cols = t.length + 1
+  const dp = new Array<number>(rows * cols).fill(0)
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const i = gridIndex(r, c, cols)
+      if (r === 0) dp[i] = c
+      else if (c === 0) dp[i] = r
+      else if (s[r - 1] === t[c - 1]) dp[i] = dp[gridIndex(r - 1, c - 1, cols)]!
+      else dp[i] = 1 + Math.min(dp[i - cols]!, dp[i - 1]!, dp[gridIndex(r - 1, c - 1, cols)]!)
+    }
+  }
+  return dp
+}
+
 // ------------------------------------------------------------------ instances
 
 function randomLand(rng: () => number, rows: number, cols: number, p: number): number[] {
@@ -531,6 +618,22 @@ function buildInstance(id: GraphId, input: BuildInstanceInput): ProblemInstance 
     }
   }
 
+  // lcs-length / edit-distance: a string table. Values carry match bits for
+  // the engine; tokens spell the strings for the learner (headers) and echo
+  // the bits inside — the word-search precedent for letter boards.
+  if (id === 'lcs-length' || id === 'edit-distance') {
+    const { m, n } = stringTableDims(input.difficulty)
+    const s = randomWord(rng, m)
+    const t = randomWord(rng, n)
+    const board = stringTableBoard(s, t)
+    return {
+      problemId: id, seed: input.seed,
+      values: board.values,
+      tokens: board.tokens, slots: linearSlots(board.values.length),
+      extras: { difficulty: input.difficulty, rows: board.rows, cols: board.cols, gridCols: board.cols, s, t },
+    }
+  }
+
   // union-find-connect: a plain linear board of node labels plus an edge list.
   const n = Math.max(4, sized(id, input))
   const m = n + 1
@@ -588,10 +691,11 @@ function initState(id: GraphId, instance: ProblemInstance): GameState {
     state.internal = { planIndex: 0 }
     return state
   }
-  if (id === 'unique-paths') {
+  if (id === 'unique-paths' || id === 'lcs-length' || id === 'edit-distance') {
     const state = buildBoard({
       problemId: id, instance,
-      variables: { r: 0, c: 0, ways: 0, n: instance.values.length },
+      kind: id === 'unique-paths' ? undefined : 'token',
+      variables: { r: 0, c: 0, best: 0, n: instance.values.length },
     })
     state.internal = { planIndex: 0 }
     return state
@@ -728,6 +832,67 @@ function actionsFor(id: GraphId, instance: ProblemInstance): Action[] {
     return actions
   }
 
+  // lcs-length: matches copy diagonal+1; mismatches compare above vs left —
+  // naming the exact cells whose counts decide — and take the larger.
+  if (id === 'lcs-length') {
+    const { rows, cols } = gridDims(instance)
+    const s = String(instance.extras?.['s'] ?? '')
+    const t = String(instance.extras?.['t'] ?? '')
+    const table = lcsTable(s, t)
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const i = gridIndex(r, c, cols)
+        actions.push({ type: 'selectObject', objectId: `v${i}` })
+        if (r === 0 || c === 0) {
+          actions.push({ type: 'assignValue', targetId: `dp_${r}_${c}`, value: '0' })
+        } else if (s[r - 1] === t[c - 1]) {
+          actions.push({ type: 'assignValue', targetId: `dp_${r}_${c}`, value: String(table[i]) })
+        } else {
+          const up = i - cols
+          const left = i - 1
+          const rel = relation(table[up]!, table[left]!)
+          actions.push({ type: 'comparePair', aId: `v${up}`, bId: `v${left}`, relation: rel })
+          actions.push({ type: 'assignValue', targetId: `dp_${r}_${c}`, value: String(table[i]) })
+        }
+      }
+    }
+    actions.push({ type: 'submitAnswer', targetId: `v${rows * cols - 1}`, value: String(table[rows * cols - 1]) })
+    return actions
+  }
+
+  // edit-distance: matches copy the diagonal free; mismatches compare above
+  // vs left, the winner vs the diagonal — ties go up — and pay one plus the
+  // smallest of the three.
+  if (id === 'edit-distance') {
+    const { rows, cols } = gridDims(instance)
+    const s = String(instance.extras?.['s'] ?? '')
+    const t = String(instance.extras?.['t'] ?? '')
+    const table = editTable(s, t)
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const i = gridIndex(r, c, cols)
+        actions.push({ type: 'selectObject', objectId: `v${i}` })
+        if (r === 0 || c === 0) {
+          actions.push({ type: 'assignValue', targetId: `dp_${r}_${c}`, value: String(table[i]) })
+        } else if (s[r - 1] === t[c - 1]) {
+          actions.push({ type: 'assignValue', targetId: `dp_${r}_${c}`, value: String(table[i]) })
+        } else {
+          const up = i - cols
+          const left = i - 1
+          const diag = i - cols - 1
+          const rel1 = relation(table[up]!, table[left]!)
+          actions.push({ type: 'comparePair', aId: `v${up}`, bId: `v${left}`, relation: rel1 })
+          const winner = rel1 === 'gt' ? left : up
+          const rel2 = relation(table[winner]!, table[diag]!)
+          actions.push({ type: 'comparePair', aId: `v${winner}`, bId: `v${diag}`, relation: rel2 })
+          actions.push({ type: 'assignValue', targetId: `dp_${r}_${c}`, value: String(table[i]) })
+        }
+      }
+    }
+    actions.push({ type: 'submitAnswer', targetId: `v${rows * cols - 1}`, value: String(table[rows * cols - 1]) })
+    return actions
+  }
+
   // union-find-connect
   const n = v.length
   const edges = (instance.extras?.['edges'] as number[] | undefined) ?? []
@@ -764,6 +929,8 @@ function codeLine(id: GraphId, action: Action): number {
     if (id === 'word-search') return action.value === 'found' ? 3 : 5
     if (id === 'kruskal-mst') return 12
     if (id === 'unique-paths') return 7
+    if (id === 'lcs-length') return 7
+    if (id === 'edit-distance') return 8
     return 9
   }
   if (action.type === 'selectObject') {
@@ -771,14 +938,19 @@ function codeLine(id: GraphId, action: Action): number {
     if (id === 'union-find-connect') return 13
     if (id === 'network-delay-time') return 5
     if (id === 'kruskal-mst') return 15
-    if (id === 'unique-paths') return 3
+    if (id === 'unique-paths' || id === 'lcs-length' || id === 'edit-distance') return 3
     return 6
   }
-  if (action.type === 'comparePair') return id === 'network-delay-time' || id === 'kruskal-mst' ? 7 : 6
+  if (action.type === 'comparePair') {
+    if (id === 'lcs-length' || id === 'edit-distance') return 5
+    return id === 'network-delay-time' || id === 'kruskal-mst' ? 7 : 6
+  }
   if (action.type === 'assignValue') {
     if (id === 'word-search') return action.value === '1' ? 9 : 14
     if (id === 'network-delay-time') return 8
     if (id === 'kruskal-mst') return action.targetId === 'mst' ? 9 : 8
+    if (id === 'lcs-length') return 6
+    if (id === 'edit-distance') return 7
     if (id === 'unique-paths') return 6
     return 7
   }
@@ -795,6 +967,8 @@ function source(id: GraphId): string[] {
     case 'network-delay-time': return ['function networkDelay(n, edges, source) {', '  dist = [0, ∞, ...]; settled = none', '  repeat n times:', '    u = the closest unsettled node', '    settle u', '    for each edge u -> v with weight w:', '      if dist[u] + w < dist[v]:', '        dist[v] = dist[u] + w', '  return max(dist)', '}']
     case 'kruskal-mst': return ['function minCost(n, edges) {', '  sort edges by weight, lightest first', '  parent = [0..n-1]; total = 0', '  for each edge in order {', '    u, v, w = edge', '    ru = find(u); rv = find(v)', '    if (ru !== rv) {', '      parent[ru] = rv', '      total += w', '    }', '  }', '  return total', '}', 'function find(x) {', '  while (parent[x] !== x) x = parent[x]', '  return x', '}']
     case 'unique-paths': return ['function uniquePaths(grid) {', '  dp = zero table; dp[0][0] = open start ? 1 : 0', '  for each cell row by row, after the start:', '    if the cell is blocked: dp = 0', '    else: dp = paths from above + paths from the left', '    record dp for this cell', '  return dp at the finish', '}']
+    case 'lcs-length': return ['function lcs(s, t) {', '  dp = zero table; borders stay 0', '  for each cell row by row, after the borders:', '    if letters match: best = diagonal + 1', '    else: best = larger of above and left', '    dp = best', '  return dp at the finish', '}']
+    case 'edit-distance': return ['function editDistance(s, t) {', '  dp borders count deletions and insertions', '  for each cell row by row, after the borders:', '    if letters match: best = diagonal', '    else compare above vs left, winner vs diagonal:', '      best = 1 + smallest of the three', '    dp = best', '  return dp at the finish', '}']
   }
 }
 
@@ -808,6 +982,8 @@ function pseudocode(id: GraphId): string[] {
     case 'network-delay-time': return ['FUNCTION networkDelay(n, edges, source)', '    dist[source] <- 0, rest <- ∞', '    REPEAT n times', '        u <- closest UNSETTLED node; SETTLE it', '        FOR each edge u -> v with weight w', '            IF dist[u] + w < dist[v]: dist[v] <- dist[u] + w', '    END REPEAT', '    RETURN max(dist)', 'END FUNCTION']
     case 'kruskal-mst': return ['FUNCTION minCost(n, edges)', '    SORT edges lightest-first; parent[i] <- i, total <- 0', '    FOR each edge (u, v, w) in order', '        ru <- FIND(u); rv <- FIND(v)', '        IF ru != rv: parent[ru] <- rv, total <- total + w', '    END FOR', '    RETURN total', 'END FUNCTION']
     case 'unique-paths': return ['FUNCTION uniquePaths(grid)', '    dp[start] <- 1 when open', '    FOR each cell row by row', '        IF blocked: dp <- 0', '        ELSE: dp <- paths from above + paths from the left', '    END FOR', '    RETURN dp at the finish', 'END FUNCTION']
+    case 'lcs-length': return ['FUNCTION lcs(s, t)', '    borders <- 0', '    FOR each cell row by row', '        IF match: dp <- diagonal + 1', '        ELSE: dp <- larger of above and left', '    END FOR', '    RETURN dp at the finish', 'END FUNCTION']
+    case 'edit-distance': return ['FUNCTION editDistance(s, t)', '    borders <- count deletions and insertions', '    FOR each cell row by row', '        IF match: dp <- diagonal', '        ELSE: dp <- 1 + smallest of above, left, diagonal', '    END FOR', '    RETURN dp at the finish', 'END FUNCTION']
   }
 }
 
@@ -859,6 +1035,18 @@ function answerText(id: GraphId, instance: ProblemInstance): { text: string; val
       ? { text: 'no open path reaches the finish', value: 0 }
       : { text: `${ways} unique paths reach the finish`, value: ways }
   }
+  if (id === 'lcs-length' || id === 'edit-distance') {
+    const s = String(instance.extras?.['s'] ?? '')
+    const t = String(instance.extras?.['t'] ?? '')
+    const table = id === 'lcs-length' ? lcsTable(s, t) : editTable(s, t)
+    const answer = table[table.length - 1]!
+    if (id === 'lcs-length') {
+      return { text: `longest common subsequence has length ${answer}`, value: answer }
+    }
+    return answer === 1
+      ? { text: '1 edit turns one string into the other', value: answer }
+      : { text: `${answer} edits turn one string into the other`, value: answer }
+  }
   const n = v.length
   const edges = (instance.extras?.['edges'] as number[] | undefined) ?? []
   const { comps } = unionFindTrace(n, edges)
@@ -879,7 +1067,7 @@ function legalActions(id: GraphId, state: GameState): LegalActionDescriptor[] {
       : id === 'word-search' ? 'Step onto the next matching letter'
       : id === 'network-delay-time' ? 'Settle the closest unsettled node'
       : id === 'kruskal-mst' ? 'Walk up to the root'
-      : id === 'unique-paths' ? 'Walk to the next cell'
+      : id === 'unique-paths' || id === 'lcs-length' || id === 'edit-distance' ? 'Walk to the next table cell'
       : 'Walk up to the root'
     return [{ type: next.type, label, options: { objectIds: [next.objectId] } }]
   }
@@ -887,6 +1075,8 @@ function legalActions(id: GraphId, state: GameState): LegalActionDescriptor[] {
     const label =
       id === 'network-delay-time' ? 'Is the path through the settled node shorter?'
       : id === 'kruskal-mst' ? 'Are these two roots already connected?'
+      : id === 'lcs-length' ? 'Which neighbour count is larger — take it.'
+      : id === 'edit-distance' ? 'Which neighbour costs less — take it.'
       : 'Are these two roots the same set?'
     return [{ type: next.type, label, options: { objectIds: [next.aId, next.bId] }, expects: 'relation' }]
   }
@@ -1004,10 +1194,10 @@ function applyAction(id: GraphId, state: GameState, action: Action): { nextState
       if ((id === 'union-find-connect' || id === 'kruskal-mst') && action.targetId.startsWith('parent_')) {
         next.variables['comps'] = num(next.variables['comps'], 1) - 1
       }
-      if (id === 'unique-paths' && action.targetId.startsWith('dp_') && Number.isFinite(numeric)) {
+      if ((id === 'unique-paths' || id === 'lcs-length' || id === 'edit-distance') && action.targetId.startsWith('dp_') && Number.isFinite(numeric)) {
         // Row-major order, so the latest record is the frontier's newest count;
         // at the finish it is the answer.
-        next.variables['ways'] = numeric
+        next.variables['best'] = numeric
       }
       feedback = `${action.targetId} now records ${action.value}.`
       note = `Store ${action.value} in ${action.targetId}.`
@@ -1025,9 +1215,15 @@ function applyAction(id: GraphId, state: GameState, action: Action): { nextState
             ? action.relation === 'eq'
               ? 'Already connected — skip this edge.'
               : 'Cheapest link between two groups — take it.'
-            : action.relation === 'eq'
-              ? 'Already the same set — no union.'
-              : 'Different sets — union them.'
+            : id === 'lcs-length'
+              ? action.relation === 'eq'
+                ? 'Both neighbours tie — record either.'
+                : 'Take the larger neighbour count.'
+              : id === 'edit-distance'
+                ? 'Take the cheaper neighbour.'
+                : action.relation === 'eq'
+                  ? 'Already the same set — no union.'
+                  : 'Different sets — union them.'
       break
     }
     case 'submitAnswer': {
@@ -1099,6 +1295,8 @@ export const createUnionFindConnectOracle = (): Oracle => createGraphOracle('uni
 export const createNetworkDelayTimeOracle = (): Oracle => createGraphOracle('network-delay-time')
 export const createKruskalMstOracle = (): Oracle => createGraphOracle('kruskal-mst')
 export const createUniquePathsOracle = (): Oracle => createGraphOracle('unique-paths')
+export const createLcsLengthOracle = (): Oracle => createGraphOracle('lcs-length')
+export const createEditDistanceOracle = (): Oracle => createGraphOracle('edit-distance')
 
 /** Guard used by the registry test: every id must be in the catalogue. */
 if (!IDS.every((id) => PROBLEM_IDS.includes(id))) throw new Error('a graph oracle id is not in PROBLEM_IDS')

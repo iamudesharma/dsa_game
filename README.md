@@ -166,9 +166,9 @@ Two further measured constraints, both found by calling the live endpoint:
 
 ## Status
 
-- **43 problems** are in the catalogue (`packages/game-schema/src/problems.ts`),
+- **45 problems** are in the catalogue (`packages/game-schema/src/problems.ts`),
   each with `allowedMechanics` and `requiredMechanics`.
-- **All 43 catalogue problems have deterministic oracles**: arrays (maximum /
+- **All 45 catalogue problems have deterministic oracles**: arrays (maximum /
   minimum, Two Sum, move zeroes, sliding-window max sum, sorted two-pointers
   pair, prefix-sum range, Kadane's max subarray, merge intervals), sorting
   (bubble and selection), stack (valid parentheses, push / pop, next greater
@@ -179,14 +179,17 @@ Two further measured constraints, both found by calling the live endpoint:
   via a size-k min-heap), graphs (number of islands, max area, rotting
   oranges, word search, union-find components, network delay via Dijkstra,
   minimum connection cost via Kruskal), dynamic programming (climbing stairs,
-  house robber, coin change, unique paths through obstacles), backtracking
+  house robber, coin change, unique paths through obstacles, longest common
+  subsequence and edit distance on a string table), backtracking
   (subsets, permutations), greedy (jump game), bit manipulation (single
   number), and tries (prefix search). The same registry drives both
   clients and the API.
 - Grid games (`num-islands`, `max-area-island`, `rotting-oranges`,
-  `word-search`) declare `gridCols` in their instance extras; both clients lay
+  `word-search`, `unique-paths`, `lcs-length`, `edit-distance`) declare
+  `gridCols` in their instance extras; both clients lay
   the slots lane out as fixed rows from it, so row-major ids read as a real
-  2D board with no per-problem renderer.
+  2D board with no per-problem renderer. The string-table games pair numeric
+  match-bit values with letter-spelling tokens (the word-search precedent).
 
 ## Learning library (web)
 

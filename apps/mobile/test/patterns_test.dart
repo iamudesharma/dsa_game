@@ -52,6 +52,8 @@ const Set<String> knownProblemIds = {
   'coin-change',
   'kruskal-mst',
   'unique-paths',
+  'lcs-length',
+  'edit-distance',
   'single-number',
   'trie-prefix-search',
 };

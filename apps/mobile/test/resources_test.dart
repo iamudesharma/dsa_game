@@ -33,6 +33,16 @@ void main() {
     expect(paths.trackMentions.map((m) => m.n), contains(63));
   });
 
+  test('trains the string-table games from the DP pattern and the 2D track', () {
+    final lcs = resourcesForProblem('lcs-length');
+    expect(lcs.patterns.map((p) => p.id), contains('dynamic-programming'));
+    expect(lcs.trackMentions.map((m) => m.n), contains(1143));
+
+    final edit = resourcesForProblem('edit-distance');
+    expect(edit.patterns.map((p) => p.id), contains('dynamic-programming'));
+    expect(edit.trackMentions.map((m) => m.n), contains(72));
+  });
+
   test('stamps the matching classics items', () {
     final dijkstra = resourcesForProblem('network-delay-time');
     expect(dijkstra.trackMentions.map((m) => m.n), contains(743));

@@ -582,6 +582,28 @@ const KEYWORDS: Readonly<Record<string, { specific: readonly string[]; topic: re
     specific: ['unique paths', 'paths through obstacles', 'grid dp', 'paths from above', 'robot grid', 'ways to reach'],
     topic: ['paths', 'grid', 'obstacles', 'unique', 'dp', 'finish', 'blocked'],
   },
+  'lcs-length': {
+    specific: [
+      'longest common subsequence',
+      'lcs',
+      'common subsequence',
+      'subsequence match',
+      'diagonal plus one',
+      'larger neighbour',
+    ],
+    topic: ['subsequence', 'common', 'strings', 'match', 'diagonal', 'dp', 'table'],
+  },
+  'edit-distance': {
+    specific: [
+      'edit distance',
+      'levenshtein',
+      'minimum edits',
+      'string transformation',
+      'insert delete replace',
+      'cheapest neighbour',
+    ],
+    topic: ['edit', 'distance', 'transform', 'convert', 'operations', 'dp', 'strings'],
+  },
 }
 
 const W_TOPIC = 2

@@ -285,6 +285,18 @@ const PROMPTS: Record<string, SelfExplanationPrompts> = {
     integration:
       'What stayed true about what a recorded cell meant every time you moved one step further along a row?',
   },
+  'lcs-length': {
+    retention:
+      'A match extended the diagonal by one while a mismatch took the larger neighbour. Why does a match earn the plus-one rather than just the diagonal?',
+    integration:
+      'What stayed true about what a recorded cell meant every time you moved one letter deeper into either string?',
+  },
+  'edit-distance': {
+    retention:
+      'A match copied the diagonal free while a mismatch paid one plus the cheapest neighbour. Why is one operation always enough per cell rather than more?',
+    integration:
+      'What stayed true about what a recorded cell meant, from the empty prefixes down to the full strings?',
+  },
 }
 
 /** Generic fallback for a problem id the catalogue does not know yet. */

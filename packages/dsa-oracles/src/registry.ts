@@ -54,7 +54,9 @@ import {
 } from './problems/trees.js'
 import { createKthLargestHeapOracle } from './problems/heap.js'
 import {
+  createEditDistanceOracle,
   createKruskalMstOracle,
+  createLcsLengthOracle,
   createMaxAreaIslandOracle,
   createNetworkDelayTimeOracle,
   createNumIslandsOracle,
@@ -120,6 +122,8 @@ export const ORACLES: Readonly<Record<string, Oracle>> = {
   'network-delay-time': createNetworkDelayTimeOracle(),
   'kruskal-mst': createKruskalMstOracle(),
   'unique-paths': createUniquePathsOracle(),
+  'lcs-length': createLcsLengthOracle(),
+  'edit-distance': createEditDistanceOracle(),
   'climbing-stairs': createClimbingStairsOracle(),
   'house-robber': createHouseRobberOracle(),
   'coin-change': createCoinChangeOracle(),

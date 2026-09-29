@@ -333,7 +333,7 @@ const List<DsaPattern> dsaPatterns = [
       PracticeRef(n: 416, name: 'Partition Equal Subset Sum'),
       PracticeRef(n: 72, name: 'Edit Distance'),
     ],
-    playIds: ['climbing-stairs', 'house-robber', 'kadane-max-subarray', 'coin-change', 'unique-paths'],
+    playIds: ['climbing-stairs', 'house-robber', 'kadane-max-subarray', 'coin-change', 'unique-paths', 'lcs-length', 'edit-distance'],
     deepDive: 'https://algomaster.io/learn/dsa/dp-introduction',
   ),
 ];

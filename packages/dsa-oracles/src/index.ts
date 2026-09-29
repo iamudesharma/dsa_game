@@ -40,7 +40,9 @@ export {
 export { createKthLargestHeapOracle } from './problems/heap.js'
 export {
   createGraphOracle,
+  createEditDistanceOracle,
   createKruskalMstOracle,
+  createLcsLengthOracle,
   createMaxAreaIslandOracle,
   createNetworkDelayTimeOracle,
   createNumIslandsOracle,

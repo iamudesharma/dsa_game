@@ -205,8 +205,8 @@ const BLIND_75_CATEGORIES: readonly TrackCategory[] = [
     title: '2D Dynamic Programming',
     items: [
       item(63, 'Unique Paths II', ['unique-paths']),
-      item(1143, 'Longest Common Subsequence'),
-      item(72, 'Edit Distance'),
+      item(1143, 'Longest Common Subsequence', ['lcs-length']),
+      item(72, 'Edit Distance', ['edit-distance']),
     ],
   },
   {

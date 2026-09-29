@@ -24,6 +24,16 @@ describe('per-problem study resources', () => {
     expect(coins.deepDives).toContain('https://algomaster.io/learn/dsa/dp-introduction')
   })
 
+  it('trains the string-table games from the DP pattern and the 2D track', () => {
+    const lcs = resourcesForProblem('lcs-length')
+    expect(lcs.patterns.map((p) => p.id)).toContain('dynamic-programming')
+    expect(lcs.trackMentions.map((m) => m.n)).toContain(1143)
+
+    const edit = resourcesForProblem('edit-distance')
+    expect(edit.patterns.map((p) => p.id)).toContain('dynamic-programming')
+    expect(edit.trackMentions.map((m) => m.n)).toContain(72)
+  })
+
   it('stamps the matching Interview Classics items', () => {
     const dijkstra = resourcesForProblem('network-delay-time')
     expect(dijkstra.trackMentions.map((m) => m.n)).toContain(743)

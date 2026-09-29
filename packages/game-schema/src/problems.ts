@@ -1,5 +1,5 @@
 /**
- * The problem registry: forty-three problems across sixteen topics.
+ * The problem registry: forty-five problems across sixteen topics.
  *
  * Scope follows the awesome-leetcode-resources fundamentals list: the original
  * six topics (3 arrays, 2 sorting, 2 stack, 1 queue, 1 binary search,
@@ -13,10 +13,10 @@
  * weighted edge lists) — the grid games render through a columns-aware slots
  * lane on both clients, the weighted-graph games reuse the linear node board
  * with `dist_*` / `parent_*` variables — plus dynamic programming (climbing
- * stairs, house robber, coin change, unique paths on an obstacle grid through
- * the same grid lane), backtracking (subsets, permutations), greedy (jump
- * game), bit manipulation (single number), and tries (prefix search on a
- * static trie).
+ * stairs, house robber, coin change, unique paths on an obstacle grid, LCS
+ * and edit distance on a string table through the same grid lane),
+ * backtracking (subsets, permutations), greedy (jump game), bit manipulation
+ * (single number), and tries (prefix search on a static trie).
  *
  * `instanceHints` tells the instance generator how to build valid data
  * (e.g. "sorted, unique, target present") and `allowedMechanics` is the
@@ -757,6 +757,36 @@ export const PROBLEMS: readonly ProblemMeta[] = [
       'Set dp[0][0]=1 when the start is open. Walk row by row: a blocked cell records 0, any other cell records the ways from above plus the ways from the left. The finish cell is the answer.',
     instanceHints: { minLength: 16, maxLength: 30, valueRange: [0, 1] },
     complexity: { time: 'O(rows × cols)', space: 'O(rows × cols)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'lcs-length',
+    allowedMechanics: ['selectObject', 'comparePair', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'comparePair', 'assignValue', 'submitAnswer'],
+
+    topic: 'dp',
+    title: 'Longest common subsequence (grid DP)',
+    learningObjective:
+      'A matching pair extends the best of the shorter prefixes by one; a mismatch inherits the better of dropping one side or the other.',
+    canonicalAlgorithm:
+      'Walk the table row by row. A match records the diagonal plus one; a mismatch compares the cell above with the cell to the left and records the larger. The bottom-right cell is the answer.',
+    instanceHints: { minLength: 16, maxLength: 25, valueRange: [0, 1], tokenAlphabet: ['a', 'b', 'c', 'd', 'e'] },
+    complexity: { time: 'O(m × n)', space: 'O(m × n)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'edit-distance',
+    allowedMechanics: ['selectObject', 'comparePair', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'comparePair', 'assignValue', 'submitAnswer'],
+
+    topic: 'dp',
+    title: 'Edit distance (grid DP)',
+    learningObjective:
+      'Turning one string into the other reuses smaller answers: a match copies the diagonal for free, otherwise pay one plus the cheapest of deleting, inserting, or substituting.',
+    canonicalAlgorithm:
+      'Walk the table row by row. A match copies the diagonal; a mismatch compares above against left, compares the winner against the diagonal, and records one plus the smallest. The bottom-right cell is the answer.',
+    instanceHints: { minLength: 16, maxLength: 25, valueRange: [0, 1], tokenAlphabet: ['a', 'b', 'c', 'd', 'e'] },
+    complexity: { time: 'O(m × n)', space: 'O(m × n)' },
     defaultDifficulty: 'medium',
   },
 ] as const

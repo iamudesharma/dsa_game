@@ -158,8 +158,8 @@ const List<TrackCategory> interviewClassicsCategories = [
   ]),
   TrackCategory(title: '2D Dynamic Programming', items: [
     TrackItem(n: 63, name: 'Unique Paths II', playIds: ['unique-paths']),
-    TrackItem(n: 1143, name: 'Longest Common Subsequence'),
-    TrackItem(n: 72, name: 'Edit Distance'),
+    TrackItem(n: 1143, name: 'Longest Common Subsequence', playIds: ['lcs-length']),
+    TrackItem(n: 72, name: 'Edit Distance', playIds: ['edit-distance']),
   ]),
   TrackCategory(title: 'Greedy', items: [
     TrackItem(n: 53, name: 'Maximum Subarray', playIds: ['kadane-max-subarray']),

@@ -407,7 +407,7 @@ return dp[n]`,
       { n: 416, name: 'Partition Equal Subset Sum' },
       { n: 72, name: 'Edit Distance' },
     ],
-    playIds: ['climbing-stairs', 'house-robber', 'kadane-max-subarray', 'coin-change', 'unique-paths'],
+    playIds: ['climbing-stairs', 'house-robber', 'kadane-max-subarray', 'coin-change', 'unique-paths', 'lcs-length', 'edit-distance'],
     deepDive: 'https://algomaster.io/learn/dsa/dp-introduction',
   },
 ] as const
