@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { CatalogueResponse, DecideResponse, Difficulty, GenerateResponse } from '@dsa/game-schema'
 
@@ -16,6 +17,7 @@ import { DsaApiError, getCatalogue, postDecide, postGenerate } from '@/lib/api'
 import { DIFFICULTIES, PROVIDER_TIER_LABELS } from '@/lib/contract'
 import { cn } from '@/lib/format'
 import { getLinkedListQuestion } from '@/lib/linked-list-learning'
+import { resourcesForProblem } from '@/lib/resources'
 import { useGameStore } from '@/store/game'
 
 /**
@@ -174,6 +176,7 @@ export function ProblemView({
   const mechanicsList = useMemo(() => problem?.allowedMechanics ?? [], [problem])
   const linkedListQuestion = getLinkedListQuestion(questionId)
   const activeQuestion = linkedListQuestion?.gameProblemId === problemId ? linkedListQuestion : undefined
+  const resources = useMemo(() => resourcesForProblem(problemId), [problemId])
   if (notFound) {
     return (
       <main className="mx-auto max-w-2xl px-4 py-16">
@@ -243,6 +246,48 @@ export function ProblemView({
 
           <details className="adventure-drawer"><summary>Peek inside the algorithm</summary><div className="p-4">
             <pre className="mono prose-block text-sm">{problem.canonicalAlgorithm}</pre></div></details>
+
+          <details className="adventure-drawer"><summary>Study resources · {resources.patterns.length > 0 ? `${resources.patterns.length} pattern${resources.patterns.length === 1 ? '' : 's'}` : 'foundations drill'}{resources.trackMentions.length > 0 ? ` · stamps ${resources.trackMentions.length} classic${resources.trackMentions.length === 1 ? '' : 's'}` : ''}</summary><div className="p-4">
+            {resources.patterns.length > 0 ? (
+              <ul className="space-y-3">
+                {resources.patterns.map((pattern) => (
+                  <li key={pattern.id} className="text-sm">
+                    <Link href="/patterns" className="font-semibold text-[var(--dsa-accent)] underline-offset-4 hover:underline">
+                      {pattern.name}
+                    </Link>
+                    <span className="text-[var(--dsa-muted)]"> — the reusable approach this game trains. </span>
+                    <a
+                      href={pattern.deepDive}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-[var(--dsa-accent)] underline-offset-4 hover:underline"
+                    >
+                      Deep dive ↗
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-[var(--dsa-muted)]">
+                A foundations drill: it teaches the moves other patterns build on, so no pattern claims it. The classics below still stamp it.
+              </p>
+            )}
+            {resources.trackMentions.length > 0 && (
+              <div className="mt-3">
+                <p className="text-xs font-semibold text-[var(--dsa-ink)]">Stamps these Interview Classics</p>
+                <ul className="mt-1 space-y-1">
+                  {resources.trackMentions.map((mention) => (
+                    <li key={`${mention.category}-${mention.n}`} className="text-xs text-[var(--dsa-muted)]">
+                      <span className="mono">#{mention.n} {mention.name}</span>
+                      <span> · {mention.category} · </span>
+                      <Link href="/tracks" className="text-[var(--dsa-accent)] underline-offset-4 hover:underline">
+                        view track ↗
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}</div></details>
 
           {activeQuestion && (
             <Panel

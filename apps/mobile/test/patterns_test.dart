@@ -48,6 +48,8 @@ const Set<String> knownProblemIds = {
   'subsets',
   'permutations',
   'jump-game',
+  'network-delay-time',
+  'coin-change',
   'single-number',
   'trie-prefix-search',
 };

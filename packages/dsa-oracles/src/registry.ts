@@ -55,12 +55,13 @@ import {
 import { createKthLargestHeapOracle } from './problems/heap.js'
 import {
   createMaxAreaIslandOracle,
+  createNetworkDelayTimeOracle,
   createNumIslandsOracle,
   createRottingOrangesOracle,
   createUnionFindConnectOracle,
   createWordSearchOracle,
 } from './problems/graphs.js'
-import { createClimbingStairsOracle, createHouseRobberOracle } from './problems/dp.js'
+import { createClimbingStairsOracle, createCoinChangeOracle, createHouseRobberOracle } from './problems/dp.js'
 import { createPermutationsOracle, createSubsetsOracle } from './problems/backtracking.js'
 import { createJumpGameOracle } from './problems/greedy.js'
 import { createSingleNumberOracle } from './problems/bit-manip.js'
@@ -114,8 +115,10 @@ export const ORACLES: Readonly<Record<string, Oracle>> = {
   'rotting-oranges': createRottingOrangesOracle(),
   'word-search': createWordSearchOracle(),
   'union-find-connect': createUnionFindConnectOracle(),
+  'network-delay-time': createNetworkDelayTimeOracle(),
   'climbing-stairs': createClimbingStairsOracle(),
   'house-robber': createHouseRobberOracle(),
+  'coin-change': createCoinChangeOracle(),
   'subsets': createSubsetsOracle(),
   'permutations': createPermutationsOracle(),
   'jump-game': createJumpGameOracle(),

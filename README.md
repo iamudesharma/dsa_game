@@ -166,9 +166,9 @@ Two further measured constraints, both found by calling the live endpoint:
 
 ## Status
 
-- **39 problems** are in the catalogue (`packages/game-schema/src/problems.ts`),
+- **41 problems** are in the catalogue (`packages/game-schema/src/problems.ts`),
   each with `allowedMechanics` and `requiredMechanics`.
-- **All 39 catalogue problems have deterministic oracles**: arrays (maximum /
+- **All 41 catalogue problems have deterministic oracles**: arrays (maximum /
   minimum, Two Sum, move zeroes, sliding-window max sum, sorted two-pointers
   pair, prefix-sum range, Kadane's max subarray, merge intervals), sorting
   (bubble and selection), stack (valid parentheses, push / pop, next greater
@@ -177,10 +177,11 @@ Two further measured constraints, both found by calling the live endpoint:
   count, valid anagram), strings (valid palindrome), trees (pre/in/post-order
   traversals, BST validation, level order, BST search), heaps (kth largest
   via a size-k min-heap), graphs (number of islands, max area, rotting
-  oranges, word search, union-find components), dynamic programming (climbing
-  stairs, house robber), backtracking (subsets, permutations), greedy (jump
-  game), bit manipulation (single number), and tries (prefix search). The
-  same registry drives both clients and the API.
+  oranges, word search, union-find components, network delay via Dijkstra),
+  dynamic programming (climbing stairs, house robber, coin change),
+  backtracking (subsets, permutations), greedy (jump game), bit manipulation
+  (single number), and tries (prefix search). The same registry drives both
+  clients and the API.
 - Grid games (`num-islands`, `max-area-island`, `rotting-oranges`,
   `word-search`) declare `gridCols` in their instance extras; both clients lay
   the slots lane out as fixed rows from it, so row-major ids read as a real
@@ -197,6 +198,12 @@ Two further measured constraints, both found by calling the live endpoint:
   train each item (study-only items show their LeetCode number, never a play
   button), plus a Full Tour derived from the catalogue so it cannot drift.
   Progress is the adventure store's own completion map.
+- Every problem page carries a Study resources drawer (`apps/web/src/lib/resources.ts`):
+  which patterns train the game, which classics it stamps, and the verbatim
+  deep-dives — the same mappings the mobile client mirrors.
+- First-visit onboarding tips (`apps/web/src/lib/onboarding.ts`): three
+  sentences on the adventure map, dismissible forever, degradable to visible
+  when storage is unavailable.
 - Low, medium, and high choose increasing instance sizes within each problem's
   declared bounds. The template provider can generate every game without model
   keys or sidecars, so the full catalogue remains playable offline.

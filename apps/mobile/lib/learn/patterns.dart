@@ -255,7 +255,7 @@ const List<DsaPattern> dsaPatterns = [
       PracticeRef(n: 778, name: 'Swim in Rising Water'),
       PracticeRef(n: 1631, name: 'Path with Minimum Effort'),
     ],
-    playIds: ['rotting-oranges'],
+    playIds: ['network-delay-time', 'rotting-oranges'],
     deepDive: 'https://algomaster.io/learn/dsa/dijkstras-algorithm',
   ),
   DsaPattern(
@@ -332,7 +332,7 @@ const List<DsaPattern> dsaPatterns = [
       PracticeRef(n: 416, name: 'Partition Equal Subset Sum'),
       PracticeRef(n: 72, name: 'Edit Distance'),
     ],
-    playIds: ['climbing-stairs', 'house-robber', 'kadane-max-subarray'],
+    playIds: ['climbing-stairs', 'house-robber', 'kadane-max-subarray', 'coin-change'],
     deepDive: 'https://algomaster.io/learn/dsa/dp-introduction',
   ),
 ];

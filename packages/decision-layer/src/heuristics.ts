@@ -550,6 +550,22 @@ const KEYWORDS: Readonly<Record<string, { specific: readonly string[]; topic: re
     specific: ['trie', 'prefix tree', 'prefix search', 'autocomplete', 'starts with', 'shared prefix', 'implement trie'],
     topic: ['trie', 'prefix', 'words', 'letters', 'completions', 'dictionary'],
   },
+  'network-delay-time': {
+    specific: [
+      'network delay',
+      'network delay time',
+      'dijkstra',
+      'shortest path weighted',
+      'minimum distance',
+      'settle closest',
+      'signal delay',
+    ],
+    topic: ['delay', 'network', 'distance', 'shortest', 'weighted', 'settle', 'signal'],
+  },
+  'coin-change': {
+    specific: ['coin change', 'fewest coins', 'minimum coins', 'coin denominations', 'change amount'],
+    topic: ['coins', 'change', 'amount', 'denomination', 'fewest', 'dp', 'minimum'],
+  },
 }
 
 const W_TOPIC = 2

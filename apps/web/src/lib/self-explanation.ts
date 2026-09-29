@@ -261,6 +261,18 @@ const PROMPTS: Record<string, SelfExplanationPrompts> = {
     integration:
       'What stayed true about every word below the node you landed on?',
   },
+  'network-delay-time': {
+    retention:
+      'Each round you settled the closest unsettled node instead of any other. Why was its distance final rather than still improvable?',
+    integration:
+      'What stayed true about every settled node, from the source to the last one?',
+  },
+  'coin-change': {
+    retention:
+      'For one amount you took one coin plus the best for the remainder instead of counting from scratch. Why was the stored remainder trustworthy rather than not?',
+    integration:
+      'What stayed true about what dp[x] meant after every amount, from zero to the target?',
+  },
 }
 
 /** Generic fallback for a problem id the catalogue does not know yet. */

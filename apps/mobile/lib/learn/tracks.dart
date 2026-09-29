@@ -3,7 +3,7 @@
 /// `interview-classics` is Blind-75-style coverage across every category with
 /// the same item mapping (LeetCode number + name text, never fabricated
 /// URLs). Like the web original it is deliberately NOT titled "Blind 75":
-/// the list holds 113 items. `full-tour` is built from the live catalogue at
+/// the list holds 114 items. `full-tour` is built from the live catalogue at
 /// runtime, so it cannot drift from the registry.
 library;
 
@@ -139,6 +139,7 @@ const List<TrackCategory> interviewClassicsCategories = [
     TrackItem(n: 323, name: 'Number of Connected Components', playIds: ['union-find-connect']),
     TrackItem(n: 286, name: 'Walls and Gates', playIds: ['rotting-oranges']),
     TrackItem(n: 261, name: 'Graph Valid Tree', playIds: ['union-find-connect']),
+    TrackItem(n: 743, name: 'Network Delay Time', playIds: ['network-delay-time']),
   ]),
   TrackCategory(title: '1D Dynamic Programming', items: [
     TrackItem(n: 70, name: 'Climbing Stairs', playIds: ['climbing-stairs']),
@@ -148,7 +149,7 @@ const List<TrackCategory> interviewClassicsCategories = [
     TrackItem(n: 5, name: 'Longest Palindromic Substring', playIds: ['valid-palindrome']),
     TrackItem(n: 647, name: 'Palindromic Substrings', playIds: ['valid-palindrome']),
     TrackItem(n: 91, name: 'Decode Ways', playIds: ['climbing-stairs']),
-    TrackItem(n: 322, name: 'Coin Change'),
+    TrackItem(n: 322, name: 'Coin Change', playIds: ['coin-change']),
     TrackItem(n: 152, name: 'Maximum Product Subarray', playIds: ['kadane-max-subarray']),
     TrackItem(n: 139, name: 'Word Break', playIds: ['word-search', 'trie-prefix-search']),
     TrackItem(n: 300, name: 'Longest Increasing Subsequence'),

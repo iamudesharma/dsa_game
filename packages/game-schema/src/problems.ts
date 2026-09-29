@@ -1,5 +1,5 @@
 /**
- * The problem registry: twenty-two problems across eight topics.
+ * The problem registry: forty-one problems across sixteen topics.
  *
  * Scope follows the awesome-leetcode-resources fundamentals list: the original
  * six topics (3 arrays, 2 sorting, 2 stack, 1 queue, 1 binary search,
@@ -8,9 +8,11 @@
  * binary search, linked-list cycle detection, hash-table frequency counting,
  * anagrams, palindrome checking, binary trees (traversals, BST validation,
  * level order, BST search), heaps (kth largest via a size-k min-heap), and
- * graphs (islands, max area, rotting oranges, word search, union-find) — the
- * grid games render through a columns-aware slots lane on both clients —
- * plus dynamic programming (climbing stairs, house robber), backtracking
+ * graphs (islands, max area, rotting oranges, word search, union-find,
+ * network delay via Dijkstra on a weighted edge list) — the grid games render
+ * through a columns-aware slots lane on both clients, the weighted-graph game
+ * reuses the linear node board with `dist_*` variables — plus dynamic
+ * programming (climbing stairs, house robber, coin change), backtracking
  * (subsets, permutations), greedy (jump game), bit manipulation (single
  * number), and tries (prefix search on a static trie).
  *
@@ -693,6 +695,36 @@ export const PROBLEMS: readonly ProblemMeta[] = [
       'Follow one link per query letter from the root. If a link is missing the prefix matches nothing; otherwise every word-end in the landed subtree is a completion.',
     instanceHints: { minLength: 4, maxLength: 8, tokenAlphabet: ['a', 'b', 'c', 'd', 'e'] },
     complexity: { time: 'O(L + C)', space: 'O(1)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'network-delay-time',
+    allowedMechanics: ['selectObject', 'comparePair', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'comparePair', 'assignValue', 'submitAnswer'],
+
+    topic: 'graphs',
+    title: 'Network delay time (Dijkstra)',
+    learningObjective:
+      'Dijkstra always settles the closest unsettled node first: its distance is final, so every relaxation from it is trustworthy.',
+    canonicalAlgorithm:
+      'Set dist[source]=0 and the rest to infinity. Repeatedly settle the unsettled node with the smallest distance, then relax each outgoing edge (dist[v] = min(dist[v], dist[u]+w)). The largest settled distance is the delay.',
+    instanceHints: { minLength: 5, maxLength: 8, valueRange: [0, 8] },
+    complexity: { time: 'O(E log V)', space: 'O(V)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'coin-change',
+    allowedMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'assignValue', 'submitAnswer'],
+
+    topic: 'dp',
+    title: 'Coin change (fewest coins)',
+    learningObjective:
+      'The fewest coins for each amount reuses smaller answers: try every coin, take one plus the best for the remainder, and keep the minimum.',
+    canonicalAlgorithm:
+      'Set dp[0]=0. For each amount x from 1 to the target, record dp[x] = 1 + min(dp[x-c]) over coins c no larger than x. dp[target] is the answer.',
+    instanceHints: { minLength: 5, maxLength: 10, valueRange: [0, 10] },
+    complexity: { time: 'O(amount × coins)', space: 'O(amount)' },
     defaultDifficulty: 'medium',
   },
 ] as const

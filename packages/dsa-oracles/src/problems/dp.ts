@@ -15,6 +15,10 @@
  *                    (money[i]+dp[i-2]) REL skip (dp[i-1]) — the Kadane-style
  *                    convention of comparing two computed quantities while
  *                    naming the cells involved — then assign dp[i].
+ *   coin-change      cells are amounts 0..target, coins in extras (1 is always
+ *                    included, so every amount is reachable). Per amount:
+ *                    select + record dp[x] = 1 + min(dp[x-c]) — the
+ *                    climbing-stairs shape, one rung at a time.
  */
 import type {
   Action,
@@ -39,9 +43,9 @@ import {
 } from '@dsa/game-schema'
 import { buildBoard, finishIllegal, indexOf, num, type CodeLang } from '../shared/kernel.js'
 
-type DpId = 'climbing-stairs' | 'house-robber'
+type DpId = 'climbing-stairs' | 'house-robber' | 'coin-change'
 
-const IDS: readonly DpId[] = ['climbing-stairs', 'house-robber']
+const IDS: readonly DpId[] = ['climbing-stairs', 'house-robber', 'coin-change']
 
 function sized(metaId: DpId, input: BuildInstanceInput): number {
   const meta = getProblem(metaId)
@@ -73,6 +77,24 @@ function buildInstance(id: DpId, input: BuildInstanceInput): ProblemInstance {
     return { problemId: id, seed: input.seed, values, slots: linearSlots(values.length), extras: { difficulty: input.difficulty } }
   }
 
+  if (id === 'coin-change') {
+    // Cells are amounts 0..target; denominations ride in extras. Coin 1 is
+    // always present so every amount is reachable and the answer is a number.
+    const amount = Math.max(5, n)
+    const pool = [2, 3, 4, 5, 6]
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1))
+      ;[pool[i], pool[j]] = [pool[j]!, pool[i]!]
+    }
+    const extra = 1 + Math.floor(rng() * 2)
+    const coins = [1, ...pool.slice(0, extra)].sort((a, b) => a - b)
+    const values = Array.from({ length: amount + 1 }, (_, i) => i)
+    return {
+      problemId: id, seed: input.seed, values, slots: linearSlots(values.length),
+      extras: { difficulty: input.difficulty, coins, amount },
+    }
+  }
+
   const len = Math.max(2, n)
   const values = Array.from({ length: len }, () => randInt(rng, 1, 20))
   return { problemId: id, seed: input.seed, values, slots: linearSlots(values.length), extras: { difficulty: input.difficulty } }
@@ -100,13 +122,28 @@ function robberBest(values: readonly number[]): number {
   return prev1
 }
 
+/** Fewest coins per amount 0..amount. Coin 1 keeps every entry finite. */
+function fewestCoins(coins: readonly number[], amount: number): number[] {
+  const dp = new Array<number>(amount + 1).fill(Number.MAX_SAFE_INTEGER)
+  dp[0] = 0
+  for (let x = 1; x <= amount; x++) {
+    for (const c of coins) {
+      if (c <= x) dp[x] = Math.min(dp[x]!, dp[x - c]! + 1)
+    }
+  }
+  return dp
+}
+
 // --------------------------------------------------------------------- states
 
 function initState(id: DpId, instance: ProblemInstance): GameState {
+  const amount = num(instance.extras?.['amount'], instance.values.length - 1)
   const variables: GameState['variables'] =
     id === 'climbing-stairs'
       ? { i: 0, n: instance.values.length - 1 }
-      : { i: 0, dpPrev2: 0, dpPrev1: 0, n: instance.values.length }
+      : id === 'coin-change'
+        ? { i: 0, amount, n: instance.values.length }
+        : { i: 0, dpPrev2: 0, dpPrev1: 0, n: instance.values.length }
   const state = buildBoard({ problemId: id, instance, variables })
   state.internal = { planIndex: 0 }
   return state
@@ -137,29 +174,42 @@ function actionsFor(id: DpId, instance: ProblemInstance): Action[] {
   }
 
   // house-robber
-  let prev2 = 0
-  let prev1 = 0
-  for (let i = 0; i < v.length; i++) {
-    const take = v[i]! + prev2
-    const skip = prev1
-    const rel = relation(take, skip)
-    const cur = Math.max(take, skip)
-    actions.push({ type: 'selectObject', objectId: `v${i}` })
-    // `take REL skip`: the named cells are the house and (when it exists) the
-    // house two doors down; the note carries the two computed quantities.
-    actions.push({ type: 'comparePair', aId: `v${i}`, bId: `v${Math.max(0, i - 2)}`, relation: rel })
-    actions.push({ type: 'assignValue', targetId: `dp_${i}`, value: String(cur) })
-    prev2 = prev1
-    prev1 = cur
+  if (id === 'house-robber') {
+    let prev2 = 0
+    let prev1 = 0
+    for (let i = 0; i < v.length; i++) {
+      const take = v[i]! + prev2
+      const skip = prev1
+      const rel = relation(take, skip)
+      const cur = Math.max(take, skip)
+      actions.push({ type: 'selectObject', objectId: `v${i}` })
+      // `take REL skip`: the named cells are the house and (when it exists) the
+      // house two doors down; the note carries the two computed quantities.
+      actions.push({ type: 'comparePair', aId: `v${i}`, bId: `v${Math.max(0, i - 2)}`, relation: rel })
+      actions.push({ type: 'assignValue', targetId: `dp_${i}`, value: String(cur) })
+      prev2 = prev1
+      prev1 = cur
+    }
+    actions.push({ type: 'submitAnswer', targetId: `v${v.length - 1}`, value: String(robberBest(v)) })
+    return actions
   }
-  actions.push({ type: 'submitAnswer', targetId: `v${v.length - 1}`, value: String(robberBest(v)) })
+
+  // coin-change: one rung per amount, the climbing-stairs shape.
+  const coinAmount = num(instance.extras?.['amount'], v.length - 1)
+  const coinSet = (instance.extras?.['coins'] as number[] | undefined) ?? [1]
+  const table = fewestCoins(coinSet, coinAmount)
+  for (let x = 0; x <= coinAmount; x++) {
+    actions.push({ type: 'selectObject', objectId: `v${x}` })
+    actions.push({ type: 'assignValue', targetId: `dp_${x}`, value: String(table[x]) })
+  }
+  actions.push({ type: 'submitAnswer', targetId: `v${coinAmount}`, value: String(table[coinAmount]) })
   return actions
 }
 
 // ------------------------------------------------------------------ metadata
 
 function codeLine(id: DpId, action: Action): number {
-  if (action.type === 'submitAnswer') return 7
+  if (action.type === 'submitAnswer') return id === 'coin-change' ? 8 : 7
   if (action.type === 'selectObject') return 3
   if (action.type === 'comparePair') return 5
   if (action.type === 'assignValue') return 6
@@ -170,12 +220,18 @@ function source(id: DpId): string[] {
   if (id === 'climbing-stairs') {
     return ['function climbStairs(n) {', '  let a = 1, b = 1', '  for (let i = 2; i <= n; i++) {', '    const c = a + b', '    a = b; b = c', '  }', '  return n === 0 ? 1 : b', '}']
   }
+  if (id === 'coin-change') {
+    return ['function coinChange(coins, amount) {', '  dp = new Array(amount + 1).fill(∞); dp[0] = 0', '  for (let x = 1; x <= amount; x++) {', '    let best = ∞', '    for (const c of coins) if (c <= x) best = Math.min(best, dp[x - c] + 1)', '    dp[x] = best', '  }', '  return dp[amount]', '}']
+  }
   return ['function rob(nums) {', '  let prev2 = 0, prev1 = 0', '  for (let i = 0; i < nums.length; i++) {', '    const take = nums[i] + prev2', '    const skip = prev1', '    const cur = Math.max(take, skip)', '    prev2 = prev1; prev1 = cur', '  }', '  return prev1', '}']
 }
 
 function pseudocode(id: DpId): string[] {
   if (id === 'climbing-stairs') {
     return ['FUNCTION climbStairs(n)', '    dp[0] <- 1, dp[1] <- 1', '    FOR i FROM 2 TO n', '        dp[i] <- dp[i-1] + dp[i-2]', '    END FOR', '    RETURN dp[n]', 'END FUNCTION']
+  }
+  if (id === 'coin-change') {
+    return ['FUNCTION coinChange(coins, amount)', '    dp[0] <- 0, rest <- ∞', '    FOR x FROM 1 TO amount', '        best <- min over coins c <= x of (dp[x-c] + 1)', '        dp[x] <- best', '    END FOR', '    RETURN dp[amount]', 'END FUNCTION']
   }
   return ['FUNCTION rob(nums)', '    prev2 <- 0, prev1 <- 0', '    FOR each house i', '        take <- money[i] + prev2', '        skip <- prev1', '        cur <- max(take, skip); shift prev2, prev1', '    END FOR', '    RETURN prev1', 'END FUNCTION']
 }
@@ -189,6 +245,12 @@ function answerText(id: DpId, instance: ProblemInstance): { text: string; value:
   if (id === 'climbing-stairs') {
     const answer = stairsWays(instance.values.length - 1)
     return { text: `${answer} ways to climb ${instance.values.length - 1} stairs`, value: answer }
+  }
+  if (id === 'coin-change') {
+    const amount = num(instance.extras?.['amount'], instance.values.length - 1)
+    const coins = (instance.extras?.['coins'] as number[] | undefined) ?? [1]
+    const answer = fewestCoins(coins, amount)[amount]!
+    return { text: `${answer} coins for amount ${amount} with [${coins.join(', ')}]`, value: answer }
   }
   const answer = robberBest(instance.values)
   return { text: `max loot ${answer}`, value: answer }
@@ -342,6 +404,7 @@ export function createDpOracle(id: DpId): Oracle {
 
 export const createClimbingStairsOracle = (): Oracle => createDpOracle('climbing-stairs')
 export const createHouseRobberOracle = (): Oracle => createDpOracle('house-robber')
+export const createCoinChangeOracle = (): Oracle => createDpOracle('coin-change')
 
 /** Guard used by the registry test: every id must be in the catalogue. */
 if (!IDS.every((id) => PROBLEM_IDS.includes(id))) throw new Error('a DP oracle id is not in PROBLEM_IDS')

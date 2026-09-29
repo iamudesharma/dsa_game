@@ -21,6 +21,11 @@
  *   union-find        no grid: nodes on a line, sets in `parent_*` variables.
  *                     Per edge: walk both roots (selects), compare them, union
  *                     on mismatch (assign). Submit the component count.
+ *   network-delay     no grid either: a weighted directed edge list in extras,
+ *                     distances in `dist_*` variables. Settle nodes in Dijkstra
+ *                     order (select), relax each outgoing edge (compare the
+ *                     candidate against the known distance, assign on
+ *                     improvement). Submit the largest distance.
  */
 import type {
   Action,
@@ -45,9 +50,9 @@ import {
 } from '@dsa/game-schema'
 import { buildBoard, finishIllegal, indexOf, num, type CodeLang } from '../shared/kernel.js'
 
-type GraphId = 'num-islands' | 'max-area-island' | 'rotting-oranges' | 'word-search' | 'union-find-connect'
+type GraphId = 'num-islands' | 'max-area-island' | 'rotting-oranges' | 'word-search' | 'union-find-connect' | 'network-delay-time'
 
-const IDS: readonly GraphId[] = ['num-islands', 'max-area-island', 'rotting-oranges', 'word-search', 'union-find-connect']
+const IDS: readonly GraphId[] = ['num-islands', 'max-area-island', 'rotting-oranges', 'word-search', 'union-find-connect', 'network-delay-time']
 
 const LETTERS = ['a', 'b', 'c', 'd', 'e'] as const
 /** Up, right, down, left — the fixed exploration order every walk uses. */
@@ -216,6 +221,37 @@ function solveWordSearch(tokens: readonly string[], rows: number, cols: number, 
   return { actions, found }
 }
 
+/** Unreached distance. Larger than any real path (at most (n-1) × 9), small enough to read. */
+const INF = 9999
+
+/** Dijkstra with deterministic ties (smaller index first). All callers share it so the plan, the answer, and the variables agree. */
+function dijkstra(n: number, edges: readonly number[], source: number): { dist: number[]; order: number[] } {
+  const dist = new Array<number>(n).fill(INF)
+  dist[source] = 0
+  const done = new Array<boolean>(n).fill(false)
+  const order: number[] = []
+  for (let iter = 0; iter < n; iter++) {
+    let u = -1
+    for (let i = 0; i < n; i++) {
+      if (!done[i] && (u === -1 || dist[i]! < dist[u]!)) u = i
+    }
+    done[u] = true
+    order.push(u)
+    for (const { v, w } of outEdges(edges, u)) {
+      if (dist[u]! + w < dist[v]!) dist[v] = dist[u]! + w
+    }
+  }
+  return { dist, order }
+}
+
+/** Outgoing edges of u in instance order: flat [from, to, weight] triples. */
+function outEdges(edges: readonly number[], u: number): Array<{ v: number; w: number }> {
+  const out: Array<{ v: number; w: number }> = []
+  for (let e = 0; e + 2 < edges.length; e += 3) {
+    if (edges[e] === u) out.push({ v: edges[e + 1]!, w: edges[e + 2]! })
+  }
+  return out
+}
 /** Union-find simulation: per-edge walk/compare/union description. */
 function unionFindTrace(n: number, edges: readonly number[]): { comps: number } {
   const parent = Array.from({ length: n }, (_, i) => i)
@@ -365,6 +401,37 @@ function buildInstance(id: GraphId, input: BuildInstanceInput): ProblemInstance 
     }
   }
 
+  // network-delay-time: a weighted directed edge list. A spanning
+  // arborescence out of node 0 guarantees every node is reachable, so the
+  // delay is always a number (never -1); extra edges add route choices.
+  if (id === 'network-delay-time') {
+    const n = Math.max(4, sized(id, input))
+    const seen = new Set<string>()
+    const edges: number[] = []
+    for (let i = 1; i < n; i++) {
+      const parent = randInt(rng, 0, i - 1)
+      seen.add(`${parent}-${i}`)
+      edges.push(parent, i, 1 + randInt(rng, 0, 8))
+    }
+    const m = n + 1
+    let guard = 0
+    while (edges.length < 3 * m && guard++ < 300) {
+      const u = randInt(rng, 0, n - 1)
+      const v = randInt(rng, 0, n - 1)
+      if (u === v) continue
+      const key = `${u}-${v}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      edges.push(u, v, 1 + randInt(rng, 0, 8))
+    }
+    return {
+      problemId: id, seed: input.seed,
+      values: Array.from({ length: n }, (_, i) => i),
+      slots: linearSlots(n),
+      extras: { difficulty: input.difficulty, edges, source: 0 },
+    }
+  }
+
   // union-find-connect: a plain linear board of node labels plus an edge list.
   const n = Math.max(4, sized(id, input))
   const m = n + 1
@@ -394,6 +461,15 @@ function initState(id: GraphId, instance: ProblemInstance): GameState {
   const extras = instance.extras ?? {}
   if (id === 'word-search') {
     const state = buildBoard({ problemId: id, instance, kind: 'token', variables: { r: 0, c: 0, n: instance.values.length } })
+    state.internal = { planIndex: 0 }
+    return state
+  }
+  if (id === 'network-delay-time') {
+    const n = instance.values.length
+    const source = num(instance.extras?.['source'], 0)
+    const variables: GameState['variables'] = { i: 0, settled: 0, n, source }
+    for (let i = 0; i < n; i++) variables[`dist_${i}`] = i === source ? 0 : INF
+    const state = buildBoard({ problemId: id, instance, variables })
     state.internal = { planIndex: 0 }
     return state
   }
@@ -461,6 +537,36 @@ function actionsFor(id: GraphId, instance: ProblemInstance): Action[] {
     return solveWordSearch(instance.tokens ?? [], rows, cols, word).actions
   }
 
+  // network-delay-time: settle in Dijkstra order; relax every outgoing edge.
+  if (id === 'network-delay-time') {
+    const delayN = v.length
+    const delayEdges = (instance.extras?.['edges'] as number[] | undefined) ?? []
+    const source = num(instance.extras?.['source'], 0)
+    const dist = new Array<number>(delayN).fill(INF)
+    dist[source] = 0
+    const done = new Array<boolean>(delayN).fill(false)
+    for (let iter = 0; iter < delayN; iter++) {
+      let u = -1
+      for (let i = 0; i < delayN; i++) {
+        if (!done[i] && (u === -1 || dist[i]! < dist[u]!)) u = i
+      }
+      done[u] = true
+      actions.push({ type: 'selectObject', objectId: `v${u}` })
+      for (const { v: nb, w } of outEdges(delayEdges, u)) {
+        const rel = relation(dist[u]! + w, dist[nb]!)
+        actions.push({ type: 'comparePair', aId: `v${u}`, bId: `v${nb}`, relation: rel })
+        if (rel === 'lt') {
+          dist[nb] = dist[u]! + w
+          actions.push({ type: 'assignValue', targetId: `dist_${nb}`, value: String(dist[nb]) })
+        }
+      }
+    }
+    const { order } = dijkstra(delayN, delayEdges, source)
+    const last = order[order.length - 1] ?? source
+    actions.push({ type: 'submitAnswer', targetId: `v${last}`, value: String(Math.max(...dist)) })
+    return actions
+  }
+
   // union-find-connect
   const n = v.length
   const edges = (instance.extras?.['edges'] as number[] | undefined) ?? []
@@ -500,11 +606,13 @@ function codeLine(id: GraphId, action: Action): number {
   if (action.type === 'selectObject') {
     if (id === 'word-search') return 9
     if (id === 'union-find-connect') return 13
+    if (id === 'network-delay-time') return 5
     return 6
   }
-  if (action.type === 'comparePair') return 6
+  if (action.type === 'comparePair') return id === 'network-delay-time' ? 7 : 6
   if (action.type === 'assignValue') {
     if (id === 'word-search') return action.value === '1' ? 9 : 14
+    if (id === 'network-delay-time') return 8
     return 7
   }
   return 1
@@ -517,6 +625,7 @@ function source(id: GraphId): string[] {
     case 'rotting-oranges': return ['function rottingOranges(grid) {', '  queue all rotten at minute 0', '  while (queue.length) {', '    cell = queue.shift()', '    for (const nb of neighbours(cell)) {', '      if (nb is fresh) { rot it, minute = cell.minute + 1 }', '    }', '  }', '  return fresh remain ? -1 : last minute', '}']
     case 'word-search': return ['function exist(board, word) {', '  for (let r = 0; r < rows; r++) {', '    for (let c = 0; c < cols; c++) if (dfs(r, c, 0)) return true', '  }', '  return false', '}', 'function dfs(r, c, k) {', '  if (board[r][c] !== word[k]) return false', '  mark (r, c) visited', '  if (k === word.length - 1) return true', '  for (const [nr, nc] of neighbours(r, c)) {', '    if (!visited && dfs(nr, nc, k + 1)) return true', '  }', '  unmark (r, c)', '  return false', '}']
     case 'union-find-connect': return ['function components(n, edges) {', '  parent = [0..n-1]', '  let comps = n', '  for (const [u, v] of edges) {', '    ru = find(u); rv = find(v)', '    if (ru !== rv) {', '      parent[ru] = rv', '      comps--', '    }', '  }', '  return comps', '}', 'function find(x) {', '  while (parent[x] !== x) x = parent[x]', '  return x', '}']
+    case 'network-delay-time': return ['function networkDelay(n, edges, source) {', '  dist = [0, ∞, ...]; settled = none', '  repeat n times:', '    u = the closest unsettled node', '    settle u', '    for each edge u -> v with weight w:', '      if dist[u] + w < dist[v]:', '        dist[v] = dist[u] + w', '  return max(dist)', '}']
   }
 }
 
@@ -527,6 +636,7 @@ function pseudocode(id: GraphId): string[] {
     case 'rotting-oranges': return ['FUNCTION rottingOranges(grid)', '    QUEUE every rotten cell at minute 0', '    WHILE queue is nonempty', '        cell <- DEQUEUE', '        ROT each fresh neighbour at minute + 1', '    END WHILE', '    RETURN fresh remain ? -1 : last minute', 'END FUNCTION']
     case 'word-search': return ['FUNCTION exist(board, word)', '    FOR each cell as a start', '        DFS letter by letter through unvisited neighbours', '        MARK the path; UNMARK on dead ends', '        IF every letter matched: RETURN true', '    END FOR', '    RETURN false', 'END FUNCTION']
     case 'union-find-connect': return ['FUNCTION components(n, edges)', '    parent[i] <- i, comps <- n', '    FOR each edge (u, v)', '        ru <- FIND(u); rv <- FIND(v)', '        IF ru != rv: parent[ru] <- rv, comps <- comps - 1', '    END FOR', '    RETURN comps', 'END FUNCTION']
+    case 'network-delay-time': return ['FUNCTION networkDelay(n, edges, source)', '    dist[source] <- 0, rest <- ∞', '    REPEAT n times', '        u <- closest UNSETTLED node; SETTLE it', '        FOR each edge u -> v with weight w', '            IF dist[u] + w < dist[v]: dist[v] <- dist[u] + w', '    END REPEAT', '    RETURN max(dist)', 'END FUNCTION']
   }
 }
 
@@ -556,6 +666,14 @@ function answerText(id: GraphId, instance: ProblemInstance): { text: string; val
     const found = solveWordSearch(instance.tokens ?? [], rows, cols, word).found
     return found ? { text: `the word "${word}" is on the board`, value: 'found' } : { text: `the word "${word}" is not on the board`, value: 'absent' }
   }
+  if (id === 'network-delay-time') {
+    const delayN = v.length
+    const delayEdges = (instance.extras?.['edges'] as number[] | undefined) ?? []
+    const source = num(instance.extras?.['source'], 0)
+    const { dist } = dijkstra(delayN, delayEdges, source)
+    const delay = Math.max(...dist)
+    return { text: `the signal reaches every node in ${delay}`, value: delay }
+  }
   const n = v.length
   const edges = (instance.extras?.['edges'] as number[] | undefined) ?? []
   const { comps } = unionFindTrace(n, edges)
@@ -574,12 +692,20 @@ function legalActions(id: GraphId, state: GameState): LegalActionDescriptor[] {
       : id === 'max-area-island' ? 'Measure the next cell of this island'
       : id === 'rotting-oranges' ? 'Visit the next cell the wave reaches'
       : id === 'word-search' ? 'Step onto the next matching letter'
+      : id === 'network-delay-time' ? 'Settle the closest unsettled node'
       : 'Walk up to the root'
     return [{ type: next.type, label, options: { objectIds: [next.objectId] } }]
   }
-  if (next.type === 'comparePair') return [{ type: next.type, label: 'Are these two roots the same set?', options: { objectIds: [next.aId, next.bId] }, expects: 'relation' }]
+  if (next.type === 'comparePair') {
+    const label =
+      id === 'network-delay-time' ? 'Is the path through the settled node shorter?' : 'Are these two roots the same set?'
+    return [{ type: next.type, label, options: { objectIds: [next.aId, next.bId] }, expects: 'relation' }]
+  }
   if (next.type === 'assignValue') {
-    const label = id === 'word-search' ? 'Mark or unmark this path cell' : 'Attach the root under the other set'
+    const label =
+      id === 'word-search' ? 'Mark or unmark this path cell'
+      : id === 'network-delay-time' ? 'Record the shorter distance'
+      : 'Attach the root under the other set'
     return [{ type: next.type, label, expects: 'value' }]
   }
   if (next.type === 'submitAnswer') {
@@ -649,10 +775,16 @@ function applyAction(id: GraphId, state: GameState, action: Action): { nextState
       if (position >= 0) {
         const { rows: _rows, cols } = gridDims(next.instance)
         void _rows
-        const { r, c } = gridRC(position, id === 'union-find-connect' ? Math.max(1, next.instance.values.length) : cols)
-        next.variables['r'] = id === 'union-find-connect' ? 0 : r
-        next.variables['c'] = id === 'union-find-connect' ? 0 : c
+        // Union-find and Dijkstra boards are linear node lines, not grids:
+        // row/column arithmetic would place them on phantom rows.
+        const linear = id === 'union-find-connect' || id === 'network-delay-time'
+        const { r, c } = gridRC(position, linear ? Math.max(1, next.instance.values.length) : cols)
+        next.variables['r'] = linear ? 0 : r
+        next.variables['c'] = linear ? 0 : c
         next.variables['i'] = position
+        if (id === 'network-delay-time') {
+          next.variables['settled'] = num(next.variables['settled'], 0) + 1
+        }
         if (next.slots[`s${position}`]) next.cursor.iSlotId = `s${position}`
         if (id === 'num-islands' && islandStarts(next.instance).has(position)) {
           next.variables['islands'] = num(next.variables['islands'], 0) + 1
@@ -688,7 +820,14 @@ function applyAction(id: GraphId, state: GameState, action: Action): { nextState
     case 'comparePair': {
       next.selection = [action.aId, action.bId]
       compare = [action.aId, action.bId]
-      note = action.relation === 'eq' ? 'Already the same set — no union.' : 'Different sets — union them.'
+      note =
+        id === 'network-delay-time'
+          ? action.relation === 'lt'
+            ? 'Shorter through the settled node — record it.'
+            : 'No improvement — keep the known distance.'
+          : action.relation === 'eq'
+            ? 'Already the same set — no union.'
+            : 'Different sets — union them.'
       break
     }
     case 'submitAnswer': {
@@ -757,6 +896,7 @@ export const createMaxAreaIslandOracle = (): Oracle => createGraphOracle('max-ar
 export const createRottingOrangesOracle = (): Oracle => createGraphOracle('rotting-oranges')
 export const createWordSearchOracle = (): Oracle => createGraphOracle('word-search')
 export const createUnionFindConnectOracle = (): Oracle => createGraphOracle('union-find-connect')
+export const createNetworkDelayTimeOracle = (): Oracle => createGraphOracle('network-delay-time')
 
 /** Guard used by the registry test: every id must be in the catalogue. */
 if (!IDS.every((id) => PROBLEM_IDS.includes(id))) throw new Error('a graph oracle id is not in PROBLEM_IDS')
