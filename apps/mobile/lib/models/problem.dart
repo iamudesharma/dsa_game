@@ -7,9 +7,9 @@ import 'json.dart';
 import 'provider.dart';
 
 enum Difficulty {
-  easy('easy', 'Easy'),
+  easy('easy', 'Low'),
   medium('medium', 'Medium'),
-  hard('hard', 'Hard');
+  hard('hard', 'High');
 
   const Difficulty(this.wire, this.label);
 

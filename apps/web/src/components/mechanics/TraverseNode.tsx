@@ -35,7 +35,12 @@ export function TraverseNode({ spec, model, state, binding, disabled, dispatch, 
   if (!currentId) {
     return (
       <section className="panel p-4" aria-label={binding.label}>
+        {/* The host blanks `binding.label` when the instruction is already on
+          screen, so this heading disappears with it rather than repeating an
+          imperative the learner has just read at 2rem. */}
+      {binding.label ? (
         <h2 className="text-[1.05rem] font-bold text-[var(--dsa-ink)]">{binding.label}</h2>
+      ) : null}
         <p className="mt-2 text-[0.92rem] text-[var(--dsa-muted)]">This board has no chain to walk.</p>
       </section>
     )
@@ -43,7 +48,12 @@ export function TraverseNode({ spec, model, state, binding, disabled, dispatch, 
 
   return (
     <section className="panel p-4" aria-label={binding.label}>
-      <h2 className="text-[1.05rem] font-bold text-[var(--dsa-ink)]">{binding.label}</h2>
+      {/* The host blanks `binding.label` when the instruction is already on
+          screen, so this heading disappears with it rather than repeating an
+          imperative the learner has just read at 2rem. */}
+      {binding.label ? (
+        <h2 className="text-[1.05rem] font-bold text-[var(--dsa-ink)]">{binding.label}</h2>
+      ) : null}
       <p className="mt-0.5 text-[0.85rem] text-[var(--dsa-muted)]">
         {binding.hint ?? `Follow the pointer to the next value along the ${spec.vocabulary.place}.`}
       </p>

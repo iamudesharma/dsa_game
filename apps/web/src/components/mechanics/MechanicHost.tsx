@@ -28,6 +28,17 @@ import type { MechanicProps } from './types'
 export interface MechanicHostProps extends Omit<MechanicProps, 'binding'> {
   activeMechanicId: MechanicId
   onSelectMechanic: (id: MechanicId) => void
+  /**
+   * Suppress the selected mechanic's own label inside the panel.
+   *
+   * `PlayView` sets this, because `YourTurnIndicator` renders the same
+   * imperative at 2rem a few hundred pixels above the board and the panel was
+   * repeating it as a heading and again as its first body line. The tablist
+   * still names every operation, so switching stays legible; only the echo of
+   * the already-selected one goes. A caller that renders `MechanicHost` on its
+   * own, with no instruction above it, should leave this off.
+   */
+  hideLabel?: boolean
 }
 function Renderer(props: MechanicProps): React.ReactNode {
   switch (props.binding.id) {
@@ -98,6 +109,7 @@ export function MechanicHost({
   dispatch,
   markers,
   prompt,
+  hideLabel = false,
 }: MechanicHostProps) {
   const active: MechanicBinding | null =
     spec.mechanics.find((m) => m.id === activeMechanicId) ?? spec.mechanics[0] ?? null
@@ -110,11 +122,16 @@ export function MechanicHost({
 
   if (!active) return null
 
+  // The renderer reads the label off `binding`, and several of them print it as
+  // their heading. Rather than give every one of the ten renderers a new prop,
+  // the host withholds the LABEL while leaving everything else the renderer
+  // needs — the op, the hint, the targets — untouched. `hideLabel` is applied
+  // here rather than in `PlayView` precisely so a mechanic cannot be forgotten.
   const props: MechanicProps = {
     spec,
     state,
     model,
-    binding: active,
+    binding: hideLabel ? { ...active, label: '' } : active,
     disabled,
     picked,
     setPicked,
@@ -136,6 +153,7 @@ export function MechanicHost({
             return (
               <button
                 key={mechanic.id}
+                data-mechanic={mechanic.id}
                 type="button"
                 role="tab"
                 aria-selected={isActive}

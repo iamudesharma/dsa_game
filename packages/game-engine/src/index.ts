@@ -32,7 +32,10 @@ export {
   pointerLine,
   variableLine,
 } from './hints.js'
-export type { HintResult, HintSource } from './hints.js'
+export type { HintResult, HintSource, NextHintOptions } from './hints.js'
+
+export { describeSearchWindow, findHintViolation, screenHint } from './hint-safety.js'
+export type { HintViolation, HintViolationId } from './hint-safety.js'
 
 export { mapGameActionToCode, mistakeSummary, optimisationScore, traceCodeHighlights } from './telemetry.js'
 export type { MistakeSummary, OptimisationScore, TermMapping } from './telemetry.js'

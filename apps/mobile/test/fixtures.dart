@@ -94,7 +94,10 @@ Map<String, Object?> get specJson => {
       'success': '#9ECE6A',
       'danger': '#F7768E',
     },
-    'objectGlyphs': {'number': '❖', 'target': '✦', 'node': '⬤'},
+    // One entry per GameObjectKind, indexed by ordinal: opencode-go rejects
+    // JSON-Schema maps, so the contract ships an ordered palette and the client
+    // only uses it when it covers every kind. index 1 is `number`.
+    'objectGlyphs': ['◆', '❖', '⬤', '◈', '▣', '⬢', '▢', '➤', '✦'],
     'boardLabel': 'the ledger',
   },
   'vocabulary': {

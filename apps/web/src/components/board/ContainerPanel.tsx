@@ -61,16 +61,17 @@ export function ContainerPanel({
           </span>
         )}
       </p>
+      <p className="mb-3 text-xs text-[var(--dsa-muted)]">{isStack ? '↕ Add and remove at the top' : '← Leave at the front · Join at the rear ←'}</p>
       {display.length === 0 ? (
         <p className="panel-quiet px-3 py-2 text-xs text-[var(--dsa-faint)]">empty</p>
       ) : (
-        <div className="board-scroll -mx-1 flex min-w-max items-stretch gap-1.5 px-1 pb-1">
+        <div className={cn('board-scroll flex gap-3 p-3', isStack ? 'flex-col items-start' : 'items-stretch')}>
           {display.map((id, index) => {
             const object = model.byId[id]
             if (!object) return null
             const pickedIndex = picked.indexOf(id)
             return (
-              <div key={`${container.id}:${id}`} className="flex items-center gap-1.5">
+              <div key={`${container.id}:${id}`} className={cn('flex gap-1.5', isStack ? 'flex-col items-center' : 'items-center')}>
                 {index > 0 && (
                   <span aria-hidden className="mono text-[0.65rem] text-[var(--dsa-faint)]">
                     {isStack ? '↑' : '→'}

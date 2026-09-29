@@ -1303,12 +1303,18 @@ function handleSubmitAnswer(state: GameState, action: Extract<Action, { type: 's
   applyEndOfTurn(next, i)
   next.phase = correct ? 'won' : 'lost'
 
+  // A WIN returns from line 6; a wrong answer is not a return at all, it is the
+  // `return -1` the program would have reached with an empty window. Hardcoding
+  // `LINE_RETURN_NOT_FOUND` lit that line on every successful playthrough, so
+  // the debrief's "executed in your run" markers pointed at a statement the
+  // player never ran.
+  const commitLine = correct ? LINE_HIT : LINE_RETURN_NOT_FOUND
   return legal(
     next,
     action,
     i,
     {
-      codeLine: LINE_RETURN_NOT_FOUND,
+      codeLine: commitLine,
       dsaOp: 'terminate',
       correct,
       note: correct ? `target is at index ${i.targetIndex}` : `submitted ${submitted}, truth is index ${i.targetIndex}`,
@@ -1461,6 +1467,22 @@ function canonicalTrace(state: GameState, playedTrace?: TraceFrame[]): TraceFram
 
     if (relation === 'eq') {
       answer = mid
+      // THE HIT STILL NEEDS A `choosePath`. The game does not end at the
+      // comparison: `legalActions` offers `choosePath` until the decision is
+      // reported, and only `submitAnswer` finishes the round. The reference used
+      // to break straight to the commit, which made the trace unplayable as
+      // written — `playability.test.ts` replays it and caught the mismatch.
+      frames.push({
+        index: frames.length,
+        action: { type: 'choosePath', fromId: midId, pathId: 'found' },
+        codeLine: LINE_HIT,
+        codeLineText: codeLineText(LINE_HIT),
+        variables: vars(lo, mid, hi, comparisons),
+        pointers: { current: midId, eliminated: [...eliminated] },
+        dsaOp: 'terminate',
+        correct: true,
+        note: `a[${mid}] === target: found, and the answer is ${mid}`,
+      })
       break
     }
 
@@ -1491,11 +1513,18 @@ function canonicalTrace(state: GameState, playedTrace?: TraceFrame[]): TraceFram
   }
 
   const found = answer >= 0 && answer === truthIndex
+  // The RETURN LINE DEPENDS ON THE OUTCOME. A found target returns from line 6
+  // (`if a[mid] === target) return mid`); an exhausted window falls through to
+  // line 13 (`return -1`). Hardcoding `LINE_RETURN_NOT_FOUND` made a perfect
+  // reference solution highlight the wrong statement — the debrief's
+  // "executed in your run" markers lit `return -1` for a run that found the
+  // target, which is the one line the player never executed.
+  const returnLine = found ? LINE_HIT : LINE_RETURN_NOT_FOUND
   const finalFrame: TraceFrame = {
     index: frames.length,
     action: { type: 'submitAnswer', targetId: 'answer', value: String(answer) },
-    codeLine: LINE_RETURN_NOT_FOUND,
-    codeLineText: codeLineText(LINE_RETURN_NOT_FOUND),
+    codeLine: returnLine,
+    codeLineText: codeLineText(returnLine),
     variables: vars(lo, -1, hi, comparisons),
     pointers: { current: found ? objectId(truthIndex) : undefined, eliminated: [...eliminated] },
     dsaOp: 'terminate',

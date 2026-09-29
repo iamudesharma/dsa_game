@@ -19,6 +19,21 @@ const Line = z.string().min(1).max(240)
 const Sentence = z.string().min(1).max(400)
 const Paragraph = z.string().min(1).max(1200)
 
+/**
+ * An ordered palette of glyphs the client may use for board objects.
+ *
+ * WHY A LIST AND NOT A RECORD: opencode-go enforces OpenAI's strict
+ * structured-output rules, which reject `additionalProperties: {…}` and
+ * `propertyNames` — i.e. JSON-Schema maps. Measured against the live
+ * endpoint, a `Record<string,string>` here produced a bare
+ * `400 [invalid_request_error] invalid request`, indistinguishable from a
+ * payload bug. An array of strings is accepted by every gateway and reads
+ * better in a prompt than key/value pairs the model has to invent keys for.
+ * The client picks the nearest glyph by object kind or index; an empty list
+ * means "use the plain text tile".
+ */
+const GlyphListSchema = z.array(Line).max(12).default([])
+
 export const VisualSchema = z
   .object({
     palette: z
@@ -30,7 +45,7 @@ export const VisualSchema = z
         danger: Line,
       })
       .strict(),
-    objectGlyphs: z.record(z.string().max(40), z.string().min(1).max(24)).default({}),
+    objectGlyphs: GlyphListSchema,
     boardLabel: Line.optional(),
   })
   .strict()
@@ -86,8 +101,20 @@ export const DebriefSchema = z
      * Keys must be action types. No correctness claims, no answers.
      */
     actionMeaning: z.record(z.string().max(40), Line).default({}),
-    /** Optional metaphor-to-algorithm table: [gameTerm, algorithmTerm]. */
-    mapping: z.array(z.tuple([Line, Line])).max(12).default([]),
+    /**
+     * Metaphor-to-algorithm table, as OBJECTS rather than `[from, to]` tuples.
+     *
+     * Two reasons. An array of two-element tuples compiles to JSON Schema's
+     * tuple form (`items: [ … ]`), which opencode-go rejects outright — the
+     * same live 400 as above. And `DebriefResponse.mapping` is already
+     * `MappingRow[]`, so the tuple form forced every client to normalise two
+     * shapes of the same thing; making the generator emit the wire shape
+     * removes that translation entirely.
+     */
+    mapping: z
+      .array(z.object({ gameTerm: Line, algorithmTerm: Line }).strict())
+      .max(12)
+      .default([]),
     /** Language tags for the code blocks (the code itself is oracle-owned). */
     codeLanguages: z.array(z.string().min(2).max(20)).max(4).default(['javascript', 'python']),
   })

@@ -68,11 +68,10 @@ and every dependency added is one more thing to audit, update and tree-shake.
 | `http` | The only transport. Six endpoints, no interceptor or retry policy needed, and `MockClient` ships inside it, which is what makes the widget tests possible. | `dio` would add interceptors, formatters and a bigger web bundle for features this client never uses. |
 | `provider` | `ChangeNotifier` lives in the Flutter SDK, but the widget layer needs *a* way to rebuild on state change without writing one. `provider` is the smallest thing that does that. | `riverpod` (or `flutter_riverpod`) would be a larger dependency and a bigger mental model for two controllers. Generators (`build_runner`, `freezed`, `json_serializable`) were deliberately avoided: they add a build step, and the contract says to hand-write the models. |
 | `cupertino_icons` | Ships with `flutter create` and is used for the couple of Cupertino-styled affordances. | — |
+| `shared_preferences` | The one persistence in the app: mission stamps, world badges, map frames and notebook drafts. Everything else stays server-side or in memory. | A heavier store (sqlite, hive) for what is one JSON blob plus a handful of draft strings. |
 
 Not added, on purpose: `google_fonts` (a network fetch at startup and a bundled
-font; the themed Material 3 theme is the visual identity here), and
-`shared_preferences` (nothing to persist yet — a game is a single server-side
-session, and `gameId` is handed back by `/api/generate`).
+font; the themed Material 3 theme is the visual identity here).
 
 ### The TypeScript package as a dependency — not used
 

@@ -15,11 +15,13 @@ import {
   TOPIC_LABELS,
   makeRng,
   pick,
+  type DsaOp,
   type DsaTopic,
   type Difficulty,
   type GameSpec,
   type MechanicId,
 } from '@dsa/game-schema'
+import type { ProblemMeta } from '@dsa/game-schema'
 import { TEMPLATE_THEMES, type ThemeDef } from '../themes.js'
 import type { GenerateSpecInput, SpecProvider } from '../types.js'
 
@@ -49,32 +51,135 @@ const SCOPE_TERM: Record<DsaTopic, string> = {
 }
 
 /**
- * Only used when `canonicalAlgorithm` is too short to yield two hint steps.
- * Each line is an unconditional property of the structure, so it cannot be
- * false for a particular instance.
+ * The hint ladder, keyed by OPERATION.
+ *
+ * WHY NOT THE CANONICAL ALGORITHM. This used to split
+ * `problem.canonicalAlgorithm` into sentences and ship them as the hint pool,
+ * on the argument that a hint "can never drift from the algorithm because it IS
+ * the algorithm". True, and it produced this, on the default tier, with no API
+ * key configured:
+ *
+ *     HINT1: "First move: Set lo=0, hi=n-1."
+ *     HINT2: "Then: While lo<=hi compute mid=(lo+hi)/2."
+ *     HINT3: "Then: If a[mid]==target stop."
+ *
+ * Three requests, and the caller has the algorithm in raw notation with the
+ * `lo`/`hi`/`mid` bookkeeping the learner has not been introduced to. It is a
+ * recipe, and it is the exact shape `coach/guardrails.ts` calls a recipe
+ * ("an imperative followed by a conjunction"). The `RESULT_ASSERTION` filter
+ * that used to sit here removed answer-revealing SENTENCES; it could not remove
+ * a procedure, because a procedure is not a sentence about the answer.
+ *
+ * The ladder below replaces it, and it is exhaustive in a way the old version
+ * was not: `DsaOp` is a closed 13-value union and this is a `Record` over it,
+ * so adding an operation is a COMPILE ERROR rather than a silently unhinted
+ * problem. That is a stronger guarantee than "it is the algorithm", because a
+ * new problem inherits a ladder without anyone re-reading its canonical text.
+ *
+ * Each rung is about the OPERATION, never about a position or a value:
+ *   0 — the principle being exploited (why this step exists at all)
+ *   1 — the constraint that decides it (which way, which side)
+ *   2 — the move, still unnamed
+ * Slot substitution keeps it in the theme's vocabulary.
  */
-const TOPIC_FALLBACK_HINT: Record<DsaTopic, string> = {
-  arrays: 'Read one value at a time, and keep every decision in a single recorded place.',
-  sorting: 'Compare neighbours, and only ever exchange two that are out of order.',
-  'binary-search': 'Every comparison should leave roughly half of what is left still in play.',
-  stack: 'Push when you meet an opener, pop when you meet a closer, and never pop an empty stack.',
-  queue: 'Enqueue at the rear, dequeue from the front, and the front is the one that leaves first.',
-  'linked-list': 'The only way forward is to follow a next pointer from the node you are on.',
+const HINT_LADDER: Readonly<Record<DsaOp, readonly string[]>> = {
+  read: [
+    'Everything in the {place} is in order, so order is the tool here. You never need to look at every value to make progress.',
+    'Do not begin at either end. Begin at the value in the middle of what is left, because that is the one that rules out the most.',
+    'Take whichever {object} sits in the middle of what is still in play. That is the only one this step needs.',
+  ],
+  compare: [
+    'A comparison here does not just answer yes or no — it produces a direction, and the direction is what decides everything after it.',
+    'Hold your {object} next to the {target} and ask which is bigger. Whichever side is bigger, the other side is finished.',
+    'Say which of the two is the {lower} one. That single word is the whole decision.',
+  ],
+  'choose-path': [
+    'Whatever is left is still in order, so a whole side of it can be ruled out at once. Being able to do that is the only reason this is quick.',
+    'Throw away the side that cannot hold the {target}. Keep the side that might, and start it just past the value you looked at.',
+    'Keep the half where the {target} could still be. Do not keep both — making the next step smaller is the entire point.',
+  ],
+  swap: [
+    'Two values that are the wrong way round cannot both be where they are. Exchanging them puts both right in a single move.',
+    'Exchange only the pair that is out of order. Everything else is already where it belongs.',
+    'Exchange those two and leave the rest alone.',
+  ],
+  push: [
+    'A stack hands values back in the opposite order to the one they went in. Adding to it only ever touches the top.',
+    'Add to the top, never into the middle. A stack has no middle to add to.',
+    'Put it on the top.',
+  ],
+  pop: [
+    'Last in, first out. The newest value is the one you get back, and it is the only one you are allowed to take.',
+    'Take from the top, and only from the top. If the top is empty there is nothing to take, whatever is still in the {place}.',
+    'Take the one on top.',
+  ],
+  move: [
+    'Moving a value is not the same as copying it. After the move the {place} has to still be usable for whatever comes next.',
+    'Put it where the algorithm expects to find it next, not merely somewhere nearby.',
+    'Move it to its next place in the {place}.',
+  ],
+  insert: [
+    'Keeping what you have already worked out is cheaper than working it out again, so the program saves it.',
+    'Save it once, so the next step can read it rather than recompute it.',
+    'Record the value.',
+  ],
+  assign: [
+    'A named value is how the program remembers something without carrying it around. It is the cheapest kind of storage there is.',
+    'Write it down in one place, and read it from there rather than working it out again.',
+    'Write the value into the slot.',
+  ],
+  traverse: [
+    'There is no counting along a chain of links — you can only follow one. Each step forward is exactly one link followed.',
+    'Move one link at a time. You cannot skip ahead and you cannot look back without starting over.',
+    'Follow the next link.',
+  ],
+  link: [
+    'A link decides where the traversal goes next. Rewiring one changes the route without rebuilding anything.',
+    'Point the link where the algorithm needs to go next, and the rest of the route follows on its own.',
+    'Rewire the pointer.',
+  ],
+  unlink: [
+    'Cutting a link is how a route stops being available. Nothing else has to move for that to be true.',
+    'Cut it so the traversal can no longer reach that way.',
+    'Cut that link.',
+  ],
+  terminate: [
+    'Finishing is a result, not a guess. The program stops when the rule allows it to stop, and reports what it found.',
+    'Commit only once the rule has actually been satisfied — not when it merely feels right.',
+    'Commit your answer.',
+  ],
+}
+
+/**
+ * `a` or `an`, decided by how the NOUN sounds rather than by how the sentence
+ * was written.
+ *
+ * The themes are hand-authored and the object nouns are theirs ("actuator",
+ * "satellite", "pitch", "book"), so the article cannot be baked into the
+ * template string: an earlier version hardcoded `a` and produced "take a
+ * actuator in hand" for every vowel-initial noun in the table. Vowel letters
+ * are the right test for every noun in `themes.ts` (they are all pronounced
+ * from the letter), and the consonant exceptions (hour, honest, ...) are not in
+ * this vocabulary.
+ */
+function articleFor(noun: string): 'a' | 'an' {
+  return /^[aeiou]/i.test(noun.trim()) ? 'an' : 'a'
 }
 
 /** Theme-flavoured name for each interaction. All slots come from the theme. */
 function mechanicLabel(id: MechanicId, t: ThemeDef): string {
+  const a = articleFor(t.object)
   switch (id) {
     case 'selectObject':
-      return `take a ${t.object} in hand`
+      return `take ${a} ${t.object} in hand`
     case 'moveObject':
-      return `shift a ${t.object} to another spot`
+      return `shift ${a} ${t.object} to another spot`
     case 'swapPair':
       return `trade places between two ${t.objectPlural}`
     case 'comparePair':
       return `${t.actionVerb} two ${t.objectPlural} against each other`
     case 'pushPop':
-      return `stack or unstack a ${t.object}`
+      return `stack or unstack ${a} ${t.object}`
     case 'choosePath':
       return `decide which side of the ${t.place} stays open`
     case 'traverseNode':
@@ -89,38 +194,47 @@ function mechanicLabel(id: MechanicId, t: ThemeDef): string {
 }
 
 /**
- * A step that *asserts the result* rather than describing a move.
+ * Flatten the ladder into this problem's pool, in escalating order.
  *
- * Several canonical algorithms end with their own solution ("best is the
- * answer", "the answer is (indexOf(need), i)", "The new head is prev"). Quoting
- * those verbatim as a hint would hand the player the answer, which is the one
- * thing a spec must never do — so result-asserting steps are dropped from the
- * pool while the *procedure* steps are kept. The hints are still the algorithm,
- * just not its conclusion.
+ * `requiredMechanics` rather than `allowedMechanics`: the load-bearing subset is
+ * the one whose operations the learner cannot avoid, so it is the one worth
+ * hinting. It is also already in declaration order, which is roughly the order
+ * the algorithm performs them, and that ordering is what makes the flattened
+ * list read as a ladder rather than as a shuffled deck.
+ *
+ * The rung is interleaved ACROSS operations (all principles, then all
+ * constraints) rather than nested per operation. The learner reaching for a hint
+ * is nearly always trying to work out which operation comes next, not how to
+ * finish one they have already identified — so the first thing the pool should
+ * offer is a reason for each step, and the thing it should withhold is the
+ * decision itself.
+ *
+ * Capped at 6 because `NarrationSchema.hintPool` is `max(6)`, and floored at 2
+ * because it is `min(2)`. Every operation in the ladder has three rungs, so the
+ * floor holds for any problem that declares at least one mechanic — which every
+ * one in the catalogue does.
  */
-const RESULT_ASSERTION =
-  /\b(?:answer|result|new head|final value|answer pair)\s+(?:is|are)\b|\b(?:is|are)\s+(?:the\s+)?(?:answer|result|new head|target|final value)\b|\bbest\s+is\b/i
+function hintPoolFor(problem: ProblemMeta, slots: Record<string, string>): string[] {
+  const ops: DsaOp[] = []
+  for (const id of problem.requiredMechanics) {
+    const op = MECHANICS[id]?.op
+    if (op !== undefined && !ops.includes(op)) ops.push(op)
+  }
 
-/**
- * Split the canonical algorithm into ordered steps. The canonical text is
- * written as sentences, so splitting on sentence punctuation yields statements
- * that are true by construction — the hint pool can never drift from the
- * algorithm because it *is* the algorithm.
- */
-function algorithmSteps(canonical: string): string[] {
-  const sentences = canonical
-    .split(/(?<=[.;])\s+/)
-    .map((s) => s.replace(/[.;\s]+$/, '').trim())
-    .filter((s) => s.length > 0)
-  if (sentences.length > 1) return safeSteps(sentences)
-  // Some canonical algorithms are one long comma-chained sentence (bubble sort).
-  // Splitting on commas keeps every fragment a true statement.
-  const fragments = sentences[0]?.split(/,\s+/) ?? []
-  return safeSteps(fragments.map((f) => f.trim()).filter((f) => f.length > 0))
-}
-
-function safeSteps(steps: string[]): string[] {
-  return steps.filter((s) => !RESULT_ASSERTION.test(s))
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (let rung = 0; rung < 3 && out.length < 6; rung += 1) {
+    for (const op of ops) {
+      if (out.length >= 6) break
+      const line = HINT_LADDER[op][rung]
+      if (line === undefined) continue
+      const filled = fillSlots(line, slots)
+      if (seen.has(filled)) continue
+      seen.add(filled)
+      out.push(filled)
+    }
+  }
+  return out
 }
 
 function fillSlots(template: string, slots: Record<string, string>): string {
@@ -163,6 +277,12 @@ export function chooseTemplateMechanics(
       )
     }
     if (!chosen.includes(id)) chosen.push(id)
+  }
+  // Finishing the round is never optional. It was the one mechanic the old
+  // "first N allowed" rule reliably kept, so keep it explicitly — otherwise a
+  // difficulty change can silently remove the ending.
+  if (allowed.includes('submitAnswer') && !chosen.includes('submitAnswer')) {
+    chosen.push('submitAnswer')
   }
 
   const want = Math.max(chosen.length, Math.min(allowed.length, MECHANICS_WANTED[difficulty]))
@@ -212,15 +332,22 @@ export function buildTemplateSpec(input: GenerateSpecInput): GameSpec {
   const objective =
     `In the ${theme.place}, ${lowerFirst(problem.learningObjective)}`
 
-  // Hints: canonical steps first, topically-true fallback only if we are short.
-  const steps = algorithmSteps(problem.canonicalAlgorithm)
-  const hintPool: string[] = steps.slice(0, 6).map((step, i) =>
-    i === 0 ? `First move: ${step}.` : `Then: ${step}.`,
-  )
-  if (hintPool.length < 2) hintPool.push(TOPIC_FALLBACK_HINT[problem.topic])
-  if (hintPool.length < 2) {
-    hintPool.push(`Keep every decision about the ${theme.target} in the same place.`)
-  }
+  // The pool is ladder hints for this problem's operations, but an LLM tier may
+  // have authored a pool of its own. `hintPoolFor` is the SAFE default; the
+  // screen below is what makes an authored pool safe to ship, and it lives here
+  // because this is the last point at which a spec exists before it reaches a
+  // client. Anything the screen rejects is replaced by the engine's own
+  // state-derived description at serve time (`hint-safety.ts`), so a spec with a
+  // rejected pool is still a playable spec — this is belt-and-braces on top of
+  // that, and it fails the generation rather than the learner.
+  //
+  // Hints come from the operation ladder, not from the canonical text. Ordered
+  // weakest-to-strongest ACROSS the whole problem, as `NarrationSchema`
+  // requires: every operation's principle first, then every operation's
+  // constraint. Within a problem that is a more useful ladder than per-operation
+  // deepening, because the learner is usually stuck on WHICH operation to do
+  // next rather than on how to execute one they have identified.
+  const hintPool = hintPoolFor(problem, slots)
 
   const win =
     `The ${theme.target} gives. Every ${theme.object} in the ${theme.place} was handled in the ` +
@@ -250,14 +377,16 @@ export function buildTemplateSpec(input: GenerateSpecInput): GameSpec {
     `bounded by ${problem.complexity.time} time and ${problem.complexity.space} extra space, ` +
     `and that bound comes from the algorithm rather than from how carefully you played.`
 
-  const mapping: [string, string][] = [
-    [theme.object, 'a single data element — one array slot or one node value'],
-    [theme.objectPlural, CONTAINER_TERM[problem.topic]],
-    [theme.place, SCOPE_TERM[problem.topic]],
-    [
-      `${theme.lowerWord} / ${theme.equalWord} / ${theme.higherWord}`,
-      'the three outcomes of a comparison: less than, equal, greater than',
-    ],
+  // Objects, not `[from, to]` tuples: see the note on DebriefSchema.mapping in
+  // game-schema. Tuples compile to a JSON-Schema form that opencode-go rejects.
+  const mapping: { gameTerm: string; algorithmTerm: string }[] = [
+    { gameTerm: theme.object, algorithmTerm: 'a single data element — one array slot or one node value' },
+    { gameTerm: theme.objectPlural, algorithmTerm: CONTAINER_TERM[problem.topic] },
+    { gameTerm: theme.place, algorithmTerm: SCOPE_TERM[problem.topic] },
+    {
+      gameTerm: `${theme.lowerWord} / ${theme.equalWord} / ${theme.higherWord}`,
+      algorithmTerm: 'the three outcomes of a comparison: less than, equal, greater than',
+    },
   ]
 
   // Re-parsing applies every zod default and proves the spec validates before
@@ -271,7 +400,8 @@ export function buildTemplateSpec(input: GenerateSpecInput): GameSpec {
     theme: { title, story, genre: theme.genre, tone: theme.tone },
     visual: {
       palette: theme.palette,
-      objectGlyphs: { ...theme.glyphs },
+      // An ordered palette, not a map: see the note on VisualSchema in game-schema.
+      objectGlyphs: Object.values(theme.glyphs),
       boardLabel: theme.boardLabel,
     },
     vocabulary: {

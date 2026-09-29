@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { CatalogueResponse, DecideResponse, Difficulty, GenerateResponse } from '@dsa/game-schema'
 
+import { WorldScene, RobotGuide } from '@/components/adventure/WorldScene'
+import { worldForProblem } from '@/lib/adventure'
+import type { CSSProperties } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Chip } from '@/components/ui/Chip'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -12,6 +15,7 @@ import { GeneratingSkeleton } from '@/components/ui/Skeleton'
 import { DsaApiError, getCatalogue, postDecide, postGenerate } from '@/lib/api'
 import { DIFFICULTIES, PROVIDER_TIER_LABELS } from '@/lib/contract'
 import { cn } from '@/lib/format'
+import { getLinkedListQuestion } from '@/lib/linked-list-learning'
 import { useGameStore } from '@/store/game'
 
 /**
@@ -23,7 +27,15 @@ import { useGameStore } from '@/store/game'
  * Deciding without steering would be a cosmetic feature; steering without
  * acknowledging would feel like the input was ignored.
  */
-export function ProblemView({ problemId }: { problemId: string }) {
+export function ProblemView({
+  problemId,
+  questionId,
+  initialDifficulty,
+}: {
+  problemId: string
+  questionId?: string
+  initialDifficulty?: Difficulty
+}) {
   const router = useRouter()
   const [problem, setProblem] = useState<CatalogueResponse['topics'][number]['problems'][number] | null>(null)
   const [notFound, setNotFound] = useState(false)
@@ -32,6 +44,8 @@ export function ProblemView({ problemId }: { problemId: string }) {
   const [decision, setDecision] = useState<DecideResponse | null>(null)
   const [deciding, setDeciding] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const [genStartedAt, setGenStartedAt] = useState<number | null>(null)
+  const [genElapsedSec, setGenElapsedSec] = useState(0)
   const [error, setError] = useState<DsaApiError | null>(null)
   const [result, setResult] = useState<GenerateResponse | null>(null)
   const [forceTemplate, setForceTemplate] = useState(false)
@@ -49,7 +63,7 @@ export function ProblemView({ problemId }: { problemId: string }) {
           const found = topic.problems.find((p) => p.id === problemId)
           if (found) {
             setProblem(found)
-            setDifficulty(found.defaultDifficulty)
+            setDifficulty(initialDifficulty ?? found.defaultDifficulty)
             return
           }
         }
@@ -69,7 +83,27 @@ export function ProblemView({ problemId }: { problemId: string }) {
         )
       })
     return () => controller.abort()
-  }, [problemId, reloadToken])
+  }, [problemId, reloadToken, initialDifficulty])
+
+  // Truthful waiting status: generation is one opaque server round-trip, so the
+  // only honest live facts are that the request is in flight and how long it
+  // has taken. Anything naming a specific tier mid-flight would be invented —
+  // the tier report arrives with the response and is shown under "Last
+  // generated" below.
+  useEffect(() => {
+    if (!generating || genStartedAt === null) return
+    const id = window.setInterval(() => {
+      setGenElapsedSec(Math.floor((Date.now() - genStartedAt) / 1000))
+    }, 1000)
+    return () => window.clearInterval(id)
+  }, [generating, genStartedAt])
+
+  useEffect(() => {
+    if (!generating) {
+      setGenStartedAt(null)
+      setGenElapsedSec(0)
+    }
+  }, [generating])
 
   const askLaya = async (): Promise<void> => {
     const text = freeText.trim()
@@ -100,6 +134,8 @@ export function ProblemView({ problemId }: { problemId: string }) {
 
   const generate = async (): Promise<void> => {
     setGenerating(true)
+    setGenStartedAt(Date.now())
+    setGenElapsedSec(0)
     setError(null)
     try {
       const res = await postGenerate({
@@ -116,7 +152,8 @@ export function ProblemView({ problemId }: { problemId: string }) {
         usedTier: res.usedTier,
         attempts: res.attempts,
         notes: res.notes,
-        intent: { problemId, difficulty: difficulty ?? undefined, freeText: freeText.trim() || undefined, seed: res.seed },
+        intent: { problemId, difficulty: difficulty ?? undefined, freeText: freeText.trim() || undefined, seed: res.seed, forceTemplate },
+        turnPrompt: res.turnPrompt,
       })
       router.push(`/play/${res.gameId}`)
     } catch (cause) {
@@ -135,7 +172,8 @@ export function ProblemView({ problemId }: { problemId: string }) {
   }
 
   const mechanicsList = useMemo(() => problem?.allowedMechanics ?? [], [problem])
-
+  const linkedListQuestion = getLinkedListQuestion(questionId)
+  const activeQuestion = linkedListQuestion?.gameProblemId === problemId ? linkedListQuestion : undefined
   if (notFound) {
     return (
       <main className="mx-auto max-w-2xl px-4 py-16">
@@ -158,22 +196,22 @@ export function ProblemView({ problemId }: { problemId: string }) {
     <main className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-8">
       <nav className="text-xs text-[var(--dsa-ink-faint)]">
         <a href="/" className="hover:text-[var(--dsa-accent)]">
-          All topics
+          ← Adventure map
         </a>
       </nav>
 
       {error && (
-        <ErrorState
-          error={error}
-          onRetry={() => {
-            if (problem) void generate()
-            else setReloadToken((token) => token + 1)
-          }}
-          retryLabel="Try again"
-        />
+            <ErrorState
+              error={error}
+              onRetry={() => {
+                if (problem) void generate()
+                else setReloadToken((token) => token + 1)
+              }}
+              retryLabel="Try again"
+            />
       )}
 
-      {!problem ? (
+          {!problem ? (
         <div className="panel space-y-4 p-5" role="status" aria-live="polite">
           <div className="h-7 w-1/2 animate-pulse rounded bg-[var(--dsa-border)]" />
           <div className="h-3 w-full animate-pulse rounded bg-[var(--dsa-border)]" />
@@ -181,12 +219,13 @@ export function ProblemView({ problemId }: { problemId: string }) {
         </div>
       ) : (
         <>
+          <section className="mission-preview" style={{ '--world-color': worldForProblem(problemId).color, '--world-pale': worldForProblem(problemId).pale } as CSSProperties}><div><p className="eyebrow">MISSION BRIEFING · {problem.topic}</p><h2>{worldForProblem(problemId).name}</h2></div><WorldScene world={worldForProblem(problemId)} compact/></section>
           <Panel>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <Chip tone="primary">{problem.topic}</Chip>
-                  <Chip tone="muted">{problem.id}</Chip>
+                  
                 </div>
                 <h1 className="mt-2 text-2xl font-bold text-[var(--dsa-ink)] sm:text-3xl">{problem.title}</h1>
                 <p className="mt-2 max-w-2xl text-sm text-[var(--dsa-muted)]">{problem.learningObjective}</p>
@@ -202,21 +241,32 @@ export function ProblemView({ problemId }: { problemId: string }) {
             </div>
           </Panel>
 
-          <Panel title="The canonical algorithm" subtitle="What your game will be a playable version of.">
-            <pre className="mono prose-block text-sm">{problem.canonicalAlgorithm}</pre>
-          </Panel>
+          <details className="adventure-drawer"><summary>Peek inside the algorithm</summary><div className="p-4">
+            <pre className="mono prose-block text-sm">{problem.canonicalAlgorithm}</pre></div></details>
 
-          <Panel
-            title="What will you play?"
-            subtitle="Optional. Sent to the decision layer and to the generator as theme steering."
-          >
+          {activeQuestion && (
+            <Panel
+              title={`Question: ${activeQuestion.title}`}
+              subtitle="Solve this prompt by carrying out the algorithm on a generated linked list."
+            >
+              <p className="text-sm text-[var(--dsa-muted)]">{activeQuestion.prompt}</p>
+              <p className="mt-2 text-xs text-[var(--dsa-ink-faint)]">
+                {activeQuestion.objective} The board grows with the difficulty you choose; every move is checked by the linked-list oracle.
+              </p>
+              <a href="/learn/linked-list" className="mt-3 inline-block text-xs text-[var(--dsa-accent)] underline-offset-4 hover:underline">
+                Back to the lesson and code examples
+              </a>
+            </Panel>
+          )}
+
+          <details className="adventure-drawer"><summary>Make it your story · optional</summary><div className="p-4">
             <label className="block">
               <span className="sr-only">What do you want to play?</span>
               <textarea
                 className="input min-h-20 resize-y"
                 value={freeText}
                 maxLength={400}
-                placeholder="e.g. a haunted library where I sort the books, on hard"
+                placeholder="e.g. a haunted library where I sort the books, on high"
                 onChange={(e) => setFreeText(e.target.value)}
               />
             </label>
@@ -252,9 +302,9 @@ export function ProblemView({ problemId }: { problemId: string }) {
                 </p>
               </div>
             )}
-          </Panel>
+          </div></details>
 
-          <Panel title="Difficulty" subtitle="Controls instance length and how much slack the oracle gives.">
+          <Panel title="Choose your challenge" subtitle="Low, medium, and high generate short, standard, and longer game instances.">
             <div className="flex flex-wrap gap-1.5" role="group" aria-label="Difficulty">
               {DIFFICULTIES.map((level) => (
                 <Button
@@ -264,20 +314,19 @@ export function ProblemView({ problemId }: { problemId: string }) {
                   onClick={() => setDifficulty(level)}
                   aria-pressed={difficulty === level}
                 >
-                  {level}
+                  {level === 'easy' ? 'low' : level === 'hard' ? 'high' : 'medium'}
                 </Button>
               ))}
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            <details className="mt-4 adventure-drawer"><summary>Generation settings</summary><div className="p-4">
               <label className="flex items-center gap-2 text-xs text-[var(--dsa-muted)]">
                 <input
                   type="checkbox"
                   checked={forceTemplate}
                   onChange={(e) => setForceTemplate(e.target.checked)}
                 />
-                Skip the LLM tiers (instant, plainer theme)
+                Use an instant template adventure
               </label>
-            </div>
             <p className="mt-2 text-[0.65rem] text-[var(--dsa-ink-faint)]">
               Mechanics available for this problem:{' '}
               {mechanicsList.map((m) => (
@@ -285,25 +334,37 @@ export function ProblemView({ problemId }: { problemId: string }) {
                   {m}{' '}
                 </span>
               ))}
-            </p>
+            </p></div></details>
           </Panel>
 
           {generating ? (
-            <Panel title="Generating your game">
-              <GeneratingSkeleton label="Writing a theme, choosing the mechanics, and building the board. Tier 1 is a language model, so give it a few seconds." />
+            <Panel title="Building your little adventure"><div className="scene-loading"><WorldScene world={worldForProblem(problemId)} compact/></div>
+              <GeneratingSkeleton
+                label={
+                  forceTemplate
+                    ? 'Building from the built-in template — no waiting on storytellers.'
+                    : `Asking the storytellers, fastest first… (${genElapsedSec}s)`
+                }
+                detail={
+                  forceTemplate
+                    ? 'The template always works offline, so this is quick.'
+                    : 'If every storyteller is busy, the built-in template finishes the job — your mission still opens.'
+                }
+              />
             </Panel>
           ) : (
             <div className="flex flex-wrap items-center gap-3">
-              <Button variant="primary" size="lg" onClick={() => void generate()}>
-                Generate game
+                <Button variant="primary" size="lg" onClick={() => void generate()}>
+                Start mission →
               </Button>
               <span className="text-xs text-[var(--dsa-ink-faint)]">
-                {difficulty ? `${difficulty} · ` : ''}
-                {forceTemplate ? 'template tier' : 'best available tier'}
+          {difficulty ? `${difficulty === 'easy' ? 'low' : difficulty === 'hard' ? 'high' : 'medium'} · ` : ''}
+                {forceTemplate ? 'instant adventure' : 'a fresh adventure'}
               </span>
             </div>
           )}
 
+          <RobotGuide>Take your time. You can ask for a hint whenever you need one.</RobotGuide>
           {result && (
             <Panel title="Last generated" subtitle="Kept visible so the provider behind a game is never a mystery.">
               <div className="flex flex-wrap items-center gap-2">

@@ -1,13 +1,17 @@
 import type { MappingRow } from '@dsa/game-schema'
 
 /**
- * `DebriefResponse.mapping` is typed as `MappingRow[]` (objects with
- * `gameTerm` / `algorithmTerm`), but `GameSpec.debrief.mapping` — the block the
- * provider actually authors — is an array of `[gameTerm, algorithmTerm]` tuples,
- * and the engine is free to forward the spec's array straight through.
+ * The debrief's metaphor table, as a display-friendly tuple list.
  *
- * Rather than pick a side and crash on the other, this normalises both shapes.
- * (`Row` is the tuple form; the two are structurally distinguishable.)
+ * `GameSpec.debrief.mapping` used to be an array of `[gameTerm, algorithmTerm]`
+ * tuples while `DebriefResponse.mapping` was `MappingRow[]`, so every consumer
+ * had to normalise two shapes of the same data. The spec now authors objects —
+ * a tuple compiles to JSON Schema's tuple form (`items: [ ... ]`), which
+ * opencode-go rejects — so the two agree and this is a pure formatting helper.
+ *
+ * The tuple branch is kept for one reason: a spec persisted by an older build
+ * may still be in sessionStorage when the app is hot-reloaded, and dropping its
+ * table silently would look like a bug rather than a migration.
  */
 export type MappingEntry = [gameTerm: string, algorithmTerm: string]
 type MappingInput = MappingRow | readonly [string, string]

@@ -379,6 +379,57 @@ describe('telemetry', () => {
     expect(summary).toEqual({ total: 0, byMechanic: {}, byDsaOp: {}, firstMistakeAt: null })
   })
 
+  /**
+   * The regression: `submitAnswer` is a mandatory final click and is not an
+   * algorithm step. Counting it made a flawless run — every frame
+   * `correct: true` — score 0.75 and read "Very close to optimal", because the
+   * played trace carried a commit the reference did not.
+   */
+  it('does not count the final commit as a step on either side', () => {
+    const runtime = createGameRuntime(makeFakeOracle())
+    const won = playOptimalGame(runtime, SEED)
+    const canonical = runtime.debrief(won).canonicalTrace
+
+    // The test oracle's canonical trace does include a commit, the real one
+    // does not. The score must be 1 either way, so the two must be compared
+    // with the same rule applied to both.
+    const commits = won.trace.filter((f) => f.action?.type === 'submitAnswer')
+    expect(commits.length).toBe(1)
+    expect(canonical.filter((f) => f.action?.type === 'submitAnswer').length).toBe(1)
+
+    const scored = optimisationScore(won.trace, canonical)
+    expect(scored.ratio).toBe(1)
+    expect(scored.score).toBe(1)
+    // And the note must not claim a step gap that does not exist.
+    expect(scored.note).not.toMatch(/needs \d+ steps/)
+    expect(scored.note).toMatch(/optimal/i)
+  })
+
+  it('still counts a genuinely longer path', () => {
+    // The exclusion is for the COMMIT, not a blanket amnesty: a player who
+    // takes real extra steps must still be charged for them.
+    const runtime = createGameRuntime(makeFakeOracle())
+    const won = playOptimalGame(runtime, SEED)
+    const canonical = runtime.debrief(won).canonicalTrace
+    const padded = [...won.trace, ...won.trace]
+    const scored = optimisationScore(padded, canonical)
+    expect(scored.ratio).toBeGreaterThan(1)
+    expect(scored.score).toBeLessThan(1)
+  })
+
+  it('reports an empty reference honestly rather than inventing a comparison', () => {
+    // An oracle with no canonical trace, or one whose only canonical frame is a
+    // commit, has no steps to compare against. The note must say that, not
+    // claim the learner needed one step.
+    for (const canonical of [[], [{ action: { type: 'submitAnswer' }, dsaOp: 'terminate' }] as unknown as TraceFrame[]]) {
+      const scored = optimisationScore([], canonical)
+      expect(scored.score).toBe(1)
+      expect(scored.ratio).toBe(0)
+      expect(scored.note).toContain('no reference')
+      expect(scored.note).not.toMatch(/needs \d+ step/)
+    }
+  })
+
   it('scores optimal play as 1 and sloppy play below 1', () => {
     const runtime = createGameRuntime(makeFakeOracle())
     const won = playOptimalGame(runtime, SEED)
@@ -392,12 +443,7 @@ describe('telemetry', () => {
     expect(sloppy.ratio).toBe(3)
     expect(sloppy.score).toBeGreaterThan(0)
     expect(sloppy.score).toBeLessThan(1)
-    expect(sloppy.note).toContain('12 steps')
 
-    const empty = optimisationScore([], [])
-    expect(empty.score).toBe(1)
-    expect(empty.ratio).toBe(0)
-    expect(empty.note).toContain('no reference trace')
   })
 
   it('dedupes and sorts the code lines the player hit', () => {

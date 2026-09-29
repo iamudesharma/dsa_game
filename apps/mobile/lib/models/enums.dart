@@ -91,6 +91,11 @@ enum GameObjectKind {
 
   final String wire;
 
+  /// Stable ordinal used to pick from the spec's glyph palette. The palette is
+  /// an ordered list rather than a map (opencode-go rejects JSON-Schema maps),
+  /// so this is what gives each kind its own deterministic glyph.
+  int get paletteIndex => index;
+
   /// Fallback glyph when the spec does not supply `objectGlyphs[wire]`.
   String get defaultGlyph => switch (this) {
     GameObjectKind.item => '◆',

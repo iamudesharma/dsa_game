@@ -1,4 +1,4 @@
-import type { DebriefResponse } from '@dsa/game-schema'
+import type { DebriefResponse, TraceFrame } from '@dsa/game-schema'
 
 /**
  * A deliberately transparent client-side score.
@@ -23,6 +23,24 @@ export interface ScoreResult {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
+}
+
+/**
+ * Frames that count as algorithm steps — everything except the commit.
+ *
+ * `submitAnswer` terminates the round, and the reference trace stops at the
+ * search. Counting it made the mandatory final click look like a wasted move.
+ * `telemetry.ts` excludes the same frames, and the two must agree: this function
+ * decides the number in the score line, that one decides the number in the
+ * summary sentence, and a learner reading both must not see two different
+ * step counts for one run.
+ */
+export function algorithmSteps(trace: readonly TraceFrame[] | undefined | null): number {
+  if (!Array.isArray(trace)) return 0
+  return trace.filter((frame) => {
+    if (frame?.action?.type === 'submitAnswer') return false
+    return frame?.dsaOp !== 'terminate'
+  }).length
 }
 
 export function computeScore(debrief: DebriefResponse): ScoreResult {
@@ -51,16 +69,27 @@ export function computeScore(debrief: DebriefResponse): ScoreResult {
   })
 
   // Only penalise *excess* steps: extra exploration is fine, thrashing is not.
-  const canonical = canonicalTrace.length
-  const played = playedTrace.length || stats.steps
-  const excess = canonical > 0 ? Math.max(0, played - canonical) : 0
-  const stepPenalty = Math.min(20, excess * 2)
+  //
+  // THE COMMIT IS NOT A STEP. `submitAnswer` ends the round and the oracle's
+  // canonical trace has no entry for it, so counting it charged every learner two
+  // points for the click the game requires them to make at the end. A flawless
+  // run (10 frames, 0 mistakes) scored 98/100 and read "Very close to optimal.
+  // You took 10 steps; the reference line needs 9" — a false report caused
+  // entirely by the engine forcing an extra click. `telemetry.ts::algorithmSteps`
+  // makes the same exclusion, and the two MUST agree or the panel and the score
+  // would contradict each other on the same run.
+  const used = algorithmSteps(playedTrace)
+  const reference = algorithmSteps(canonicalTrace)
+  const excess = reference > 0 ? Math.max(0, used - reference) : 0
+  // `0` and not `-0`: a zero penalty rendered as "-0" is a small wrong signal to
+  // anyone reading the published arithmetic, and `Object.is` distinguishes them.
+  const stepPenalty = excess === 0 ? 0 : -Math.min(20, excess * 2)
   lines.push({
     label: 'Path efficiency',
-    delta: -stepPenalty,
+    delta: stepPenalty,
     detail:
-      canonical > 0
-        ? `${played} steps vs ${canonical} in the reference solution`
+      reference > 0
+        ? `${used} steps vs ${reference} in the reference solution`
         : 'No reference trace available',
   })
 
@@ -75,11 +104,11 @@ export function computeScore(debrief: DebriefResponse): ScoreResult {
 
   const verdict =
     score >= 90
-      ? 'Optimal-ish. The board barely got in your way.'
+      ? 'That is the optimal line, start to finish.'
       : score >= 78
         ? 'Strong run — a few wasted steps.'
         : score >= 62
-          ? 'Solid. Replay the divergence and it clicks.'
+          ? 'Solid. Replay the difference and it clicks.'
           : score >= 45
             ? 'You finished. Now watch the reference replay once.'
             : 'Go through the side-by-side replay — that is where it lands.'

@@ -14,3 +14,14 @@ export {
 } from './registry.js'
 
 export { createBinarySearchOracle, annotatedCode } from './problems/binary-search.js'
+export { createArrayMaxMinOracle } from './problems/array-max-min.js'
+export { createBubbleSortOracle, createSelectionSortOracle, createSortOracle } from './problems/sorts.js'
+export {
+  createLinkedListTraversalOracle,
+  createMoveZeroesOracle,
+  createQueueOperationsOracle,
+  createReverseLinkedListOracle,
+  createStackPushPopOracle,
+  createTwoSumOracle,
+  createValidParenthesesOracle,
+} from './problems/remaining.js'

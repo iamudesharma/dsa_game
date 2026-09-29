@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { getOracle, unimplementedProblemIds } from '@dsa/dsa-oracles'
+import { getOracle, ORACLES, unimplementedProblemIds } from '@dsa/dsa-oracles'
 import { createGameRuntime, optimisationScore, mistakeSummary } from '@dsa/game-engine'
 import { PROBLEMS } from '@dsa/game-schema'
 import type { Action, GameState, ProblemInstance, TraceFrame } from '@dsa/game-schema'
@@ -198,6 +198,9 @@ describe('registry honesty', () => {
   it('reports exactly the problems still to be implemented', () => {
     const remaining = unimplementedProblemIds()
     expect(remaining).not.toContain('binary-search')
-    expect(remaining.length).toBe(PROBLEMS.length - 1)
+    // Derived from the registry, never counted. `PROBLEMS.length - 1` was
+    // correct for a while and then quietly wrong the moment a second oracle
+    // landed, which is the exact failure this file exists to prevent.
+    expect(remaining.length).toBe(PROBLEMS.length - Object.keys(ORACLES).length)
   })
 })

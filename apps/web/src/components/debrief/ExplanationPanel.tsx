@@ -7,6 +7,7 @@ import { Chip } from '@/components/ui/Chip'
 import { Panel } from '@/components/ui/Panel'
 import { normalizeMapping } from '@/lib/mapping'
 import { linesTouchedBy, type ScoreResult } from '@/lib/score'
+import { echoBridge, reflectionsAnswered, type ReflectionAnswers } from '@/lib/self-explanation'
 import { cn } from '@/lib/format'
 
 /**
@@ -17,11 +18,23 @@ import { cn } from '@/lib/format'
  * questions. `actionMeaning` explains "what was I just asked to do", while
  * `mapping` is the "say this game word, get this code word" crib sheet.
  */
-export function ExplanationPanel({ debrief }: { debrief: DebriefResponse }) {
+export function ExplanationPanel({
+  debrief,
+  reflections,
+}: {
+  debrief: DebriefResponse
+  /**
+   * The learner's own self-explanation answers (R2.2). Echoed back above the
+   * recap so the learner sees their production mattered — never scored, never
+   * judged. Null (or skipped) renders the explanation exactly as before.
+   */
+  reflections?: ReflectionAnswers | null
+}) {
   const [tab, setTab] = useState<'story' | 'terms' | 'mapping'>('story')
   const meaningEntries = Object.entries(debrief.actionMeaning)
   const touched = linesTouchedBy(debrief.playedTrace)
   const mapping = normalizeMapping(debrief.mapping)
+  const echoed = reflections && !reflections.skipped && reflectionsAnswered(reflections) ? reflections : null
 
   return (
     <Panel
@@ -46,6 +59,20 @@ export function ExplanationPanel({ debrief }: { debrief: DebriefResponse }) {
     >
       {tab === 'story' && (
         <div className="space-y-3">
+          {echoed && (
+            <div className="rounded-lg border border-[color-mix(in_oklab,var(--dsa-accent)_40%,var(--dsa-border))] bg-[color-mix(in_oklab,var(--dsa-accent)_8%,transparent)] p-3">
+              <p className="text-[0.6rem] font-semibold tracking-[0.14em] text-[var(--dsa-ink-faint)] uppercase">
+                you said
+              </p>
+              <blockquote className="mt-1 text-sm text-[var(--dsa-ink)]">
+                “{echoed.retention.trim()}”
+              </blockquote>
+              <blockquote className="mt-1 text-sm text-[var(--dsa-ink)]">
+                “{echoed.integration.trim()}”
+              </blockquote>
+              <p className="mt-2 text-xs text-[var(--dsa-muted)]">{echoBridge(debrief.problemId)}</p>
+            </div>
+          )}
           <p className="prose-block text-sm">{debrief.summary}</p>
           <p className="text-[0.65rem] text-[var(--dsa-ink-faint)]">
             {debrief.playedTrace.length} step{debrief.playedTrace.length === 1 ? '' : 's'} taken,{' '}
@@ -165,6 +192,21 @@ export function ComplexityChips({ debrief }: { debrief: DebriefResponse }) {
   )
 }
 
+/**
+ * `misconception-naming` -> "naming".
+ *
+ * The tag is a kebab-case SLUG because it is computed from a histogram and
+ * needs to be stable on the wire. Slugs are for the database; the learner gets
+ * a phrase. The word is also negated: a learner does not have a "misconception",
+ * they have a habit of doing something, and the phrasing is the difference
+ * between a diagnosis and a coaching note.
+ */
+function humaniseMisconception(slug: string): string {
+  const words = slug.replace(/-/g, ' ').trim()
+  if (words === '') return ''
+  return `You ${/^[aeiou]/i.test(words) ? 'an' : 'a'} habit of ${words} — worth naming on purpose next time.`
+}
+
 /** The player's stats, the misconception tag, and a transparent score. */
 export function StatsPanel({
   debrief,
@@ -241,19 +283,31 @@ export function StatsPanel({
           </ul>
         )}
 
-        {stats.misconception && (
-          <div className="mt-3 rounded-lg border border-[color-mix(in_oklab,var(--dsa-accent)_40%,var(--dsa-border))] bg-[color-mix(in_oklab,var(--dsa-accent)_8%,transparent)] p-3">
+        {/* The misconception tag is for the learner only when there IS one, and
+            the model name is not for the learner ever. "likely misconception:
+            no-mistakes" read as a diagnosis to a child who had not made a
+            mistake, and "Laya confidence 100%" is pipeline telemetry — the same
+            reasoning `ProgressRail` already applied when it collapsed the
+            provider cascade "because it explains the app to its author, not to
+            its learner". The confidence stays available as a tooltip for
+            whoever is debugging, which is the audience that can act on it. */}
+        {stats.misconception ? (
+          <div
+            className="mt-3 rounded-lg border border-[color-mix(in_oklab,var(--dsa-accent)_40%,var(--dsa-border))] bg-[color-mix(in_oklab,var(--dsa-accent)_8%,transparent)] p-3"
+            title={
+              typeof stats.confidence === 'number'
+                ? `Decision-layer confidence: ${Math.round(stats.confidence * 100)}%`
+                : undefined
+            }
+          >
             <p className="text-[0.6rem] font-semibold tracking-[0.14em] text-[var(--dsa-ink-faint)] uppercase">
-              likely misconception
+              worth a second look
             </p>
-            <p className="mt-1 text-sm text-[var(--dsa-ink)]">{stats.misconception}</p>
-            {typeof stats.confidence === 'number' && (
-              <p className="mono mt-1 text-[0.6rem] text-[var(--dsa-ink-faint)]">
-                Laya confidence {Math.round(stats.confidence * 100)}%
-              </p>
-            )}
+            <p className="mt-1 text-sm text-[var(--dsa-ink)]">
+              {humaniseMisconception(stats.misconception)}
+            </p>
           </div>
-        )}
+        ) : null}
 
         <div className="mt-4 flex flex-wrap gap-2">
           <Button variant="primary" onClick={onNewGame} disabled={newGameBusy}>

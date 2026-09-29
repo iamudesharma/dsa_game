@@ -17,11 +17,15 @@ import 'package:flutter/material.dart' hide Action;
 
 import 'package:provider/provider.dart';
 
+import '../adventure/progress_store.dart';
+import '../adventure/robot_guide.dart';
+import '../adventure/worlds.dart';
 import '../models/action.dart';
 import '../models/api.dart';
 import '../models/enums.dart';
 import '../models/spec.dart';
 import '../models/state.dart';
+import '../state/catalogue_controller.dart';
 import '../state/game_controller.dart';
 import '../theme/palette.dart';
 import '../widgets/algorithm_strip.dart';
@@ -40,7 +44,10 @@ class PlayScreen extends StatefulWidget {
 
 class _PlayScreenState extends State<PlayScreen> {
   MechanicId? _activeMechanic;
-  int _lastDebriefEpoch = -1;
+
+  /// The game id already stamped in the adventure progress, so a rebuild or a
+  /// revisit never records the same win twice.
+  String? _recordedGameId;
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +59,7 @@ class _PlayScreenState extends State<PlayScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    _maybeOpenDebrief(controller);
+    _maybeRecordWin(controller, spec);
 
     return Theme(
       data: GameColorsX.themed(spec.visual.palette),
@@ -66,23 +73,27 @@ class _PlayScreenState extends State<PlayScreen> {
     );
   }
 
-  /// Pushes the debrief exactly once per finished game.
-  void _maybeOpenDebrief(GameController controller) {
-    if (controller.debrief == null) return;
-    if (controller.debriefEpoch == _lastDebriefEpoch) return;
-    _lastDebriefEpoch = controller.debriefEpoch;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-      final finished = controller.debrief;
-      if (finished == null) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => DebriefScreen(debrief: finished)),
-      );
-      if (!mounted) return;
-      // Coming back from the debrief with a finished game: offer a new run
-      // rather than leaving a dead board behind.
-      if (controller.isFinished) setState(() {});
-    });
+  /// Records the win in the adventure progress, exactly once per game.
+  ///
+  /// Completion comes only from the authoritative server state reporting
+  /// `won` — anything still playing, lost, or already stamped earns nothing.
+  /// The controller itself enforces the won-only and idempotency rules; the
+  /// game-id guard here keeps rebuilds from even asking.
+  void _maybeRecordWin(GameController controller, GameSpec spec) {
+    final state = controller.state;
+    if (state == null || !state.phase.isTerminal) return;
+    final gameId = controller.gameId;
+    if (gameId == null || gameId == _recordedGameId) return;
+    _recordedGameId = gameId;
+    final catalogue = context.read<CatalogueController>().catalogue;
+    final known = <String>{
+      for (final topic in catalogue?.topics ?? const []) for (final p in topic.problems) p.id,
+    };
+    context.read<AdventureController>().recordWin(
+      known,
+      problemId: spec.problemId,
+      phase: state.phase.wire,
+    );
   }
 
   PreferredSizeWidget _appBar(BuildContext context, GameController controller, GameSpec spec) {
@@ -139,9 +150,53 @@ class _PlayScreenState extends State<PlayScreen> {
         ? (outcome.expected?.objectIds ?? const <String>{})
         : const <String>{};
 
+    final board = MechanicRegistry.build(
+      activeMechanic,
+      controller: controller,
+      spec: spec,
+      state: state,
+      expectedIds: expectedIds,
+    );
+
+    // A finished game gets a scrolling results layout: the victory card plus
+    // a bounded, still-scrubbable board. Keeping the playing column's
+    // `Expanded` board here overflowed a phone viewport by the height of the
+    // victory card, which is exactly the class of bug the widget tests exist
+    // to catch.
+    if (controller.isFinished) {
+      return ListView(
+        padding: const EdgeInsets.only(bottom: 16),
+        children: [
+          _ArenaCaption(controller: controller, spec: spec),
+          _VictoryCard(controller: controller, spec: spec),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: SizedBox(height: 300, child: board),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AlgorithmStrip(state: state, dense: true),
+                const SizedBox(height: 6),
+                _InfoRow(controller: controller, spec: spec, state: state),
+              ],
+            ),
+          ),
+          if (controller.debrief == null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+              child: _NoDebriefNote(colors: colors),
+            ),
+        ],
+      );
+    }
+
     return Column(
       children: [
         if (controller.isRewound) _RewindBanner(controller: controller),
+        _ArenaCaption(controller: controller, spec: spec),
         if (controller.error != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
@@ -163,13 +218,7 @@ class _PlayScreenState extends State<PlayScreen> {
         Expanded(
           child: Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: MechanicRegistry.build(
-              activeMechanic,
-              controller: controller,
-              spec: spec,
-              state: state,
-              expectedIds: expectedIds,
-            ),
+            child: board,
           ),
         ),
         Padding(
@@ -222,6 +271,115 @@ class _PlayScreenState extends State<PlayScreen> {
 
   MechanicId _defaultMechanic(GameSpec spec) =>
       spec.mechanics.isEmpty ? MechanicId.selectObject : spec.mechanics.first.id;
+}
+
+/// The world and the algorithm, side by side above the board — the metaphor
+/// stays connected to the concept throughout the game.
+class _ArenaCaption extends StatelessWidget {
+  const _ArenaCaption({required this.controller, required this.spec});
+
+  final GameController controller;
+  final GameSpec spec;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.gameColors;
+    final problem = controller.problem;
+    final world = worldForTopic(problem?.topic.wire);
+    final algorithm = problem?.title ?? spec.problemId;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      child: Row(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(color: world.color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text(
+              '${world.name} · $algorithm',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: colors.muted),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The player-controlled victory moment. No automatic push to the debrief:
+/// the stamp is already recorded, and the player chooses when to explore the
+/// algorithm — or starts a new board instead.
+class _VictoryCard extends StatelessWidget {
+  const _VictoryCard({required this.controller, required this.spec});
+
+  final GameController controller;
+  final GameSpec spec;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.gameColors;
+    final won = controller.state?.phase == GamePhase.won;
+    final debrief = controller.debrief;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        decoration: BoxDecoration(
+          color: Color.lerp(colors.surface, won ? colors.success : colors.accent, 0.12)!,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: (won ? colors.success : colors.accent).withValues(alpha: 0.45),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              won ? 'Mission complete. Stamp collected!' : 'Every attempt is a discovery.',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: colors.onSurface),
+            ),
+            const SizedBox(height: 6),
+            RobotGuide(
+              text: won
+                  ? 'That stamp is yours — replays never duplicate it.'
+                  : 'No stamp this time. The replay is still worth a look.',
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: debrief == null
+                        ? null
+                        : () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => DebriefScreen(debrief: debrief),
+                              ),
+                            ),
+                    icon: const Icon(Icons.explore_rounded, size: 17),
+                    label: const Text('Explore the algorithm'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('New board'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _CounterChip extends StatelessWidget {

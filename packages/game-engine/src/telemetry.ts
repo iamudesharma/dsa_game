@@ -69,6 +69,30 @@ export function mistakeSummary(trace: TraceFrame[]): MistakeSummary {
 }
 
 /**
+ * The frames that count as ALGORITHM STEPS, excluding the commit.
+ *
+ * WHY. `submitAnswer` is a mandatory final move that ends the round, and the
+ * oracle's `canonicalTrace` does not include it — the reference line describes
+ * how to *find* the answer, not the administrative act of saying you found it.
+ * Counting it made every perfect run look one step longer than the reference.
+ * A flawless binary search (10 frames, 0 mistakes) was scored 98/100 and told
+ * "Very close to optimal. You took 10 steps; the reference line needs 9", which
+ * is a false report caused entirely by the engine forcing an extra click.
+ *
+ * A trailing commit is also not a *choice*, so it is not a thing to be efficient
+ * about. Everything else stays: extra comparisons, extra traversals, and a
+ * genuinely longer path are all real and all still counted.
+ */
+function algorithmSteps(trace: TraceFrame[]): TraceFrame[] {
+  return framesOf(trace).filter((frame) => {
+    if (frame?.action?.type === 'submitAnswer') return false
+    // Belt and braces for an oracle that reports the commit through `dsaOp`
+    // without an explicit `submitAnswer` action.
+    return frame?.dsaOp !== 'terminate'
+  })
+}
+
+/**
  * How close the player's line was to the canonical one, in steps.
  *
  * `score` is 1 for an optimal-length trace and decays as the player takes
@@ -77,16 +101,37 @@ export function mistakeSummary(trace: TraceFrame[]): MistakeSummary {
  * lesson and is reported by `mistakeSummary`.
  */
 export function optimisationScore(played: TraceFrame[], canonical: TraceFrame[]): OptimisationScore {
-  const used = framesOf(played).length
-  const reference = framesOf(canonical).length
-  const optimal = Math.max(reference, 1)
-  const ratio = round3(used / optimal)
-  const score = used <= optimal ? 1 : clamp01(round3(1 / ratio))
+  // BOTH SIDES are filtered, symmetrically. The oracles disagree about whether
+  // the commit belongs in the reference: `binary-search` ends its canonical
+  // trace at the search, while the test oracle appends a `submitAnswer` frame.
+  // Filtering only the played side (or only via a `max`) makes the comparison
+  // depend on which oracle ran, which is how a perfect play-through came to be
+  // scored 0.75. One rule, applied to both, is the only version that holds.
+  const used = algorithmSteps(played).length
+  // Kept separate from `optimal`, and checked BEFORE the division. A reference
+  // trace that is empty, or that consists only of a commit, has no steps to
+  // compare against, and the note has to say so rather than claim the learner
+  // needed 1 step.
+  const reference = algorithmSteps(canonical).length
 
+  if (reference === 0) {
+    return {
+      score: 1,
+      ratio: 0,
+      note: `The oracle produced no reference steps, so this ${used}-step run cannot be compared for efficiency.`,
+    }
+  }
+
+  const ratio = round3(used / reference)
+  const score = used <= reference ? 1 : clamp01(round3(1 / ratio))
+
+  // On an optimal run the two counts are equal, and saying so twice reads as
+  // padding: "the optimal line. You took 3 steps; the reference needs 3 steps."
+  // The band alone is the whole message when there is no gap to report.
   const note =
-    reference === 0
-      ? `The oracle produced no reference trace, so this ${used}-step run is only compared against a single step.`
-      : `${bandFor(ratio)} You took ${plural(used, 'step')}; the reference line needs ${plural(optimal, 'step')}.`
+    used === reference
+      ? bandFor(ratio)
+      : `${bandFor(ratio)} You took ${plural(used, 'step')}; the reference line needs ${plural(reference, 'step')}.`
 
   return { score, ratio, note }
 }

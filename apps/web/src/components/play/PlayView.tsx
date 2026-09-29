@@ -4,7 +4,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { getProblem } from '@dsa/game-schema'
 
+import { WorldScene, RobotGuide } from '@/components/adventure/WorldScene'
+import { useAdventure } from '@/components/adventure/AdventureProvider'
+import { worldForProblem } from '@/lib/adventure'
 import { Board } from '@/components/board/Board'
 import { deriveActiveMechanic, MechanicHost } from '@/components/mechanics/MechanicHost'
 import { useObjectClickRouter } from '@/components/mechanics/useObjectClickRouter'
@@ -23,6 +27,7 @@ import { buildBoard } from '@/lib/board'
 import { getGame } from '@/lib/api'
 import { markWatchOneStepSeen, shouldOfferWatchOneStep } from '@/lib/firstRun'
 import { buildTargetMarkers, deriveWorkCountdown } from '@/lib/guidance'
+import { markLinkedListQuestionSolved, questionForGameProblem } from '@/lib/linked-list-learning'
 import { useGameStore, useTurnPrompt } from '@/store/game'
 
 export interface PlayViewProps {
@@ -96,7 +101,7 @@ export function PlayView({ gameId }: PlayViewProps) {
   const [dismissedStep, setDismissedStep] = useState<number | null>(null)
   const [coachOpen, setCoachOpen] = useState(false)
   const [demoState, setDemoState] = useState<'offer' | 'showing' | 'done'>('done')
-  const autoAdvanced = useRef(false)
+  const { warning } = useAdventure()
 
   const loaded = Boolean(spec && state && storeGameId === gameId)
   const model = useMemo(() => (state && spec ? buildBoard(state, spec) : null), [state, spec])
@@ -134,15 +139,11 @@ export function PlayView({ gameId }: PlayViewProps) {
     return () => controller.abort()
   }, [hydrated, loaded, gameId, hydrateFromServer])
 
-  // A terminal state is the end of the round: send the player to the debrief
-  // automatically (once per round) so the payoff is never behind them, but keep
-  // the board rendered read-only behind the decision.
   useEffect(() => {
-    if (!state || state.phase === 'playing' || autoAdvanced.current) return
-    autoAdvanced.current = true
-    const timer = setTimeout(() => router.replace(`/debrief/${gameId}`), 2600)
-    return () => clearTimeout(timer)
-  }, [state, gameId, router])
+    if (!loaded || state?.phase !== 'won') return
+    const question = questionForGameProblem(spec?.problemId ?? state.problemId)
+    if (question) markLinkedListQuestionSolved(question.id)
+  }, [loaded, spec?.problemId, state?.phase, state?.problemId])
 
   useEffect(() => {
     setPicked([])
@@ -249,8 +250,8 @@ export function PlayView({ gameId }: PlayViewProps) {
             extraneous load — the reader has to work out whether the two versions
             differ. The full objective is one tap away, for when they want it. */}
         <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-1">
-          <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1">
-            <h1 className="truncate text-[1.05rem] font-bold text-[var(--dsa-ink)] sm:text-[1.2rem]">
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1"><Link href="/" className="btn" aria-label="Adventure map">← Map</Link>
+            <h1 className="break-words text-[1.05rem] font-bold text-[var(--dsa-ink)] sm:text-[1.2rem]">
               {spec.theme.title}
             </h1>
             <details className="text-[0.82rem] text-[var(--dsa-muted)]">
@@ -278,7 +279,8 @@ export function PlayView({ gameId }: PlayViewProps) {
           />
         ) : null}
 
-        <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_350px]">
+        {warning && <p className="storage-notice" role="status">Progress may not be saved in this browser. You can keep playing.</p>}
+        <div className="grid min-w-0 grid-cols-1 gap-4">
           <div className="min-w-0 space-y-3">
             <YourTurnIndicator
               prompt={prompt}
@@ -310,17 +312,17 @@ export function PlayView({ gameId }: PlayViewProps) {
               <motion.section
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="panel border-[color:color-mix(in_oklab,var(--dsa-accent)_45%,var(--dsa-border))] p-4"
+                className="victory-scene"
               >
                 <p className="text-[1.1rem] font-bold text-[var(--dsa-ink)]">
-                  {state.phase === 'won' ? 'Solved — here is the algorithm underneath.' : 'The run ended.'}
+                  {state.phase === 'won' ? 'Mission complete. Stamp collected!' : 'Every attempt is a discovery.'}
                 </p>
                 <p className="mt-1 text-[0.95rem] text-[var(--dsa-muted)]">
                   {state.phase === 'won' ? spec.narration.win : spec.narration.lose}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button variant="primary" onClick={() => router.push(`/debrief/${gameId}`)}>
-                    Replay and the real code
+                    Explore the algorithm
                   </Button>
                   <Button onClick={() => router.push(`/problem/${spec.problemId}`)}>New board</Button>
                 </div>
@@ -331,7 +333,7 @@ export function PlayView({ gameId }: PlayViewProps) {
                 above a row of tiles is a label for something the learner is
                 already looking at, and the space was better spent on the gap
                 between the instruction and the tiles. */}
-            <div className="panel p-3 pt-3 sm:p-4">
+            <div className="arena-board"><div className="arena-caption"><span>{worldForProblem(spec.problemId).name} · {getProblem(spec.problemId)?.title ?? spec.problemId}</span><WorldScene world={worldForProblem(spec.problemId)} compact/></div>
               <Board
                 state={state}
                 spec={spec}
@@ -350,7 +352,17 @@ export function PlayView({ gameId }: PlayViewProps) {
               />
             </div>
 
-            <MechanicHost
+            {/* `hideLabel` because `YourTurnIndicator` is already rendering the
+                instruction at 2rem, directly above, and the control panel was
+                repeating it twice more — once as the panel heading and once as
+                the first line of its body. Three copies of one imperative on one
+                screen, in the same words, is the redundancy effect rather than
+                emphasis, and `PlayView` already applies that argument to the
+                objective 200 lines up in this file. The tablist above still
+                carries `mechanic.label` for every operation, so switching
+                operations stays named; what is removed is the echo of the one
+                that is already selected. */}
+            <div className="action-dock"><MechanicHost
               spec={spec}
               state={state}
               model={model}
@@ -362,7 +374,8 @@ export function PlayView({ gameId }: PlayViewProps) {
               dispatch={dispatch}
               markers={markers}
               prompt={prompt}
-            />
+              hideLabel
+            /></div>
 
             <AnimatePresence>
               {showFeedback && outcome && feedback ? (
@@ -379,8 +392,9 @@ export function PlayView({ gameId }: PlayViewProps) {
             </AnimatePresence>
           </div>
 
-          <aside className="min-w-0 space-y-3">
-            <ProgressRail
+          <aside className="arena-tools">
+            <RobotGuide>Need a nudge? Ask for a hint or explore the moves you have made.</RobotGuide>
+            <details className="adventure-drawer"><summary>Mission progress & restart</summary><ProgressRail
               state={state}
               spec={spec}
               work={work}
@@ -390,13 +404,13 @@ export function PlayView({ gameId }: PlayViewProps) {
               round={round}
               canUndo={!finished && !busy}
               onUndo={onUndo}
-            />
+            /></details>
             <HintPanel progress={state.progress} hints={hints} busy={busy} onHint={() => void requestHint()} />
             {coachOpen ? (
               <CoachPanel gameId={gameId} progress={prompt.progress} onClose={() => setCoachOpen(false)} />
             ) : null}
-            <ProgramMemory state={state} />
-            <TraceRail trace={state.trace} activeIndex={activeFrame?.index ?? null} />
+            <details className="adventure-drawer"><summary>Program memory</summary><ProgramMemory state={state} /></details>
+            <details className="adventure-drawer"><summary>Your move history</summary><TraceRail trace={state.trace} activeIndex={activeFrame?.index ?? null} /></details>
           </aside>
         </div>
 

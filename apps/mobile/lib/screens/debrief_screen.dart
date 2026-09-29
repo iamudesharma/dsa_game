@@ -21,6 +21,7 @@ import '../models/api.dart';
 import '../models/spec.dart';
 import '../models/state.dart';
 import '../models/trace.dart';
+import '../adventure/worlds.dart';
 import '../state/game_controller.dart';
 import '../theme/palette.dart';
 import '../widgets/common.dart';
@@ -119,7 +120,9 @@ class _DebriefScreenState extends State<DebriefScreen> {
     return Theme(
       data: GameColorsX.themed(palette),
       child: Builder(
-        builder: (context) => Scaffold(
+        builder: (context) => DefaultTabController(
+          length: 3,
+          child: Scaffold(
           backgroundColor: colors.background,
           appBar: AppBar(
             title: Column(
@@ -150,79 +153,88 @@ class _DebriefScreenState extends State<DebriefScreen> {
             top: false,
             child: Column(
               children: [
+                _ResultsScene(debrief: _debrief, spec: spec),
+                const TabBar(
+                  tabs: [
+                    Tab(text: 'Replay', icon: Icon(Icons.replay_rounded, size: 17)),
+                    Tab(text: 'Explain', icon: Icon(Icons.lightbulb_outline_rounded, size: 17)),
+                    Tab(text: 'Code', icon: Icon(Icons.code_rounded, size: 17)),
+                  ],
+                ),
                 Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                  child: TabBarView(
                     children: [
-                      _ResultCard(debrief: _debrief, spec: spec),
-                      const SizedBox(height: 18),
-                      if (_debrief.playedTrace.isEmpty)
-                        EmptyHint(
-                          text: 'No moves were recorded for this run.',
-                          icon: Icons.replay_rounded,
-                        )
-                      else ...[
-                        _Section(
-                          number: '1',
-                          title: 'Your run, step by step',
-                          subtitle: 'Exactly the moves you made, on the board you saw.',
-                          child: _ReplaySection(
-                            debrief: _debrief,
-                            spec: spec,
-                            frame: _frame,
-                            onScrub: _scrub,
-                            playing: _playing,
-                            onTogglePlay: _togglePlay,
-                            onStep: _step,
-                            resolveSnapshot: _snapshotFor,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                      ],
-                      if (_debrief.canonicalTrace.isNotEmpty) ...[
-                        _Section(
-                          number: '2',
-                          title: 'The canonical run',
-                          subtitle: 'What the algorithm does when nobody gets it wrong.',
-                          child: _CanonicalSection(
-                            debrief: _debrief,
-                            spec: spec,
-                            frame: _canonicalFrame,
-                            onScrub: (value) => setState(
-                              () => _canonicalFrame = value.clamp(0, _debrief.canonicalTrace.length - 1),
+                      _tabList([
+                        if (_debrief.playedTrace.isEmpty)
+                          EmptyHint(
+                            text: 'No moves were recorded for this run.',
+                            icon: Icons.replay_rounded,
+                          )
+                        else ...[
+                          _Section(
+                            number: '1',
+                            title: 'Your run, step by step',
+                            subtitle: 'Exactly the moves you made, on the board you saw.',
+                            child: _ReplaySection(
+                              debrief: _debrief,
+                              spec: spec,
+                              frame: _frame,
+                              onScrub: _scrub,
+                              playing: _playing,
+                              onTogglePlay: _togglePlay,
+                              onStep: _step,
+                              resolveSnapshot: _snapshotFor,
                             ),
                           ),
+                          const SizedBox(height: 18),
+                        ],
+                        if (_debrief.canonicalTrace.isNotEmpty) ...[
+                          _Section(
+                            number: '2',
+                            title: 'The canonical run',
+                            subtitle: 'What the algorithm does when nobody gets it wrong.',
+                            child: _CanonicalSection(
+                              debrief: _debrief,
+                              spec: spec,
+                              frame: _canonicalFrame,
+                              onScrub: (value) => setState(
+                                () => _canonicalFrame = value.clamp(0, _debrief.canonicalTrace.length - 1),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ]),
+                      _tabList([
+                        _Section(
+                          number: '3',
+                          title: 'What you were really doing',
+                          subtitle: 'The metaphor, and the algorithm underneath it.',
+                          child: _MeaningSection(debrief: _debrief, spec: spec),
                         ),
                         const SizedBox(height: 18),
-                      ],
-                      _Section(
-                        number: '3',
-                        title: 'What you were really doing',
-                        subtitle: 'The metaphor, and the algorithm underneath it.',
-                        child: _MeaningSection(debrief: _debrief, spec: spec),
-                      ),
-                      const SizedBox(height: 18),
-                      _Section(
-                        number: '4',
-                        title: 'The algorithm itself',
-                        subtitle: 'Your lines are highlighted. Tap one to see what you did there.',
-                        child: _CodeSection(
-                          debrief: _debrief,
-                          language: _language,
-                          selectedLine: _selectedCodeLine,
-                          onSelectLine: (line) => setState(
-                            () => _selectedCodeLine = _selectedCodeLine == line ? null : line,
-                          ),
-                          onLanguage: (lang) => setState(() => _language = lang),
+                        _Section(
+                          number: '4',
+                          title: 'What it cost',
+                          subtitle: 'Complexity, your stats, and any misconception spotted.',
+                          child: _CostSection(debrief: _debrief),
                         ),
-                      ),
-                      const SizedBox(height: 18),
-                      _Section(
-                        number: '5',
-                        title: 'What it cost',
-                        subtitle: 'Complexity, your stats, and any misconception spotted.',
-                        child: _CostSection(debrief: _debrief),
-                      ),
+                      ]),
+                      _tabList([
+                        _Section(
+                          number: '5',
+                          title: 'The algorithm itself',
+                          subtitle: 'Your lines are highlighted. Tap one to see what you did there.',
+                          child: _CodeSection(
+                            debrief: _debrief,
+                            language: _language,
+                            selectedLine: _selectedCodeLine,
+                            onSelectLine: (line) => setState(
+                              () => _selectedCodeLine = _selectedCodeLine == line ? null : line,
+                            ),
+                            onLanguage: (lang) => setState(() => _language = lang),
+                          ),
+                        ),
+                      ]),
                     ],
                   ),
                 ),
@@ -231,6 +243,7 @@ class _DebriefScreenState extends State<DebriefScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }
@@ -267,6 +280,60 @@ class _DebriefScreenState extends State<DebriefScreen> {
 }
 
 // ------------------------------------------------------------------- pieces
+
+/// One scrollable tab page.
+Widget _tabList(List<Widget> children) {
+  return ListView(
+    padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+    children: children,
+  );
+}
+
+/// The results scene: the outcome card with the world and algorithm named
+/// alongside each other, above the Replay / Explain / Code tabs.
+class _ResultsScene extends StatelessWidget {
+  const _ResultsScene({required this.debrief, required this.spec});
+
+  final Debrief debrief;
+  final GameSpec? spec;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.gameColors;
+    final problem = context.watch<GameController>().problem;
+    final world = worldForTopic(problem?.topic.wire);
+    final algorithm = problem?.title ?? debrief.problemId;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ResultCard(debrief: debrief, spec: spec),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(color: world.color, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  '${world.name} · $algorithm',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: colors.muted),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+}
 
 class _Section extends StatelessWidget {
   const _Section({required this.number, required this.title, required this.subtitle, required this.child});

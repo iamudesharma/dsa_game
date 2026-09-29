@@ -32,10 +32,25 @@ export interface ProviderAttempt {
 
 // ---------------------------------------------------------------- catalogue
 
+/**
+ * A catalogue entry, as sent to a client.
+ *
+ * `ProblemMeta` plus ONE extra field, and it is the field that stops the
+ * catalogue from over-promising. `PROBLEMS` is the list of what is PLANNED;
+ * `playable` is the list of what actually works, computed server-side from
+ * whether an oracle is registered. Without it every problem rendered as an
+ * equal clickable option and a learner found out which ones were real by
+ * clicking and reading a 500.
+ */
+export type ProblemDto = ProblemMeta & {
+  /** False when the problem is listed but its oracle is not built yet. */
+  playable: boolean
+}
+
 export interface TopicDto {
   id: string
   label: string
-  problems: ProblemMeta[]
+  problems: ProblemDto[]
 }
 
 export interface CatalogueResponse {
@@ -145,6 +160,22 @@ export interface HintResponse {
   /** 'laya' when the local model chose it, 'heuristic' otherwise. */
   source: 'laya' | 'heuristic'
   confidence?: number
+  /**
+   * Set when the authored hint was rejected by the spoiler screen and the
+   * engine's own description of the board was substituted.
+   *
+   * WHY IT IS ON THE WIRE. The screen exists because a hint can hand over the
+   * answer or the algorithm, and a screen nobody can observe is a screen nobody
+   * will notice is broken. Reporting which rule fired makes the substitution
+   * auditable from a client, and it is what the debrief needs in order to tell
+   * the truth about how a run was helped.
+   */
+  screened?: {
+    /** Which class of leak was caught. */
+    id: 'notation' | 'position' | 'resolution' | 'pasted-code' | 'unearned-praise'
+    /** Human-readable, for a server log or a debug panel. */
+    reason: string
+  }
 }
 
 // ------------------------------------------------------------------- decide
@@ -206,6 +237,18 @@ export const API_ERRORS = {
    */
   unknownThread: 'UNKNOWN_THREAD',
   generationFailed: 'GENERATION_FAILED',
+  /**
+   * The problem is in the catalogue but has no oracle yet, so there is no
+   * definition of correct and the game cannot be played.
+   *
+   * ITS OWN CODE, and it is a 4xx rather than a 500, because "we have not built
+   * this yet" is a fact about the app rather than a fault in the request. It
+   * used to be a thrown `Error` from `requireOracle` that escaped
+   * `POST /api/generate` and surfaced as `INTERNAL` — which told the client
+   * "the server broke" and offered a "Try again" button, on a request that
+   * could never succeed no matter how many times it was sent.
+   */
+  problemNotPlayable: 'PROBLEM_NOT_PLAYABLE',
   internal: 'INTERNAL',
 } as const
 

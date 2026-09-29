@@ -1,6 +1,11 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  // Keep `next dev` output separate from `next build`. Both commands otherwise
+  // write to `.next`, so a production build can replace the assets referenced
+  // by an already-running dev server and leave the browser unstyled/unhydrated.
+  distDir: process.env.NODE_ENV === 'development' ? '.next-dev' : '.next',
+
   // The shared packages ship TypeScript sources rather than built output, so
   // they are transpiled by the app rather than imported from dist.
   transpilePackages: ['@dsa/game-schema', '@dsa/game-engine', '@dsa/dsa-oracles'],

@@ -17,7 +17,7 @@
  *   OPENCODE_GO_BASE_URL        (default https://opencode.ai/zen/go/v1)
  *   OPENCODE_GO_MODEL           empty = resolve from the live GET /models list
  *   OPENCODE_GO_TEMPERATURE     (default 0.9 — variety is the point)
- *   OPENCODE_GO_MAX_TOKENS      (default 4000)
+ *   OPENCODE_GO_MAX_TOKENS      (default 16000; reasoning tokens count toward the limit)
  *   OPENCODE_GO_TIMEOUT_MS      (default 180000)
  *   OPENCODE_AGENT               agent name to pin (default dsa-game-gen)
  *   OPENCODE_PASSWORD            basic-auth password printed by `opencode serve`

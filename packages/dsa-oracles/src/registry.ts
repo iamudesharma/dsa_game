@@ -7,7 +7,7 @@
  * module directly, so swapping an implementation is a one-line change here.
  *
  * ---------------------------------------------------------------------------
- * ADDING THE REMAINING PROBLEMS
+ * ADDING A PROBLEM
  *
  * 1. Create `src/problems/<id>.ts` exporting
  *    `export function create<PascalCase>Oracle(): Oracle` plus any extra
@@ -25,29 +25,24 @@
  *    lo/hi invariant, one full winning action sequence, one wrong-but-legal
  *    sequence, and illegal actions not throwing.
  *
- * Remaining ids from `PROBLEM_IDS` (i.e. `PROBLEMS` minus what is implemented
- * here — recompute the list with `unimplementedProblemIds()` rather than
- * trusting a copy, so this comment cannot silently go stale):
- *
- *   - array-max-min
- *   - two-sum
- *   - move-zeroes
- *   - bubble-sort
- *   - selection-sort
- *   - valid-parentheses
- *   - stack-push-pop
- *   - queue-operations
- *   - linked-list-traversal
- *   - reverse-linked-list
- *
- * That is ten. `PROBLEMS` currently holds eleven entries in total; its header
- * comment says "twelve", so do not size a plan off that number — read
- * `PROBLEM_IDS`.
+ * The catalogue currently has an oracle for every id. Keep the registry and
+ * catalogue honest by checking `unimplementedProblemIds()` when adding games.
  */
 
 import { PROBLEM_IDS } from '@dsa/game-schema'
 import type { Oracle } from '@dsa/game-schema'
+import { createArrayMaxMinOracle } from './problems/array-max-min.js'
 import { createBinarySearchOracle } from './problems/binary-search.js'
+import { createSortOracle } from './problems/sorts.js'
+import {
+  createLinkedListTraversalOracle,
+  createMoveZeroesOracle,
+  createQueueOperationsOracle,
+  createReverseLinkedListOracle,
+  createStackPushPopOracle,
+  createTwoSumOracle,
+  createValidParenthesesOracle,
+} from './problems/remaining.js'
 
 /**
  * Implemented oracle factories, keyed by problem id. Built once at module
@@ -55,7 +50,17 @@ import { createBinarySearchOracle } from './problems/binary-search.js'
  * instance is safe and saves a rebuild per request.
  */
 export const ORACLES: Readonly<Record<string, Oracle>> = {
+  'array-max-min': createArrayMaxMinOracle(),
   'binary-search': createBinarySearchOracle(),
+  'bubble-sort': createSortOracle('bubble-sort'),
+  'selection-sort': createSortOracle('selection-sort'),
+  'two-sum': createTwoSumOracle(),
+  'move-zeroes': createMoveZeroesOracle(),
+  'valid-parentheses': createValidParenthesesOracle(),
+  'stack-push-pop': createStackPushPopOracle(),
+  'queue-operations': createQueueOperationsOracle(),
+  'linked-list-traversal': createLinkedListTraversalOracle(),
+  'reverse-linked-list': createReverseLinkedListOracle(),
 }
 
 const IMPLEMENTED_IDS: ReadonlySet<string> = new Set(Object.keys(ORACLES))

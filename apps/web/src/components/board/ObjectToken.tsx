@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import type { GameObject, GameSpec, ObjectState } from '@dsa/game-schema'
 import type { TargetMarker, TargetStrength } from '@/lib/guidance'
 import { targetStrength } from '@/lib/guidance'
+import { displayTokenState, tokenIsInert } from '@/lib/token-state'
 import { cn } from '@/lib/format'
 import { ObjectGlyph, glyphFor } from './ObjectGlyph'
 
@@ -198,11 +199,10 @@ export function ObjectToken({
   layout = true,
   className,
 }: ObjectTokenProps) {
-  const state = overrideState ?? object.state
+  const state = overrideState ?? displayTokenState(object, serverSelected)
   const lookStyle = look(state, picked, pickIndex)
-  // `eliminated` and `locked` are read-only states: clicking them is a no-op
-  // rather than a legal move the oracle would reject.
-  const inert = state === 'eliminated' || state === 'locked'
+  // Keep comparison operands and fixed targets usable; search exclusions stay inert.
+  const inert = tokenIsInert(state, spec.problemId)
   const glyph = glyphFor(spec, object.id, object.kind, object.label)
   // `turnPrompt.targets` lists everything legal, with the engine's actual choice
   // tagged `current`. Puling all of them identically would be worse than useless,
@@ -242,7 +242,7 @@ export function ObjectToken({
         <ObjectGlyph visual={object.visual} glyph={glyph} size={20} />
         <span
           className={cn(
-            'mono truncate text-[0.95rem] leading-tight font-semibold',
+            'mono break-words max-w-40 text-[0.95rem] leading-tight font-semibold',
             state === 'eliminated' && 'line-through',
             isPrimary && 'uppercase tracking-wide',
           )}
@@ -287,7 +287,7 @@ export function ObjectToken({
   if (!onActivate || inert) {
     return (
       <motion.div
-        {...(layout ? { layout: true, transition: { type: 'spring', stiffness: 380, damping: 32 } } : {})}
+        {...(layout ? { layout: true, layoutId: object.id, transition: { type: 'spring', stiffness: 380, damping: 32 } } : {})}
         className={baseClass}
         style={dragStyle}
         role="img"
@@ -302,7 +302,7 @@ export function ObjectToken({
   return (
     <motion.button
       type="button"
-      {...(layout ? { layout: true, transition: { type: 'spring', stiffness: 380, damping: 32 } } : {})}
+      {...(layout ? { layout: true, layoutId: object.id, transition: { type: 'spring', stiffness: 380, damping: 32 } } : {})}
       className={cn(baseClass, 'hover:brightness-125', disabled && 'opacity-50')}
       style={dragStyle}
       onClick={() => onActivate(object.id)}

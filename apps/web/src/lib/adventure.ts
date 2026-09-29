@@ -1,0 +1,55 @@
+import { DSA_TOPICS, PROBLEMS, type DsaTopic } from '@dsa/game-schema'
+
+export interface WorldDefinition { id: DsaTopic; name: string; subtitle: string; color: string; pale: string; mark: string }
+export const WORLDS: WorldDefinition[] = [
+  { id: 'arrays', name: 'Array Orchard', subtitle: 'A little order. A lot to discover.', color: '#386448', pale: '#d9ebbf', mark: '01' },
+  { id: 'sorting', name: 'Sorting Workshop', subtitle: 'Make every piece fall into place.', color: '#9b492c', pale: '#f9d0ae', mark: '02' },
+  { id: 'stack', name: 'Stack Tower', subtitle: 'Build it up. Take it from the top.', color: '#68518d', pale: '#e6daf5', mark: '03' },
+  { id: 'queue', name: 'Queue Station', subtitle: 'Everyone gets their turn.', color: '#246b75', pale: '#c9e9e8', mark: '04' },
+  { id: 'binary-search', name: 'Search Observatory', subtitle: 'Narrow the sky. Find your star.', color: '#425c96', pale: '#d9e3ff', mark: '05' },
+  { id: 'linked-list', name: 'Linked-list Railway', subtitle: 'Follow the connections.', color: '#8c4b65', pale: '#f4d4df', mark: '06' },
+]
+export function worldForProblem(id?: string) { return WORLDS.find(w => w.id === PROBLEMS.find(p => p.id === id)?.topic) ?? WORLDS[0]! }
+export interface PlayerPreferences { mapFrame: DsaTopic | 'default' }
+export interface AdventureProgress { version: 1; completed: Record<string, string>; preferences: PlayerPreferences; legacyImported: boolean }
+export const PROGRESS_KEY = 'play-the-algorithms:adventure:v1'
+const LEGACY_KEY = 'play-the-algorithms:linked-list-solved:v1'
+export const freshProgress = (): AdventureProgress => ({ version: 1, completed: {}, preferences: { mapFrame: 'default' }, legacyImported: false })
+export function completedWorlds(progress: AdventureProgress): WorldDefinition[] {
+  return WORLDS.filter(w => PROBLEMS.filter(p => p.topic === w.id).every(p => Boolean(progress.completed[p.id])))
+}
+export function nextMission(progress: AdventureProgress) {
+  return DSA_TOPICS.flatMap(topic => PROBLEMS.filter(p => p.topic === topic)).find(p => !progress.completed[p.id])
+}
+export function recordCompletion(progress: AdventureProgress, state: { problemId: string; phase: string }, now = new Date().toISOString()): AdventureProgress {
+  if (state.phase !== 'won' || !PROBLEMS.some(p => p.id === state.problemId) || progress.completed[state.problemId]) return progress
+  return { ...progress, completed: { ...progress.completed, [state.problemId]: now } }
+}
+export function readProgress(storage: Pick<Storage, 'getItem'>, now = new Date().toISOString()): { progress: AdventureProgress; warning: boolean } {
+  let progress = freshProgress()
+  let warning = false
+  try {
+    const raw = storage.getItem(PROGRESS_KEY)
+    if (raw) {
+      const value = JSON.parse(raw)
+      if (value?.version !== 1 || !value.completed || typeof value.completed !== 'object' || Array.isArray(value.completed)) throw new Error('Invalid progress')
+      const completed = Object.fromEntries(Object.entries(value.completed).filter(([id, time]) => PROBLEMS.some(p => p.id === id) && typeof time === 'string' && Number.isFinite(Date.parse(time)))) as Record<string, string>
+      progress = { version: 1, completed, preferences: { mapFrame: 'default' }, legacyImported: value.legacyImported === true }
+      if (completedWorlds(progress).some(w => w.id === value.preferences?.mapFrame)) progress.preferences.mapFrame = value.preferences.mapFrame
+    }
+  } catch { warning = true }
+  if (!progress.legacyImported) {
+    try {
+      const legacy = JSON.parse(storage.getItem(LEGACY_KEY) ?? '[]')
+      if (Array.isArray(legacy)) {
+        if (legacy.includes('count-nodes')) progress = recordCompletion(progress, { problemId: 'linked-list-traversal', phase: 'won' }, now)
+        if (legacy.includes('reverse-list')) progress = recordCompletion(progress, { problemId: 'reverse-linked-list', phase: 'won' }, now)
+      }
+    } catch { warning = true }
+    progress.legacyImported = true
+  }
+  return { progress, warning }
+}
+export function saveProgress(storage: Pick<Storage, 'setItem'>, progress: AdventureProgress): boolean {
+  try { storage.setItem(PROGRESS_KEY, JSON.stringify(progress)); return true } catch { return false }
+}

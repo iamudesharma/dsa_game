@@ -24,7 +24,12 @@ export function SwapPair({ spec, model, binding, disabled, picked, setPicked, di
 
   return (
     <section className="panel p-4" aria-label={binding.label}>
-      <h2 className="text-[1.05rem] font-bold text-[var(--dsa-ink)]">{binding.label}</h2>
+      {/* The host blanks `binding.label` when the instruction is already on
+          screen, so this heading disappears with it rather than repeating an
+          imperative the learner has just read at 2rem. */}
+      {binding.label ? (
+        <h2 className="text-[1.05rem] font-bold text-[var(--dsa-ink)]">{binding.label}</h2>
+      ) : null}
       <p className="mt-0.5 text-[0.85rem] text-[var(--dsa-muted)]">
         {binding.hint ?? `Choose two ${spec.vocabulary.objectPlural} to put in each other's place.`}
       </p>

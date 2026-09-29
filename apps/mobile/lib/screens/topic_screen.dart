@@ -1,17 +1,25 @@
-/// Topic picker — the six DSA topics from `GET /api/catalogue`.
+/// The adventure map: six illustrated world destinations with mission nodes.
 ///
-/// No pull-to-refresh: the catalogue is small and static for a demo server, so
-/// the screen uses explicit reload affordances and real error states (including
-/// "the API is not running", which is the single most common first-run state).
+/// Replaces the old topic-card grid. Every mission stays accessible from the
+/// start — completion stamps, the collection sheet and the suggested next
+/// mission orient the player; nothing is ever locked. Provider diagnostics
+/// live in a secondary section, and a health-probe failure never blocks the
+/// catalogue (see [CatalogueController]).
 library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../adventure/progress.dart';
+import '../adventure/progress_store.dart';
+import '../adventure/robot_guide.dart';
+import '../adventure/world_scene.dart';
+import '../adventure/worlds.dart';
 import '../models/problem.dart';
 import '../state/catalogue_controller.dart';
 import '../theme/palette.dart';
 import '../widgets/common.dart';
+import 'learn_screen.dart';
 import 'problem_screen.dart';
 
 class TopicScreen extends StatefulWidget {
@@ -25,8 +33,8 @@ class _TopicScreenState extends State<TopicScreen> {
   @override
   void initState() {
     super.initState();
-    // Kick the load off after the first frame so the route transition is not
-    // blocked behind a network call.
+    // Kick loads off after the first frame so the route transition is not
+    // blocked behind network or storage calls.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final catalogue = context.read<CatalogueController>();
       if (!catalogue.hasData && !catalogue.isLoading) catalogue.load();
@@ -36,35 +44,48 @@ class _TopicScreenState extends State<TopicScreen> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<CatalogueController>();
-    final colors = context.gameColors;
+    final adventure = context.watch<AdventureController>();
     final catalogue = controller.catalogue;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('DSA by playing'),
+        title: const Text('Play the Algorithms'),
         actions: [
+          IconButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const LearnScreen()),
+            ),
+            icon: const Icon(Icons.menu_book_outlined),
+            tooltip: 'Field notebook',
+          ),
+          IconButton(
+            onPressed: catalogue == null ? null : () => _openCollection(context, catalogue),
+            icon: Badge(
+              label: Text('${adventure.progress.completed.length}'),
+              child: const Icon(Icons.emoji_events_outlined),
+            ),
+            tooltip: 'Your collection',
+          ),
           IconButton(
             onPressed: controller.isLoading ? null : () => controller.load(),
             icon: controller.isLoading
                 ? SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: colors.primary),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: context.gameColors.primary),
                   )
                 : const Icon(Icons.refresh_rounded),
             tooltip: 'Reload catalogue',
           ),
         ],
       ),
-      body: SafeArea(
-        child: _body(context, controller, catalogue),
-      ),
+      body: SafeArea(child: _body(context, controller, catalogue)),
     );
   }
 
   Widget _body(BuildContext context, CatalogueController controller, CatalogueResponse? catalogue) {
     if (catalogue == null && controller.error != null) {
-      return _Centered(
+      return Center(
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: ApiErrorCard(
@@ -77,7 +98,7 @@ class _TopicScreenState extends State<TopicScreen> {
     }
 
     if (catalogue == null || catalogue.isEmpty) {
-      return _Centered(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -101,113 +122,290 @@ class _TopicScreenState extends State<TopicScreen> {
       );
     }
 
+    final adventure = context.watch<AdventureController>();
+    final orderedIds = [for (final t in catalogue.topics) for (final p in t.problems) p.id];
+    final nextId = nextMission(adventure.progress, orderedIds);
+    final nextProblem = nextId == null ? null : catalogue.problemById(nextId);
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
       children: [
+        if (adventure.warning)
+          _WarningBanner(
+            text: 'Progress storage is unavailable or was reset. You can keep playing; new stamps may not be kept.',
+          ),
+        _Hero(nextProblem: nextProblem, catalogue: catalogue),
+        const SizedBox(height: 16),
+        const SectionHeading(title: 'the adventure map', icon: Icons.map_outlined),
+        const SizedBox(height: 4),
         Text(
-          'Pick a topic. Every game is generated for you: a theme, a story and a real algorithm to run.',
+          'Every world is open. Pick what sparks your curiosity.',
           style: TextStyle(fontSize: 12.5, height: 1.35, color: context.gameColors.muted),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         for (final topic in catalogue.topics) ...[
-          _TopicCard(
-            topic: topic,
-            onOpen: () => _openTopic(context, topic),
-          ),
-          const SizedBox(height: 10),
+          _WorldCard(topic: topic, nextProblemId: nextId),
+          const SizedBox(height: 12),
         ],
-        const SizedBox(height: 6),
-        _Footer(catalogue: catalogue, controller: controller),
+        const SizedBox(height: 8),
+        _Diagnostics(catalogue: catalogue, controller: controller),
       ],
     );
   }
 
-  void _openTopic(BuildContext context, TopicDto topic) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => ProblemScreen(topic: topic)),
+  void _openCollection(BuildContext context, CatalogueResponse catalogue) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => _CollectionSheet(catalogue: catalogue),
     );
   }
 }
 
-class _TopicCard extends StatelessWidget {
-  const _TopicCard({required this.topic, required this.onOpen});
+/// The hero: greeting, suggested next mission, and pace note.
+class _Hero extends StatelessWidget {
+  const _Hero({required this.nextProblem, required this.catalogue});
+
+  final ProblemMeta? nextProblem;
+  final CatalogueResponse catalogue;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.gameColors;
+    final adventure = context.watch<AdventureController>();
+    final done = adventure.progress.completed.length;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.muted.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Big ideas. Small adventures.',
+            style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: colors.onSurface),
+          ),
+          const SizedBox(height: 4),
+          RobotGuide(
+            text: done == 0
+                ? 'Swap, stack, search, and explore. Curiosity is your superpower.'
+                : 'Welcome back, explorer. $done of ${catalogue.problemCount} missions stamped.',
+          ),
+          const SizedBox(height: 10),
+          if (nextProblem != null)
+            FilledButton.icon(
+              onPressed: () => _openProblem(context, nextProblem!),
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: Text(done == 0 ? "Let's play" : 'Keep exploring'),
+            )
+          else
+            Row(
+              children: [
+                Icon(Icons.emoji_events_rounded, color: colors.accent),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Every mission stamped. The map is yours.',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: colors.onSurface),
+                  ),
+                ),
+              ],
+            ),
+          const SizedBox(height: 6),
+          Text(
+            '6 worlds · ${catalogue.problemCount} missions · your own pace',
+            style: TextStyle(fontSize: 11, color: colors.muted),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openProblem(BuildContext context, ProblemMeta problem) {
+    final catalogue = context.read<CatalogueController>().catalogue;
+    final topic = catalogue?.topics.firstWhere(
+      (t) => t.problems.any((p) => p.id == problem.id),
+      orElse: () => catalogue.topics.first,
+    );
+    if (topic == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ProblemScreen(topic: topic, initialProblemId: problem.id),
+      ),
+    );
+  }
+}
+
+/// One illustrated destination with its mission nodes.
+class _WorldCard extends StatelessWidget {
+  const _WorldCard({required this.topic, required this.nextProblemId});
 
   final TopicDto topic;
+  final String? nextProblemId;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.gameColors;
+    final adventure = context.watch<AdventureController>();
+    final world = worldForTopic(topic.topic?.wire ?? topic.id);
+    final done = topic.problems.where((p) => adventure.progress.completed.containsKey(p.id)).length;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.muted.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+            child: Row(
+              children: [
+                _WorldDot(number: world.mark, color: world.color),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        world.name,
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: colors.onSurface),
+                      ),
+                      Text(
+                        '${topic.label} · ${world.subtitle}',
+                        style: TextStyle(fontSize: 11, color: colors.muted),
+                      ),
+                    ],
+                  ),
+                ),
+                MiniLabel(
+                  text: done == topic.problems.length ? '★ complete' : '$done/${topic.problems.length}',
+                  icon: done == topic.problems.length ? Icons.star_rounded : Icons.explore_outlined,
+                  color: done == topic.problems.length ? colors.accent : colors.muted,
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+            child: WorldScene(world: world, height: 104),
+          ),
+          for (var i = 0; i < topic.problems.length; i++)
+            _MissionNode(
+              problem: topic.problems[i],
+              index: i,
+              solved: adventure.progress.completed.containsKey(topic.problems[i].id),
+              suggested: nextProblemId == topic.problems[i].id,
+              onOpen: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ProblemScreen(topic: topic, initialProblemId: topic.problems[i].id),
+                ),
+              ),
+            ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _WorldDot extends StatelessWidget {
+  const _WorldDot({required this.number, required this.color});
+
+  final String number;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 38,
+      height: 38,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
+      child: Text(
+        number,
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Colors.white),
+      ),
+    );
+  }
+}
+
+class _MissionNode extends StatelessWidget {
+  const _MissionNode({
+    required this.problem,
+    required this.index,
+    required this.solved,
+    required this.suggested,
+    required this.onOpen,
+  });
+
+  final ProblemMeta problem;
+  final int index;
+  final bool solved;
+  final bool suggested;
   final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.gameColors;
-    final enumTopic = topic.topic;
-    final icon = enumTopic?.icon ?? Icons.category_outlined;
-
-    return Material(
-      color: colors.surface,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onOpen,
-        borderRadius: BorderRadius.circular(18),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: colors.muted.withValues(alpha: 0.22)),
-          ),
-          padding: const EdgeInsets.fromLTRB(14, 13, 12, 13),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(13),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 4, 10, 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onOpen,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
+            child: Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: solved
+                        ? colors.success.withValues(alpha: 0.18)
+                        : colors.primary.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: solved
+                          ? colors.success.withValues(alpha: 0.5)
+                          : colors.muted.withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: solved
+                      ? Icon(Icons.check_rounded, size: 18, color: colors.success, semanticLabel: 'Completed')
+                      : Text(
+                          '${index + 1}'.padLeft(2, '0'),
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: colors.primary),
+                        ),
                 ),
-                child: Icon(icon, color: colors.primary, size: 21),
-              ),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        problem.title,
+                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: colors.onSurface),
+                      ),
+                      if (suggested)
                         Text(
-                          topic.label,
-                          style: TextStyle(
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.w800,
-                            color: colors.onSurface,
-                          ),
+                          'Suggested next adventure',
+                          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: colors.accent),
                         ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: colors.muted.withValues(alpha: 0.16),
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          child: Text(
-                            '${topic.problems.length}',
-                            style: TextStyle(
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w900,
-                              color: colors.muted,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      enumTopic?.blurb ?? '',
-                      style: TextStyle(fontSize: 11.5, height: 1.3, color: colors.muted),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Icon(Icons.chevron_right_rounded, color: colors.muted, size: 22),
-            ],
+                Icon(Icons.chevron_right_rounded, color: colors.muted, size: 22),
+              ],
+            ),
           ),
         ),
       ),
@@ -215,9 +413,139 @@ class _TopicCard extends StatelessWidget {
   }
 }
 
-/// Health + tier status, so it is obvious *why* generation is slow or down.
-class _Footer extends StatelessWidget {
-  const _Footer({required this.catalogue, required this.controller});
+class _WarningBanner extends StatelessWidget {
+  const _WarningBanner({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.gameColors;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.fromLTRB(12, 9, 12, 9),
+      decoration: BoxDecoration(
+        color: Color.lerp(colors.surface, colors.accent, 0.12)!,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.accent.withValues(alpha: 0.4)),
+      ),
+      child: Text(text, style: TextStyle(fontSize: 11.5, color: colors.onSurface)),
+    );
+  }
+}
+
+/// Stamps, world badges and map frames.
+class _CollectionSheet extends StatelessWidget {
+  const _CollectionSheet({required this.catalogue});
+
+  final CatalogueResponse catalogue;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.gameColors;
+    final adventure = context.watch<AdventureController>();
+    final missionIds = {
+      for (final topic in catalogue.topics)
+        worldForTopic(topic.topic?.wire ?? topic.id): [for (final p in topic.problems) p.id],
+    };
+    final badges = completedWorlds(adventure.progress, missionIds);
+    final frames = ['default', for (final w in badges) w.topic.wire];
+
+    return SafeArea(
+      child: ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
+        children: [
+          Text(
+            'Your collection',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: colors.onSurface),
+          ),
+          const SizedBox(height: 4),
+          const RobotGuide(
+            text: 'Every solved mission earns a stamp. Finish a whole world for its badge and map frame.',
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '${adventure.progress.completed.length} mission stamps · ${badges.length} world badges',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: colors.muted),
+          ),
+          const SizedBox(height: 10),
+          for (final world in worlds)
+            _BadgeRow(
+              world: world,
+              earned: badges.contains(world),
+              count: missionIds[world]?.where(adventure.progress.completed.containsKey).length ?? 0,
+              total: missionIds[world]?.length ?? 0,
+            ),
+          const SizedBox(height: 12),
+          Text('Map frame', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: colors.onSurface)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final frame in frames)
+                ChoiceChip(
+                  selected: adventure.progress.mapFrame == frame,
+                  onSelected: (_) {
+                    adventure.selectFrame(frame, missionIds);
+                  },
+                  label: Text(frame == 'default' ? 'Original' : worldForTopic(frame).name),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Saved on this device. No account needed.',
+            style: TextStyle(fontSize: 11, color: colors.muted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BadgeRow extends StatelessWidget {
+  const _BadgeRow({required this.world, required this.earned, required this.count, required this.total});
+
+  final WorldDefinition world;
+  final bool earned;
+  final int count;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.gameColors;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(
+            earned ? Icons.star_rounded : Icons.star_outline_rounded,
+            color: earned ? colors.accent : colors.muted,
+            size: 22,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              world.name,
+              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: colors.onSurface),
+            ),
+          ),
+          Text(
+            earned ? 'Collected!' : '$count/$total',
+            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: earned ? colors.accent : colors.muted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Provider tiers, Laya and version — secondary on purpose. The map above
+/// never depends on any of it.
+class _Diagnostics extends StatelessWidget {
+  const _Diagnostics({required this.catalogue, required this.controller});
 
   final CatalogueResponse catalogue;
   final CatalogueController controller;
@@ -226,16 +554,23 @@ class _Footer extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.gameColors;
     final health = controller.health;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      shape: const Border(),
+      leading: Icon(Icons.dns_outlined, color: colors.muted, size: 18),
+      title: Text(
+        'Connection & diagnostics',
+        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: colors.muted),
+      ),
       children: [
-        const SectionHeading(title: 'api', icon: Icons.dns_rounded),
-        const SizedBox(height: 7),
-        Text(
-          controller.baseUrl,
-          style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: colors.muted),
-        ),
-        const SizedBox(height: 8),
+        if (health == null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Service status is unavailable. Missions can still be started.',
+              style: TextStyle(fontSize: 11.5, color: colors.muted),
+            ),
+          ),
         Wrap(
           spacing: 6,
           runSpacing: 6,
@@ -259,21 +594,18 @@ class _Footer extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 10),
-        Text(
-          '${catalogue.problemCount} problems across ${catalogue.topics.length} topics.',
-          style: TextStyle(fontSize: 11, color: colors.muted),
+        const SizedBox(height: 8),
+        Text(controller.baseUrl, style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: colors.muted)),
+        const SizedBox(height: 6),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            onPressed: controller.isLoading ? null : () => controller.load(),
+            icon: const Icon(Icons.refresh_rounded, size: 15),
+            label: const Text('Refresh connection'),
+          ),
         ),
       ],
     );
   }
-}
-
-class _Centered extends StatelessWidget {
-  const _Centered({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => Center(child: child);
 }

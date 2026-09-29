@@ -49,6 +49,7 @@ export interface GenerateIntent {
   problemId: string
   difficulty?: Difficulty
   freeText?: string
+  forceTemplate?: boolean
   /** Set when the round was restarted with the same seed (the "undo"). */
   seed?: number
 }
@@ -224,7 +225,7 @@ export const useGameStore = create<GameStore>()(
           hints: [],
           // The last intent keeps the seed so an undo is one call away.
           lastIntent: payload.intent,
-          activeMechanicId: prev.activeMechanicId ?? payload.spec.mechanics[0]?.id ?? null,
+          activeMechanicId: null,
           phase: phaseFromState(payload.state),
           busy: false,
           generating: false,
@@ -253,6 +254,7 @@ export const useGameStore = create<GameStore>()(
           ...(options?.newSeed ? {} : intent.seed !== undefined ? { seed: intent.seed } : {}),
           ...(intent.difficulty ? { difficulty: intent.difficulty } : {}),
           ...(intent.freeText ? { freeText: intent.freeText } : {}),
+          ...(intent.forceTemplate ? { forceTemplate: true } : {}),
         }
         try {
           const res = await postGenerate(body)
@@ -311,7 +313,7 @@ export const useGameStore = create<GameStore>()(
             activeMechanicId:
               !res.outcome.correct && res.outcome.expected?.type
                 ? mechanicForAction(res.outcome.expected as Action)
-                : prev.activeMechanicId,
+                : null,
           }))
           return res.outcome
         } catch (cause) {

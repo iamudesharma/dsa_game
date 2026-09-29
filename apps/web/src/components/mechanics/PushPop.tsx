@@ -43,18 +43,34 @@ export function PushPop({ spec, model, binding, disabled, picked, setPicked, dis
   if (model.containers.length === 0) {
     return (
       <section className="panel p-4" aria-label={binding.label}>
+        {/* The host blanks `binding.label` when the instruction is already on
+          screen, so this heading disappears with it rather than repeating an
+          imperative the learner has just read at 2rem. */}
+      {binding.label ? (
         <h2 className="text-[1.05rem] font-bold text-[var(--dsa-ink)]">{binding.label}</h2>
+      ) : null}
         <p className="mt-2 text-[0.92rem] text-[var(--dsa-muted)]">This board has nothing to push onto yet.</p>
       </section>
     )
   }
 
-  const topId = active ? (active.order[active.order.length - 1] ?? active.order[0] ?? '') : ''
+  const topId = active
+    ? active.kind === 'queue'
+      ? (active.order[0] ?? '')
+      : (active.order[active.order.length - 1] ?? '')
+    : ''
+  const insertLabel = active?.kind === 'queue' ? 'Enqueue' : 'Push'
+  const removeLabel = active?.kind === 'queue' ? 'Dequeue' : 'Pop'
   const empty = (active?.order.length ?? 0) === 0
 
   return (
     <section className="panel p-4" aria-label={binding.label}>
-      <h2 className="text-[1.05rem] font-bold text-[var(--dsa-ink)]">{binding.label}</h2>
+      {/* The host blanks `binding.label` when the instruction is already on
+          screen, so this heading disappears with it rather than repeating an
+          imperative the learner has just read at 2rem. */}
+      {binding.label ? (
+        <h2 className="text-[1.05rem] font-bold text-[var(--dsa-ink)]">{binding.label}</h2>
+      ) : null}
       <p className="mt-0.5 text-[0.85rem] text-[var(--dsa-muted)]">
         {binding.hint ?? `Push onto and pop off the ${spec.vocabulary.place}.`}
       </p>
@@ -89,10 +105,10 @@ export function PushPop({ spec, model, binding, disabled, picked, setPicked, dis
           </p>
           <p className="mt-1 text-[0.88rem] text-[var(--dsa-muted)]">
             {empty
-              ? 'Empty. Popping now would underflow — there is nothing to take.'
+              ? `Empty. ${removeLabel} would underflow — there is nothing to take.`
               : `The ${active.kind === 'queue' ? 'front' : 'top'} is ${
                   topId ? objectName(model, topId) : 'nothing'
-                }, so that is what a pop takes.`}
+                }, so that is what ${active.kind === 'queue' ? 'dequeue' : 'pop'} takes.`}
           </p>
         </div>
       ) : null}
@@ -104,15 +120,19 @@ export function PushPop({ spec, model, binding, disabled, picked, setPicked, dis
           onClick={() => run('push')}
           aria-label={objectId ? `Push ${objectName(model, objectId)}` : 'Pick something on the board to push first'}
         >
-          Push{objectId ? ` ${objectName(model, objectId)}` : ''}
+          {insertLabel}{objectId ? ` ${objectName(model, objectId)}` : ''}
         </Button>
         <Button
           variant="accent"
           disabled={disabled || !active || empty}
           onClick={() => run('pop')}
-          aria-label={empty ? 'Nothing to pop — this is empty' : `Take the top off ${active?.label ?? 'it'}`}
+          aria-label={empty
+            ? `Nothing to ${removeLabel.toLowerCase()} — this is empty`
+            : active?.kind === 'queue'
+              ? `Take the front of ${active.label ?? 'the queue'}`
+              : `Take the top off ${active?.label ?? 'it'}`}
         >
-          Pop
+          {removeLabel}
         </Button>
         {picked.length > 0 && (
           <Button size="sm" variant="ghost" disabled={disabled} onClick={() => setPicked([])}>

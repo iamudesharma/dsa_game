@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { LayoutGroup } from 'framer-motion'
+import { useId, useCallback, useMemo, useRef, useState } from 'react'
 import type { BoardModel } from '@/lib/board'
 import type { GameSpec, GameState, TurnPrompt } from '@dsa/game-schema'
 import type { TargetMarkers } from '@/lib/guidance'
@@ -62,6 +63,7 @@ export function Board({
   onSlotActivate,
   onObjectDrop,
 }: BoardProps) {
+  const boardId = useId()
   const [drag, setDrag] = useState<DragState | null>(null)
   // Refs mirror the drag state so the pointer handlers (which re-bind every
   // render anyway) always read the latest value without stale closures.
@@ -117,7 +119,7 @@ export function Board({
   }
 
   return (
-    <div
+    <LayoutGroup id={boardId}><div
       className="space-y-5"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -179,6 +181,6 @@ export function Board({
           This board is empty right now.
         </p>
       )}
-    </div>
+    </div></LayoutGroup>
   )
 }

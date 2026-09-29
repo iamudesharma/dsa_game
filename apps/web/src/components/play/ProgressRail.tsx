@@ -148,8 +148,8 @@ export function ProgressRail({
           <p className="mt-2.5 rounded-lg border border-[color:color-mix(in_oklab,var(--dsa-success)_45%,transparent)] bg-[color-mix(in_oklab,var(--dsa-success)_10%,transparent)] px-2.5 py-2 text-[0.9rem] leading-relaxed text-[var(--dsa-ink)]">
             You just ran <span className="mono font-bold text-[var(--dsa-success)]">{work.notation}</span> using{' '}
             <span className="mono font-bold">{work.used}</span> {work.used === 1 ? unitWord : unitWordPlural} — and the
-            worst case for this board was {work.worstCase}. That is the whole claim: the work grows with the logarithm
-            of the board, not with the board.
+            worst case for this board was {work.worstCase}. Complexity notation describes how that work changes as the
+            input grows.
           </p>
         ) : null}
       </div>

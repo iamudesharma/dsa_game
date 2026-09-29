@@ -18,7 +18,7 @@ import {
   getProblem,
 } from '@dsa/game-schema'
 import type { ApiError, ProviderTier } from '@dsa/game-schema'
-import { requireOracle } from '@dsa/dsa-oracles'
+import { getOracle } from '@dsa/dsa-oracles'
 import {
   createGameRuntime,
   deriveFeedback,
@@ -121,7 +121,15 @@ export function createApp(deps: AppDeps): Hono {
       topics: DSA_TOPICS.map((topic) => ({
         id: topic,
         label: TOPIC_LABELS[topic],
-        problems: PROBLEMS.filter((p) => p.topic === topic),
+        // `playable` is the catalogue telling the truth about itself. Without
+        // it, every problem rendered as an equal, equally-clickable option and
+        // the learner discovered the ten missing oracles by hitting a 500 —
+        // which is not something a catalogue should make you do. `PROBLEMS` is
+        // the list of what is PLANNED; this is the list of what works.
+        problems: PROBLEMS.filter((p) => p.topic === topic).map((p) => ({
+          ...p,
+          playable: getOracle(p.id) !== undefined,
+        })),
       })),
       tiers: PROVIDER_TIERS.map((tier) => ({ tier, available: false })),
       laya: { enabled: deps.decisions.isEnabled(), available: false },
@@ -143,7 +151,22 @@ export function createApp(deps: AppDeps): Hono {
       })
     }
 
-    const oracle = requireOracle(problem.id)
+    // Keep a defensive response for a future catalogue/registry mismatch.
+    // The shipped catalogue currently has an oracle for every listed problem.
+    const oracle = getOracle(problem.id)
+    if (!oracle) {
+      return fail(
+        c,
+        409,
+        API_ERRORS.problemNotPlayable,
+        `'${problem.id}' is listed but its game is not finished yet`,
+        {
+          problemId: problem.id,
+          playable: PROBLEMS.filter((p) => getOracle(p.id) !== undefined).map((p) => p.id),
+        },
+      )
+    }
+
     const seed = body.seed ?? randomSeed()
     const difficulty = body.difficulty ?? problem.defaultDifficulty
 
@@ -271,6 +294,17 @@ export function createApp(deps: AppDeps): Hono {
 
   // -------------------------------------------------------------------- hint
 
+  /**
+   * The hint ladder.
+   *
+   * THE ORDERING DECISION IS NOT THE CONTENT DECISION. This route used to read
+   * `pool[index]` itself, so whichever entry the decision layer chose went to
+   * the learner verbatim — unscreened, unprefixed, and on the default tier
+   * literally "First move: Set lo=0, hi=n-1." The decision layer is good at
+   * choosing an INDEX (a hint ordered by the operation just got wrong beats the
+   * next one in a list) and has no business choosing text. So it now picks an
+   * index, `nextHint` picks the words, and `hint-safety` clears them.
+   */
   app.post('/api/hint', async (c) => {
     const parsed = HintBodySchema.safeParse(await safeJson(c))
     if (!parsed.success) return fail(c, 400, API_ERRORS.badRequest, 'Invalid hint request')
@@ -281,19 +315,29 @@ export function createApp(deps: AppDeps): Hono {
     const pool = session.spec.narration.hintPool
     const used = session.state.progress.hintsUsed
 
-    // The engine owns hint CONTENT (the deterministic ladder, which is always
-    // algorithmically true). The decision layer only orders the pool, and for
-    // that the keyword heuristic is both instant and predictable — see the note
-    // in debrief.ts on why Laya is not consulted for structured decisions.
+    // The keyword heuristic orders the pool: it is instant, predictable, and
+    // good enough that Laya is not consulted here — see the note in debrief.ts
+    // on why the decision layer is not asked for structured decisions.
     const chosen = pickHint(pool, used, lastWrong?.dsaOp)
     const index = Number(chosen.choice)
-    const hint =
-      Number.isInteger(index) && index >= 0 && index < pool.length
-        ? (pool[index] as string)
-        : (pool[Math.min(used, Math.max(0, pool.length - 1))] ?? nextHint(session.state, session.oracle, session.spec).hint)
+    const preferIndex = Number.isInteger(index) && index >= 0 ? index : undefined
+
+    const result = nextHint(session.state, session.oracle, session.spec, { preferIndex })
+    if (result.screened !== undefined) {
+      console.warn(
+        `[api] hint screened (${result.screened.id}: ${result.screened.reason}) for game ${session.gameId}`,
+      )
+    }
 
     session.state = incrementHintsUsed(session.state)
-    return c.json({ hint, source: 'heuristic', confidence: chosen.confidence })
+    return c.json({
+      hint: result.hint,
+      source: result.source,
+      confidence: chosen.confidence,
+      ...(result.screened !== undefined
+        ? { screened: { id: result.screened.id, reason: result.screened.reason } }
+        : {}),
+    })
   })
 
   // ------------------------------------------------------------------ suggest

@@ -20,6 +20,9 @@ dependencies:
   # ChangeNotifier is in the Flutter SDK, but the widget layer needs a way to
   # rebuild on state change without a code-gen dependency.
   provider: ^6.1.2
+  # On-device progression (mission stamps, world badges, map frames, notebook
+  # drafts). The only persistence in the app; games themselves stay server-side.
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:

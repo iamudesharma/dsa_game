@@ -262,33 +262,45 @@ function buildTargets(
  *
  * choosePath's legal action names only the current element, not the branches,
  * because a branch is not a board object — it is a decision. So the branches
- * are synthesised from the object's own vocabulary ("keep the lower side"),
- * which is what the learner actually has to choose between.
+ * are described in the object's own vocabulary ("weaker than beacon 25").
+ *
+ * The ids MUST be real board object ids. An earlier version minted synthetic
+ * ones (`__branch_high_v3`) for the higher side: they parsed fine, validated
+ * fine, and highlighted nothing at all, because no tile had that id. A target
+ * that cannot be pointed at is worse than no target, so the higher side is
+ * anchored to a real element above the mid.
  */
 function branchTargets(state: GameState, spec: GameSpec): TurnTarget[] {
   const live = Object.values(state.objects).filter(
     (o) => o.kind !== 'target' && o.state !== 'eliminated' && o.value !== undefined,
   )
   if (live.length < 2) return []
+
   const midId = objectAtCursor(state)
   const mid = midId ? state.objects[midId] : undefined
+  if (!mid || mid.value === undefined) return []
 
-  const out: TurnTarget[] = []
-  if (mid) {
-    out.push({
+  const out: TurnTarget[] = [
+    {
       id: mid.id,
-      label: `${spec.vocabulary.lowerWord} than ${spec.vocabulary.object} ${mid.value ?? ''}`.trim(),
+      label: `${spec.vocabulary.lowerWord} than ${spec.vocabulary.object} ${mid.value}`,
       hint: `if the ${spec.vocabulary.target} is on the ${spec.vocabulary.lowerWord} side`,
+      role: 'current',
+    },
+  ]
+
+  const higher = live
+    .filter((o) => (o.value ?? 0) > (mid.value ?? 0))
+    .sort((a, b) => (a.value ?? 0) - (b.value ?? 0))[0]
+  const higherId = higher?.id ?? live[live.length - 1]?.id
+  if (higherId) {
+    out.push({
+      id: higherId,
+      label: `${spec.vocabulary.higherWord} than ${spec.vocabulary.object} ${mid.value}`,
+      hint: `if the ${spec.vocabulary.target} is on the ${spec.vocabulary.higherWord} side`,
       role: 'candidate',
     })
   }
-  out.push({
-    id: `__branch_high_${midId ?? 'x'}`,
-    label: `${spec.vocabulary.higherWord} than ${spec.vocabulary.object} ${mid?.value ?? 'it'}`,
-    hint: `if the ${spec.vocabulary.target} is on the ${spec.vocabulary.higherWord} side`,
-    role: 'candidate',
-  })
-  void live
   return out
 }
 
@@ -510,7 +522,7 @@ export function deJargon(text: string, spec?: GameSpec): string {
     .replace(/\bwindow\s*\[[^\]]*\]/gi, 'the rest of the board')
     .replace(/\bthe midpoint of \[[^\]]*\]/gi, 'the middle of what is left')
     .replace(/\bmidpoint of \[[^\]]*\]/gi, 'the middle of what is left')
-    .replace(/\bindex\s+-?\d+\b/gi, 'spot')
+    .replace(/\bindex\s+(-?\d+)\b/gi, 'position $1')
     .replace(/\b(lo|hi|mid|i|j)\s*=\s*-?\d+/gi, '')
     .replace(/\[\s*-?\d+\s*,\s*-?\d+\s*\]/g, 'what is left')
     .replace(/\s{2,}/g, ' ')

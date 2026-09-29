@@ -2,15 +2,40 @@ import type { GameSpec, ObjectVisual } from '@dsa/game-schema'
 
 /**
  * `ObjectVisual` covers four shapes of "how to draw a thing". The spec may also
- * supply `visual.objectGlyphs`, a loose `Record<string, string>`; the contract
- * does not say what its keys are, so we look up the most specific key first
- * (object id), then the object kind, then the label — and fall back to the
- * structured `ObjectVisual` when there is no glyph. In practice providers emit
- * either glyphs or a visual, rarely both.
+ * supply `visual.objectGlyphs`, an ORDERED PALETTE of glyph strings.
+ *
+ * It is a list rather than a map because opencode-go enforces OpenAI's strict
+ * structured-output rules, which reject JSON-Schema maps
+ * (`additionalProperties: {…}`, `propertyNames`); a Record there produced a bare
+ * `400 invalid_request_error`. See the note on `VisualSchema` in game-schema.
+ *
+ * A list has no keys, so it is indexed by object KIND. That only means
+ * something when there is one entry per kind: a shorter palette is decoration
+ * rather than an assignment, and showing a `target` with a `node` glyph is
+ * worse than showing plain text. Below full length we ignore it and let
+ * `ObjectVisual` do the work. The Flutter client applies the same rule, so the
+ * two renderers agree.
  */
+const KIND_ORDER = [
+  'item',
+  'number',
+  'node',
+  'token',
+  'door',
+  'room',
+  'slot',
+  'path',
+  'target',
+] as const
+
 export function glyphFor(spec: GameSpec, objectId: string, kind: string, label: string): string | undefined {
-  const glyphs = spec.visual.objectGlyphs
-  return glyphs[objectId] ?? glyphs[kind] ?? glyphs[label]
+  const palette = spec.visual.objectGlyphs
+  if (palette.length < KIND_ORDER.length) return undefined
+  const index = KIND_ORDER.indexOf(kind as (typeof KIND_ORDER)[number])
+  if (index < 0) return undefined
+  void objectId
+  void label
+  return palette[index]
 }
 
 const SHAPE_CLASS: Record<'circle' | 'square' | 'hex' | 'star', string> = {

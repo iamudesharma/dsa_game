@@ -193,7 +193,7 @@ export const TEMPLATE_THEMES: readonly ThemeDef[] = [
     titleTemplate: 'The {place} Crossing',
     storyTemplate:
       'The {place} runs for {n} pitches of loose rock, and each pitch is a survey {object} with a ' +
-      'grade. You must find the grade that marks the {target} camp before the weather turns. A ' +
+      'grade. You must find the grade that marks the {target} before the weather turns. A ' +
       'wrong turn costs you the whole party. This is {problem}: read the grade, then commit.',
     genre: 'nature',
     tone: 'tense',
@@ -221,7 +221,7 @@ export const TEMPLATE_THEMES: readonly ThemeDef[] = [
     key: 'robot-factory',
     titleTemplate: 'Assembly Line {n}',
     storyTemplate:
-      'Line {n} of the factory has {n} unprogrammed actuator {objectPlural} queued on the rail. ' +
+      'Line {n} of the factory has {n} unprogrammed {objectPlural} queued on the rail. ' +
       'One of them must be flagged for the {target} unit; flag the wrong one and the rail jams ' +
       'for a week. The line does not slow down. This is {problem}: read each unit, then route it.',
     genre: 'sci-fi',

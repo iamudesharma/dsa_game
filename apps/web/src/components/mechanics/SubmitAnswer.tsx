@@ -69,10 +69,18 @@ export function SubmitAnswer({
   }
 
   const marked = targetId ? findMarker(markers, targetId) : null
+  // MechanicHost hides the repeated panel heading, but the submit control still
+  // needs a visible and accessible name of its own.
+  const submitLabel = binding.label || 'Submit answer'
 
   return (
     <section className="panel p-4" aria-label={binding.label}>
-      <h2 className="text-[1.05rem] font-bold text-[var(--dsa-ink)]">{binding.label}</h2>
+      {/* The host blanks `binding.label` when the instruction is already on
+          screen, so this heading disappears with it rather than repeating an
+          imperative the learner has just read at 2rem. */}
+      {binding.label ? (
+        <h2 className="text-[1.05rem] font-bold text-[var(--dsa-ink)]">{binding.label}</h2>
+      ) : null}
       <p className="mt-0.5 text-[0.85rem] text-[var(--dsa-muted)]">
         {binding.hint ?? `Say what you found and end the run.`}
       </p>
@@ -134,7 +142,7 @@ export function SubmitAnswer({
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Button variant="primary" disabled={disabled || !targetId || value.trim() === ''} onClick={commit}>
-          {binding.label}
+          {submitLabel}
         </Button>
         {targetId ? (
           <span className="text-[0.78rem] text-[var(--dsa-faint)]">

@@ -45,7 +45,7 @@ function makeSpec(): GameSpec {
         success: '#86efac',
         danger: '#fca5a5',
       },
-      objectGlyphs: {},
+      objectGlyphs: [],
     },
     vocabulary: {
       object: 'beacon',
@@ -406,6 +406,43 @@ describe('spoiler safety', () => {
       }).state
     }
   })
+
+  it('only ever points at real board objects', () => {
+    // Regression: the branch turn used to mint `__branch_high_v3` for the higher
+    // side. It validated, rendered, and highlighted nothing, because no tile
+    // carried that id. A target id the UI cannot resolve is a dead target.
+    const { state, spec } = fresh()
+    const runtime = createRuntime()
+    const values = state.instance.values
+    const target = state.instance.target!
+
+    let s = state
+    for (let turn = 0; turn < 12 && s.phase === 'playing'; turn += 1) {
+      const prompt = deriveTurnPrompt({ state: s, oracle, spec })
+      for (const t of prompt.targets) {
+        expect(
+          s.objects[t.id],
+          `turn ${turn} target "${t.id}" is not a real board object`,
+        ).toBeDefined()
+        // Real object ids only — no synthetic prefixes, ever.
+        expect(t.id.startsWith('__')).toBe(false)
+      }
+
+      const mid = Number(s.variables['mid'])
+      if (s.internal['midChosen'] !== true) {
+        s = runtime.apply(s, { type: 'selectObject', objectId: `v${mid}` }).state
+        continue
+      }
+      const rel = values[mid]! < target ? 'gt' : values[mid]! > target ? 'lt' : 'eq'
+      s = runtime.apply(s, { type: 'comparePair', aId: `v${mid}`, bId: 'target', relation: rel }).state
+      if (rel === 'eq' || s.phase !== 'playing') break
+      s = runtime.apply(s, {
+        type: 'choosePath',
+        fromId: `v${mid}`,
+        pathId: values[mid]! < target ? 'right' : 'left',
+      }).state
+    }
+  })
 })
 
 function values1(s: GameState): number {
@@ -418,7 +455,7 @@ function target1(s: GameState): number {
 describe('deJargon', () => {
   it('rewrites notation into plain words', () => {
     const { spec } = fresh()
-    expect(deJargon('Index 3 is the midpoint of [0, 7].', spec)).not.toMatch(/index|\[0, 7\]/i)
+    expect(deJargon('Index 3 is the midpoint of [0, 7].', spec)).not.toMatch(/\bindex\b|\[0, 7\]/i)
     expect(deJargon('keeping window [4, 7]', spec)).not.toMatch(/\[4, 7\]/)
     expect(deJargon('mid = 3', spec)).not.toMatch(/mid\s*=/)
   })

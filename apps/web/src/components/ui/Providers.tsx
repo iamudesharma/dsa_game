@@ -1,5 +1,6 @@
 'use client'
 
+import { AdventureProvider } from '@/components/adventure/AdventureProvider'
 import { MotionConfig } from 'framer-motion'
 import type { ReactNode } from 'react'
 
@@ -14,5 +15,5 @@ import type { ReactNode } from 'react'
  *    that the play/debrief screens override per game spec.
  */
 export function Providers({ children }: { children: ReactNode }) {
-  return <MotionConfig reducedMotion="user">{children}</MotionConfig>
+  return <MotionConfig reducedMotion="user"><AdventureProvider>{children}</AdventureProvider></MotionConfig>
 }

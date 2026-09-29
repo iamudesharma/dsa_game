@@ -392,11 +392,18 @@ export function deriveWorkCountdown(state: GameState, prompt: TurnPrompt | null)
   // same unit as the complexity it is being held against.
   const rawComparisons = state.variables['comparisons']
   const counted = typeof rawComparisons === 'number' && Number.isFinite(rawComparisons) && rawComparisons >= 0
-  const used = counted ? rawComparisons : state.progress.steps
+  const linkedList = state.problemId === 'linked-list-traversal' || state.problemId === 'reverse-linked-list'
+  // The answer submission closes a round; it is not a pointer operation. For
+  // linked lists, count the traversals/rewires in the work meter and leave the
+  // separate scoreboard's move total untouched.
+  const algorithmSteps = linkedList
+    ? state.trace.filter((frame) => frame.action.type !== 'submitAnswer').length
+    : state.progress.steps
+  const used = counted ? rawComparisons : algorithmSteps
   const unit: WorkCountdown['unit'] = counted ? 'comparisons' : 'moves'
 
   const declared = getProblem(state.problemId)?.complexity.time ?? null
-  const worstCase = declared ? worstCaseFor(declared, total) : null
+  const worstCase = declared ? (linkedList ? total : worstCaseFor(declared, total)) : null
 
   void prompt
 
@@ -409,7 +416,7 @@ export function deriveWorkCountdown(state: GameState, prompt: TurnPrompt | null)
     worstCase,
     remaining: worstCase === null ? null : Math.max(0, worstCase - used),
     notation: declared,
-    linearCase: Math.max(0, total - 1),
+    linearCase: Math.max(0, linkedList ? total : total - 1),
   }
 }
 

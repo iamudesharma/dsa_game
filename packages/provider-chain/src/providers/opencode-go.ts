@@ -20,17 +20,26 @@
  * failing the request, because discovery is an optimisation and the generation
  * is the thing that must happen.
  *
- * ── Headers, deliberately minimal ───────────────────────────────────────────
- * Only `content-type` and `authorization` are sent. The `x-opencode-client`,
- * `x-opencode-directory`, `x-opencode-session`, `x-opencode-ticket` and
- * `x-opencode-workspace` headers that appear inside the opencode binary belong
- * to the *local* `opencode serve` session API (see `providers/opencode.ts`), not
- * to this public HTTP endpoint. Nothing here needs them, and sending stray
- * headers to a metered public API is how you get throttled. `chain.test.ts`
- * asserts their absence so a future "just add the header" patch fails loudly.
+ * ── Headers, and why ───────────────────────────────────────────────────────
+ * Two headers beyond auth are REQUIRED, per https://opencode.ai/docs/go/:
+ * Go is metered and monitored, and it refuses requests it cannot route or
+ * attribute. Measured against the live endpoint:
  *
- * `temperature` is ~0.9, higher than the correctness tiers: the engine owns
- * correctness and this tier exists to be surprising.
+ *   400 "Request is missing x-opencode-session and cannot be routed
+ *        efficiently. Please see https://opencode.ai/docs/go/#where-can-i-use-it"
+ *
+ *   1. A client-specific `user-agent` ("dsa-game/0.1.0"), NOT a generic SDK or
+ *      HTTP-library name. The docs ask for this explicitly.
+ *   2. A STABLE `x-opencode-session` per conversation, so Go can route and
+ *      cache prompts. One id per generate() call: each call is an independent
+ *      authoring request, so sharing one id across problems would misattribute
+ *      unrelated traffic.
+ *
+ * An earlier version of this file asserted the opposite — that only
+ * `content-type` and `authorization` were needed, on the grounds that the
+ * `x-opencode-*` names in the opencode binary "belong to the local serve API".
+ * That was wrong: `x-opencode-session` is required here as well, and the
+ * failure mode is a bare 400 that reads like a schema bug rather than a header.
  */
 
 import {
@@ -38,6 +47,7 @@ import {
   gameSpecJsonSchema,
   MECHANICS,
   parseGameSpecLoose,
+  toStrictJsonSchema,
   type GameSpec,
   type ProviderTier,
 } from '@dsa/game-schema'
@@ -57,22 +67,37 @@ export interface OpencodeGoConfig {
   maxTokens: number
   /** Budget for the unauthenticated `/models` discovery call. Must stay short. */
   modelsTimeoutMs: number
+  /**
+   * Client identity sent as `user-agent`. opencode-go asks clients to identify
+   * themselves rather than shipping a generic SDK name, and it is metered, so
+   * this is part of the contract rather than cosmetics.
+   */
+  userAgent: string
+  /**
+   * Optional fixed `x-opencode-session`. Empty means "one id per generate
+   * call", which is the right default here because each call is an independent
+   * authoring request. Pin it only when several calls are genuinely one
+   * conversation and should share prompt caching.
+   */
+  sessionId: string
 }
 
 const DEFAULT_BASE_URL = 'https://opencode.ai/zen/go/v1'
 
 /**
- * Cheapest/fastest first. Used only to order the *live* list, never as an
- * assertion that a model exists.
+ * Free-first. Used only to order the *live* list, never as an assertion that a
+ * model exists. LongCat Preview Free was verified against the live GameSpec
+ * prompt on 2026-09-28; Space Bunny Free is retained as the next zero-cost
+ * option. Paid small/fast models are considered only when neither free id is
+ * present in the live catalog.
  *
- * `space-bunny-free` leads because it is free and is already recorded in
- * `.env.example` as the only opencode model that actually answered on the
- * account this was built on; the rest are the small/fast variants of the
- * families present in the live list. The *fallback* (used when `/models` is
- * unreachable) is the same free model on purpose: guessing a paid model id
- * would spend real money on a discovery failure.
+ * OpenCode marks both free ids as limited-time models, so the list can change.
+ * The *fallback* (used when `/models` is unreachable) remains a known free
+ * model on purpose: guessing a paid model id would spend real money on a
+ * discovery failure.
  */
 const MODEL_PREFERENCE: readonly string[] = [
+  'longcat-2.5-preview-free',
   'space-bunny-free',
   'mimo-v2.6-flash',
   'deepseek-flash',
@@ -85,8 +110,20 @@ const MODEL_PREFERENCE: readonly string[] = [
 /** Used when `GET /models` is unreachable and `OPENCODE_GO_MODEL` is unset. */
 const DEFAULT_MODEL = 'space-bunny-free'
 
-/** A GameSpec is a long strict JSON object; 2500 tokens is uncomfortably tight. */
-const DEFAULT_MAX_TOKENS = 4000
+/**
+ * A GameSpec is a few thousand tokens of strict JSON, and the models served here
+ * are largely REASONING models that spend tokens before they answer.
+ *
+ * Measured against `space-bunny-free` with the real GameSpec prompt:
+ *   max_tokens 4000  -> finish_reason "length", content 0 chars, reasoning_tokens 4000
+ *   max_tokens 16000 -> finish_reason "stop",   content 4970 chars, reasoning_tokens 6835
+ *
+ * So the old 4000 default did not produce a short spec — it produced an EMPTY one
+ * with every token consumed by reasoning, which surfaced as the baffling
+ * "200 with no choices[0].message.content". 16000 leaves room for the reply
+ * after the thinking. Lower it only for a non-reasoning model.
+ */
+const DEFAULT_MAX_TOKENS = 16_000
 
 /**
  * A GameSpec took ~126s end to end on this endpoint, so the default leaves
@@ -94,6 +131,13 @@ const DEFAULT_MAX_TOKENS = 4000
  * chain aborts first and the tier never gets to finish.
  */
 const DEFAULT_TIMEOUT_MS = 180_000
+
+/**
+ * Client identity. opencode-go explicitly asks clients to send their own name
+ * rather than a generic SDK/HTTP-library identifier, so this is deliberately
+ * ours and deliberately identifies what the client is.
+ */
+const DEFAULT_USER_AGENT = 'dsa-game/0.1.0 (opencode-go GameSpec generator)'
 
 const DEFAULT_TEMPERATURE = 0.9
 
@@ -119,6 +163,8 @@ export function opencodeGoConfigFromEnv(env: NodeJS.ProcessEnv = process.env): O
     temperature: num(env.OPENCODE_GO_TEMPERATURE, DEFAULT_TEMPERATURE),
     maxTokens: num(env.OPENCODE_GO_MAX_TOKENS, DEFAULT_MAX_TOKENS),
     modelsTimeoutMs: 4000,
+    userAgent: env.OPENCODE_GO_USER_AGENT?.trim() || DEFAULT_USER_AGENT,
+    sessionId: env.OPENCODE_GO_SESSION?.trim() ?? '',
   }
 }
 
@@ -217,9 +263,22 @@ export class OpencodeGoProvider implements SpecProvider {
    * not retried on every generate.
    */
   private modelPromise: Promise<string> | null = null
+  /**
+   * Identifies this provider instance inside `x-opencode-session`, and
+   * `callCounter` makes each generate() call its own conversation. No crypto
+   * needed: the value only has to be stable and distinct, not unguessable.
+   */
+  private readonly instanceId: string
+  private callCounter = 0
 
   constructor(cfg: Partial<OpencodeGoConfig> = {}) {
     this.cfg = { ...opencodeGoConfigFromEnv(), ...cfg }
+    // Per-process, per-provider-instance. Combined with callCounter this makes
+    // every generate() call a distinct conversation.
+    const salt = Math.floor(Math.random() * 0xffffff)
+      .toString(36)
+      .padStart(4, '0')
+    this.instanceId = `${salt}${Date.now().toString(36).slice(-4)}`
   }
 
   /**
@@ -252,6 +311,21 @@ export class OpencodeGoProvider implements SpecProvider {
     if (this.cfg.model.length > 0) return Promise.resolve(this.cfg.model)
     if (!this.modelPromise) this.modelPromise = this.discoverModel()
     return this.modelPromise
+  }
+
+  /**
+   * The `x-opencode-session` value for one generate() call.
+   *
+   * opencode-go wants a STABLE id per conversation so it can route and cache.
+   * One GameSpec is one conversation: its own system prompt, its own problem,
+   * its own seed. Reusing a single id across calls would attribute unrelated
+   * authoring traffic to one conversation and defeat the caching the header
+   * exists for.
+   */
+  private sessionId(): string {
+    if (this.cfg.sessionId.length > 0) return this.cfg.sessionId
+    this.callCounter += 1
+    return `gamespec-${this.instanceId}-${this.callCounter}`
   }
 
   private async discoverModel(): Promise<string> {
@@ -293,6 +367,11 @@ export class OpencodeGoProvider implements SpecProvider {
       headers: {
         authorization: `Bearer ${this.cfg.apiKey}`,
         'content-type': 'application/json',
+        // Both required by opencode-go; see the header note at the top of this
+        // file. `user-agent` identifies the client, `x-opencode-session` lets Go
+        // route and cache. Dropping either earns a bare 400.
+        'user-agent': this.cfg.userAgent,
+        'x-opencode-session': this.sessionId(),
       },
       signal: AbortSignal.timeout(this.cfg.timeoutMs),
       body: JSON.stringify({
@@ -310,9 +389,14 @@ export class OpencodeGoProvider implements SpecProvider {
           json_schema: {
             name: 'game_spec',
             strict: true,
-            schema: schemaForProblem(
-              gameSpecJsonSchema(),
-              input.problem.allowedMechanics.map((id) => ({ id, op: MECHANICS[id].op })),
+            // Narrowed to this problem's allowed mechanics so strict mode
+            // enforces the per-problem invariant, not just the id enum, then
+            // reduced to the schema subset opencode-go actually accepts.
+            schema: toStrictJsonSchema(
+              schemaForProblem(
+                gameSpecJsonSchema(),
+                input.problem.allowedMechanics.map((id) => ({ id, op: MECHANICS[id].op })),
+              ),
             ),
           },
         },
@@ -337,17 +421,29 @@ export class OpencodeGoProvider implements SpecProvider {
       throw new Error(`opencode-go returned an error envelope: ${embedded.type}: ${embedded.message.slice(0, 300)}`)
     }
 
-    const text = contentFromChatCompletion(body)
-    if (text.length === 0) {
-      throw new Error('opencode-go returned 200 with no choices[0].message.content')
+    // `length` means the model ran out of budget. Check this BEFORE the empty
+    // content check: a reasoning model that spends the whole budget thinking
+    // returns 200 with an empty message and finish_reason "length", and
+    // reporting that as "no content" hides the one thing that fixes it.
+    if (finishReason(body) === 'length') {
+      const usage = tokenUsage(body)
+      throw new SpecValidationError(
+        `response was truncated at max_tokens=${this.cfg.maxTokens} before it became valid JSON` +
+          (usage
+            ? ` (reasoning_tokens=${usage.reasoning ?? '?'}, completion_tokens=${usage.completion ?? '?'})`
+            : '') +
+          '; the models here are reasoning models, so the budget must cover their thinking as well as the reply — raise OPENCODE_GO_MAX_TOKENS',
+      )
     }
 
-    // `length` means the JSON was cut off mid-object, which is a different bug
-    // from a model that ignored the schema. Say which, so the fix (raise
-    // OPENCODE_GO_MAX_TOKENS) is obvious.
-    if (finishReason(body) === 'length') {
-      throw new SpecValidationError(
-        `response was truncated at max_tokens=${this.cfg.maxTokens} before it became valid JSON; raise OPENCODE_GO_MAX_TOKENS`,
+    const text = contentFromChatCompletion(body)
+    if (text.length === 0) {
+      const usage = tokenUsage(body)
+      throw new Error(
+        'opencode-go returned 200 with no choices[0].message.content' +
+          (usage ? ` (usage ${JSON.stringify(usage)})` : '') +
+          '; finish_reason=' +
+          String(finishReason(body) ?? 'unknown'),
       )
     }
 
@@ -396,4 +492,28 @@ function finishReason(body: unknown): string {
   const first = choices[0]
   if (!isObj(first)) return ''
   return typeof first['finish_reason'] === 'string' ? first['finish_reason'] : ''
+}
+
+/**
+ * Token counts, for explaining an empty or truncated reply.
+ *
+ * The reasoning/completion split is the whole story for a reasoning model: a
+ * reply that is empty because the budget went entirely into thinking is a very
+ * different bug from one that was refused, and the usage block is the only
+ * place that distinguishes them.
+ */
+function tokenUsage(body: unknown): { reasoning?: number; completion?: number } | null {
+  if (!isObj(body)) return null
+  const usage = body['usage']
+  if (!isObj(usage)) return null
+  const details = usage['completion_tokens_details']
+  const reasoning =
+    isObj(details) && typeof details['reasoning_tokens'] === 'number' ? details['reasoning_tokens'] : undefined
+  const completion =
+    typeof usage['completion_tokens'] === 'number' ? (usage['completion_tokens'] as number) : undefined
+  if (reasoning === undefined && completion === undefined) return null
+  return {
+    ...(reasoning === undefined ? {} : { reasoning }),
+    ...(completion === undefined ? {} : { completion }),
+  }
 }

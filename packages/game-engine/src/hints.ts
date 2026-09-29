@@ -16,9 +16,20 @@
  *               reads the generic `GameState` shape.
  *
  * Every path is total: no throws, never an empty string.
+ *
+ * EVERY RUNG IS SCREENED. Rungs 1 and 2 return prose somebody wrote — a model,
+ * or the template tier — and both of them shipped a spoiler. Rung 2 in
+ * particular is *designed* to name the move, which on a windowed problem means
+ * naming the position, which is the answer. `hint-safety.ts` is the check, and
+ * it runs on the way out of every rung rather than on the way in to one, so a
+ * rung added later cannot forget it. See that file for what is and is not
+ * screened, and why the replacement for a rejected hint is a description of the
+ * board rather than a refusal.
  */
 
 import type { GameSpec, GameState, Oracle, Variables } from '@dsa/game-schema'
+
+import { describeSearchWindow, findHintViolation, screenHint, type HintViolation } from './hint-safety.js'
 
 export type HintSource = 'spec' | 'heuristic'
 
@@ -27,6 +38,12 @@ export interface HintResult {
   source: HintSource
   /** Which rung produced this hint; spec pool index, else hintsUsed so far. */
   index: number
+  /**
+   * Set when the authored text was rejected by `hint-safety` and the board
+   * description was substituted. Present so the server can log WHICH rule
+   * fired, and so a test can assert the substitution rather than infer it.
+   */
+  screened?: HintViolation
 }
 
 /** Last-resort text. Reachable only if the state itself is unusable. */
@@ -35,10 +52,38 @@ export const FALLBACK_HINT = 'Look at the highlighted region and make one decisi
 /** Variables beyond this many are summarised as "+N more" to keep hints short. */
 const MAX_LISTED_VARIABLES = 6
 
-export function nextHint(state: GameState, oracle: Oracle, spec?: GameSpec): HintResult {
+export interface NextHintOptions {
+  /**
+   * Which pool entry the caller would rather serve, from the decision layer.
+   *
+   * The ordering of the pool is a fast local decision (Laya, or the keyword
+   * heuristic) and it is genuinely better than counting: a hint ordered by the
+   * operation the learner just got wrong beats the next one in a list. But the
+   * decision layer picks an INDEX, never content — everything it selects is
+   * still screened here, because "Laya chose it" is not a reason to trust that a
+   * model's prose is free of a position.
+   */
+  readonly preferIndex?: number
+}
+
+/**
+ * The next hint, guaranteed free of a position, a result, and the algorithm's
+ * own notation.
+ *
+ * `nextHint` used to return whichever authored string the ladder reached. It
+ * now returns whichever authored string the ladder reached *and that survives
+ * `hint-safety`*, which is the guarantee `guardrails.ts` gives the coach and
+ * which the hint path never had.
+ */
+export function nextHint(
+  state: GameState,
+  oracle: Oracle,
+  spec?: GameSpec,
+  options?: NextHintOptions,
+): HintResult {
   const used = safeCount(state?.progress?.hintsUsed)
   try {
-    const fromSpec = hintFromSpec(state, spec, used)
+    const fromSpec = hintFromSpec(state, spec, used, options?.preferIndex)
     if (fromSpec !== null) return fromSpec
 
     const fromOracle = hintFromOracle(state, oracle, used)
@@ -80,14 +125,64 @@ export function incrementHintsUsed(state: GameState): GameState {
 
 // Each rung is tried in order and may decline by returning null.
 
-function hintFromSpec(state: GameState, spec: GameSpec | undefined, used: number): HintResult | null {
+function hintFromSpec(
+  state: GameState,
+  spec: GameSpec | undefined,
+  used: number,
+  preferIndex?: number,
+): HintResult | null {
   const pool: unknown = spec?.narration?.hintPool
-  if (!Array.isArray(pool) || used < 0 || used >= pool.length) return null
-  const flavour = pool[used]
+  if (!Array.isArray(pool)) return null
+
+  // `preferIndex` is the decision layer's ordering; `used` is the ladder's own.
+  // Either way the string that comes back is authored (a model, or the template
+  // tier), so it is screened before it reaches a learner.
+  const index = inRange(pool, preferIndex) ? (preferIndex as number) : used
+  if (!inRange(pool, index)) return null
+  const flavour = pool[index]
   if (typeof flavour !== 'string' || flavour.trim() === '') return null
-  // The pool is authored prose; the first line is derived from the board so the
-  // hint stays true even when the prose is vague.
-  return { hint: `${describeStateFacts(state)}\n${flavour.trim()}`, source: 'spec', index: used }
+
+  // The pool is FLAVOUR. It is not prefixed with a state dump.
+  //
+  // The prefix used to be `describeStateFacts(state)`, which prints the
+  // algorithm's own bookkeeping verbatim — measured on a fresh binary-search
+  // board, every single hint began:
+  //
+  //   "The algorithm is now tracking comparisons=0, found=false, hi=7, lo=0,
+  //    mid=3, steps=0 (+1 more)."
+  //
+  // That is `lo=0`/`hi=7`/`mid=3` in exactly the notation `guidance.ts::deJargon`
+  // exists to strip from learner-facing text, and `hint-safety.ts` rejects it as
+  // a leak. So the two halves of this file were in direct contradiction: the
+  // screen forbade the notation and the prefix emitted it on every request.
+  // (The screen is applied below to the AUTHORED half, and `hintFromState` is
+  // where the old wording lived, so this could not be caught by screening the
+  // pool — the note was being added downstream of the check.)
+  //
+  // What a hint actually needs from the board is "where am I looking", and
+  // `hint-safety.ts::describeSearchWindow` already says it in words with no
+  // positions: "Four of the eight values are still in play." The ladder line is
+  // the teaching; the window is the context. Nothing is lost by not printing the
+  // variable table at a learner.
+  return screened(state, flavour.trim(), 'spec', index)
+}
+
+function inRange(pool: readonly unknown[], index: number | undefined): boolean {
+  return typeof index === 'number' && Number.isInteger(index) && index >= 0 && index < pool.length
+}
+
+/**
+ * Screen an authored hint, and report it if it was replaced.
+ *
+ * The ladder line is the TEACHING and it is what reaches the learner intact. A
+ * rejected line is replaced wholesale by a description of the board, because
+ * the point of a hint is the reason and `screenHint`'s fallback is the only
+ * string here that is true by construction rather than by authorship.
+ */
+function screened(state: GameState, text: string, source: HintSource, index: number): HintResult {
+  const violation = findHintViolation(text)
+  if (violation === null) return { hint: text, source, index }
+  return { hint: screenHint(text, state), source, index, screened: violation }
 }
 
 function hintFromOracle(state: GameState, oracle: Oracle, used: number): HintResult | null {
@@ -96,14 +191,32 @@ function hintFromOracle(state: GameState, oracle: Oracle, used: number): HintRes
   if (!Array.isArray(actions) || actions.length !== 1) return null
   const label = actions[0]?.label
   if (typeof label !== 'string' || label.trim() === '') return null
-  return { hint: label.trim(), source: 'heuristic', index: used }
+
+  // An oracle that leaves one legal move is telling us the answer, so its label
+  // is the strongest hint available AND the most dangerous one. Binary search's
+  // own label is "Choose index 6, the middle of [6, 7]", and on the final turn
+  // index 6 IS the answer — `guardrails.ts` documents that exact case when it
+  // declines to reuse the engine's instruction for the same reason. Screened
+  // here for the same reason: the position is what must not travel.
+  // Unprefixed on purpose. The oracle's label already names the move in full;
+  // prefixing it with "the algorithm is now tracking best=1, i=1" would restate
+  // the board and add notation to a string that is otherwise plain English.
+  return screened(state, label.trim(), 'heuristic', used)
 }
 
 function hintFromState(state: GameState, used: number): HintResult | null {
-  const variables = variableLine(state)
-  if (variables !== '') {
-    const tail = hasWindow(state) ? 'the answer can only be inside that window.' : 'decide from those values.'
-    return { hint: `${variables} — ${tail}`, source: 'heuristic', index: used }
+  // The window in words, not `lo=0, hi=7, mid=3`.
+  //
+  // This rung used to print `variableLine(state)` — the algorithm's own variable
+  // table — ahead of the sentence, on the theory that a factual prefix keeps an
+  // authored hint honest. It is the same notation `hint-safety.ts` rejects, so
+  // the two halves of this file contradicted each other: the screen forbade
+  // `lo=` and this wrote `lo=` on every request that reached the bottom rung.
+  // `describeSearchWindow` says the same thing with no positions and is derived
+  // from the state, so it cannot be wrong about the board.
+  const window = describeSearchWindow(state)
+  if (window !== '') {
+    return { hint: window, source: 'heuristic', index: used }
   }
 
   const pointer = pointerLine(state)

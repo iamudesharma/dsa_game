@@ -36,6 +36,13 @@ function nOf(state: GameState, key: string): number {
   return typeof v === 'number' && Number.isFinite(v) ? v : Number.NaN
 }
 
+/** `pathId`, but only on the frames that carry one. Narrowed so the test can
+ *  read it off a `TraceFrame` without reaching through the Action union. */
+function pathIdOf(frame: TraceFrame): string | undefined {
+  const action = frame.action as { type: string; pathId?: string }
+  return action.type === 'choosePath' ? action.pathId : undefined
+}
+
 function bOf(state: GameState, key: string): boolean {
   return state.internal[key] === true
 }
@@ -126,6 +133,61 @@ function allInstances(count: number): ProblemInstance[] {
 // ---------------------------------------------------------------------------
 
 describe('canonicalTrace correctness', () => {
+  /**
+   * The return line depends on the outcome, and the debrief highlights it.
+   *
+   * `instanceHints.targetGuaranteed` is true, so the not-found branch is not
+   * reachable through `buildInstance` — which is exactly why it needed a test
+   * written by hand. The canonical trace used to hardcode `return -1` for both
+   * outcomes, so a successful reference solution lit the one line the player
+   * never executed. An untested branch is how that survived.
+   */
+  /**
+   * The return line a PLAYED commit reports, which is a different code path from
+   * the canonical trace's and had the same bug: a successful `submitAnswer`
+   * highlighted `return -1`.
+   */
+  it('reports line 6 for a won commit and line 13 for a wrong one', () => {
+    const state = freshState(3)
+    const truth = nOf(state, 'targetIndex')
+    expect(truth).toBeGreaterThanOrEqual(0)
+
+    // `applyAction` records the frame on the NEXT state's trace, so the frame
+    // is read off the resulting trace rather than off the return value.
+    const commit = (value: number) => {
+      const result = oracle.applyAction(state, {
+        type: 'submitAnswer',
+        targetId: 'answer',
+        value: String(value),
+      })
+      return { correct: result.outcome.correct, frame: result.nextState.trace.at(-1) }
+    }
+
+    const won = commit(truth)
+    expect(won.correct).toBe(true)
+    expect(won.frame?.codeLine).toBe(6)
+
+    const lost = commit((truth + 1) % state.instance.values.length)
+    expect(lost.correct).toBe(false)
+    expect(lost.frame?.codeLine).toBe(13)
+  })
+
+  it('returns from line 6 on a hit and line 13 on a miss', () => {
+    // A hit: the generator guarantees the target is present.
+    const hit = oracle.canonicalTrace(freshState(3))
+    expect(hit[hit.length - 1]!.codeLine).toBe(6)
+
+    // A miss: an instance whose target is absent, which the generator will
+    // not produce but the trace must still describe honestly.
+    const instance = buildInstance(3)
+    const absent: ProblemInstance = { ...instance, target: undefined }
+    const missed = oracle.canonicalTrace(oracle.initState(absent))
+    expect(missed).toHaveLength(1)
+    expect(missed[0]!.dsaOp).toBe('terminate')
+    expect(missed[0]!.codeLine).toBe(13)
+    expect(missed[0]!.note).toContain('no target')
+  })
+
   it('finds the true target index on 240 seeded instances', () => {
     let checked = 0
     for (const instance of allInstances(240)) {
@@ -143,10 +205,15 @@ describe('canonicalTrace correctness', () => {
       expect(last).toBeDefined()
       if (!last) continue
 
-      // Terminates on a `return -1` / submit frame, and that frame reports the
-      // index the naive linear search also found.
+      // Terminates on the submit frame, and that frame reports the index the
+      // naive linear search also found.
       expect(last.dsaOp).toBe('terminate')
-      expect(last.codeLine).toBe(13)
+      // The return line is 6 (`return mid`) when the target WAS found and 13
+      // (`return -1`) when the window emptied. Asserting 13 unconditionally
+      // baked a real bug into this test: it passed while the canonical trace
+      // highlighted `return -1` for runs that succeeded, which is the one line
+      // the player never executed.
+      expect(last.codeLine).toBe(6)
       expect(last.action).toEqual({ type: 'submitAnswer', targetId: 'answer', value: String(truth) })
       expect(last.note).toContain(`index ${truth}`)
 
@@ -240,13 +307,32 @@ describe('canonical run invariants', () => {
           expect(mid).toBe(Math.floor((lo + hi) / 2))
         } else if (frame.dsaOp === 'choose-path') {
           const previous = frames[frame.index - 1]
-          expect(mid).toBe(Number(previous?.variables['mid']))
-          // The window strictly shrinks and mid leaves it behind.
-          expect(hi - lo + 1).toBeLessThan(Number(previous?.variables['hi']) - Number(previous?.variables['lo']) + 1)
-          expect(mid < lo || mid > hi).toBe(true)
+          if (previous?.variables['lastRelation'] === 'eq' || pathIdOf(frame) === 'found') {
+            // The HIT. The search did not shrink — the target was here — so the
+            // "window strictly shrinks" rule does not apply and mid is still the
+            // answer rather than something left behind.
+            expect(frame.codeLine).toBe(6)
+            expect(mid).toBe(Math.floor((lo + hi) / 2))
+          } else {
+            expect(mid).toBe(Number(previous?.variables['mid']))
+            // The window strictly shrinks and mid leaves it behind.
+            expect(hi - lo + 1).toBeLessThan(
+              Number(previous?.variables['hi']) - Number(previous?.variables['lo']) + 1,
+            )
+            expect(mid < lo || mid > hi).toBe(true)
+          }
         } else {
           expect(frame.dsaOp).toBe('terminate')
-          expect(mid).toBe(-1)
+          // Two different things terminate, and the difference is the answer
+          // sitting in the window: the `choosePath('found')` that reports the
+          // hit still points at it (line 6, `return mid`), while the commit
+          // that follows has no mid left to report.
+          if (pathIdOf(frame) === 'found') {
+            expect(frame.codeLine).toBe(6)
+            expect(mid).toBe(Math.floor((lo + hi) / 2))
+          } else {
+            expect(mid).toBe(-1)
+          }
         }
       }
     }
@@ -320,17 +406,32 @@ describe('canonical run invariants', () => {
     }
   })
 
-  it('emits one frame per mid / compare / eliminate step plus a terminator', () => {
+  /**
+   * The shape of a reference run, and why it is TWO terminators.
+   *
+   * A `found` run is `read, compare, choosePath` per narrowing step, then a
+   * `choosePath('found')` that REPORTS the hit, and only then the commit. The
+   * old count assumed a single terminator, because the reference used to break
+   * straight from the final comparison to `submitAnswer` — which made it
+   * UNPLAYABLE: the game asks for the path decision before it will accept a
+   * commit. `playability.test.ts` replays the reference and refused it.
+   */
+  it('emits one frame per mid / compare / eliminate step, then the hit and the commit', () => {
     for (const instance of allInstances(80)) {
       const state = oracle.initState(instance)
       const frames = oracle.canonicalTrace(state)
       const reads = frames.filter((f) => f.dsaOp === 'read').length
       const compares = frames.filter((f) => f.dsaOp === 'compare').length
       const paths = frames.filter((f) => f.dsaOp === 'choose-path').length
+      const terminators = frames.filter((f) => f.dsaOp === 'terminate').length
 
       expect(reads).toBe(compares)
       expect(paths).toBe(compares - 1)
-      expect(frames).toHaveLength(reads + compares + paths + 1)
+      // One terminator reports the hit, one commits it.
+      expect(terminators).toBe(2)
+      expect(frames).toHaveLength(reads + compares + paths + 2)
+      expect(frames[frames.length - 2] ? pathIdOf(frames[frames.length - 2]!) : undefined).toBe('found')
+      expect(frames[frames.length - 1]?.action.type).toBe('submitAnswer')
       expect(frames[frames.length - 1]?.dsaOp).toBe('terminate')
     }
   })
@@ -1100,14 +1201,13 @@ describe('registry', () => {
     expect(requireOracle('binary-search').problemId).toBe('binary-search')
     expect(() => requireOracle('not-a-problem')).toThrow(/not-a-problem/)
     expect(() => requireOracle('not-a-problem')).toThrow(/binary-search/)
-    expect(() => requireOracle('two-sum')).toThrow(/two-sum/)
+    expect(requireOracle('two-sum').problemId).toBe('two-sum')
   })
 
-  it('lists the problems that still need an oracle', () => {
+  it('has an oracle for every catalogue problem', () => {
     const missing = unimplementedProblemIds()
     expect(missing).toEqual(PROBLEM_IDS.filter((id) => !(id in ORACLES)))
-    expect(missing).not.toContain('binary-search')
-    expect(missing).toContain('two-sum')
-    expect(missing).toHaveLength(PROBLEM_IDS.length - 1)
+    expect(missing).toEqual([])
+    expect(missing).toHaveLength(PROBLEM_IDS.length - Object.keys(ORACLES).length)
   })
 })

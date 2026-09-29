@@ -11,6 +11,7 @@ import 'dart:convert';
 
 import 'package:dsa_game_mobile/main.dart';
 import 'package:dsa_game_mobile/models/action.dart';
+import 'package:dsa_game_mobile/screens/debrief_screen.dart';
 import 'package:dsa_game_mobile/screens/play_screen.dart';
 import 'package:dsa_game_mobile/services/api_client.dart';
 import 'package:dsa_game_mobile/state/game_controller.dart';
@@ -82,10 +83,18 @@ void main() {
   testWidgets('topic screen lists the catalogue and its tiers', (tester) async {
     await _bootApp(tester);
 
-    expect(find.text('DSA by playing'), findsOneWidget);
-    expect(find.text('Binary Search'), findsOneWidget);
-    expect(find.text('Linked List'), findsOneWidget);
-    // Provider availability is surfaced, not hidden.
+    expect(find.text('Play the Algorithms'), findsOneWidget);
+    // Six illustrated destinations with algorithm names alongside world names.
+    expect(find.text('Search Observatory'), findsOneWidget);
+    expect(find.text('Linked-list Railway'), findsOneWidget);
+    expect(find.text('Find the target in a sorted array'), findsOneWidget);
+    expect(find.text('Reverse a linked list'), findsOneWidget);
+    // Suggested next mission orients the player.
+    expect(find.text('Suggested next adventure'), findsOneWidget);
+    // Provider availability is surfaced in diagnostics, not hidden.
+    await _scrollTo(tester, find.text('Connection & diagnostics'));
+    await tester.tap(find.text('Connection & diagnostics'));
+    await tester.pumpAndSettle();
     expect(find.text('opencode'), findsWidgets);
     expect(find.text('template'), findsWidgets);
   });
@@ -107,7 +116,7 @@ void main() {
     await _bootApp(tester);
 
     // Topic -> problem.
-    await tester.tap(find.text('Binary Search').first);
+    await tester.tap(find.text('Find the target in a sorted array').first);
     await tester.pumpAndSettle();
     expect(find.text('The canonical algorithm'.toUpperCase()), findsOneWidget);
     expect(find.textContaining('Binary search halves'), findsOneWidget);
@@ -119,7 +128,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Generate a game'));
+    await tester.tap(find.text('Start mission'));
     await tester.pumpAndSettle();
 
     // The play screen pushed itself once the spec arrived.
@@ -151,9 +160,9 @@ void main() {
     });
     await _bootApp(tester, client: client);
 
-    await tester.tap(find.text('Binary Search').first);
+    await tester.tap(find.text('Find the target in a sorted array').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Generate a game'));
+    await tester.tap(find.text('Start mission'));
     await tester.pumpAndSettle();
 
     // The compare mechanic's two themed relation buttons.
@@ -194,9 +203,9 @@ void main() {
     });
     await _bootApp(tester, client: client);
 
-    await tester.tap(find.text('Binary Search').first);
+    await tester.tap(find.text('Find the target in a sorted array').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Generate a game'));
+    await tester.tap(find.text('Start mission'));
     await tester.pumpAndSettle();
 
     final controller = _gameController(tester);
@@ -234,9 +243,9 @@ void main() {
     });
     await _bootApp(tester, client: client);
 
-    await tester.tap(find.text('Binary Search').first);
+    await tester.tap(find.text('Find the target in a sorted array').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Generate a game'));
+    await tester.tap(find.text('Start mission'));
     await tester.pumpAndSettle();
 
     final controller = _gameController(tester);
@@ -265,41 +274,54 @@ void main() {
     });
     await _bootApp(tester, client: client);
 
-    await tester.tap(find.text('Binary Search').first);
+    await tester.tap(find.text('Find the target in a sorted array').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Generate a game'));
+    await tester.tap(find.text('Start mission'));
     await tester.pumpAndSettle();
 
     await _gameController(tester).dispatch(const SubmitAnswerAction(targetId: 't1', value: '6'));
     await tester.pumpAndSettle();
 
-    // The debrief arrived on its own.
+    // The victory moment is player-controlled: a stamp card, not an
+    // automatic push to the debrief.
+    expect(find.text('Mission complete. Stamp collected!'), findsOneWidget);
+    expect(find.byType(DebriefScreen), findsNothing);
+    await tester.tap(find.text('Explore the algorithm'));
+    await tester.pumpAndSettle();
+
+    // The debrief arrived on the player's terms.
     expect(find.text('You solved it'), findsOneWidget);
     expect(find.text('index 6'), findsOneWidget);
     expect(find.text('Play a new version of this game'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
-    // Section 1: the played run, replayable.
+    // Replay tab: the played run, replayable.
     expect(find.text('Your run, step by step'), findsOneWidget);
     expect(find.textContaining('step 2 / 2'), findsOneWidget);
 
-    // Section 3: the action meanings and the metaphor -> algorithm table.
-    await _scrollTo(tester, find.text('What you were really doing'));
+    // Explain tab: the action meanings and the metaphor -> algorithm table.
+    await tester.tap(find.text('Explain'));
+    await tester.pumpAndSettle();
+    expect(find.text('What you were really doing'), findsOneWidget);
     expect(find.text('a[mid]'), findsWidgets);
     await _scrollTo(tester, find.text('metaphor → algorithm'.toUpperCase()));
     expect(find.text('the window'), findsOneWidget);
 
-    // Section 4: real code, with the line the mistake ran on marked.
-    await _scrollTo(tester, find.text('The algorithm itself'));
+    // Code tab: real code, with the line the mistake ran on marked.
+    await tester.tap(find.text('Code'));
+    await tester.pumpAndSettle();
+    expect(find.text('The algorithm itself'), findsOneWidget);
     expect(find.text('function search(a, target) {'), findsOneWidget);
     // Once for the real code, once for the pseudocode.
     expect(find.text('you reached this'), findsNWidgets(2));
     // A language switcher, because the contract ships more than one.
     expect(find.text('python'), findsOneWidget);
 
-    // Section 5 ends with the coach's misconception. (Anything above the
+    // Explain tab ends with the coach's misconception. (Anything above the
     // scroll target is legitimately unmounted in a lazy ListView, so the
     // complexity chips are asserted in the contract test instead.)
+    await tester.tap(find.text('Explain'));
+    await tester.pumpAndSettle();
     await _scrollTo(tester, find.text('MISCONCEPTION SPOTTED'));
     expect(find.textContaining('which half survives'), findsWidgets);
     expect(tester.takeException(), isNull);
@@ -315,9 +337,9 @@ void main() {
 
   testWidgets('the hint affordance shows its source', (tester) async {
     await _bootApp(tester);
-    await tester.tap(find.text('Binary Search').first);
+    await tester.tap(find.text('Find the target in a sorted array').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Generate a game'));
+    await tester.tap(find.text('Start mission'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Hint').first);

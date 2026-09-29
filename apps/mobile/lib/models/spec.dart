@@ -113,21 +113,35 @@ class VisualSpec {
     final map = Json.map(raw);
     return VisualSpec(
       palette: Palette.from(map['palette']),
-      objectGlyphs: Json.stringMap(map['objectGlyphs']),
+      objectGlyphs: Json.stringList(map['objectGlyphs']),
       boardLabel: Json.strOrNull(map['boardLabel']),
     );
   }
 
   final Palette palette;
 
-  /// `GameObjectKind.wire` -> emoji. Any kind may be missing.
-  final Map<String, String> objectGlyphs;
+  /// An ordered glyph palette. Empty means "use the catalog default".
+  ///
+  /// A list, not a map keyed by object kind: opencode-go enforces OpenAI's
+  /// strict structured-output rules, which reject JSON-Schema maps
+  /// (`additionalProperties: {…}`, `propertyNames`). A `Record` here produced a
+  /// bare `400 invalid_request_error`, so the contract ships a list instead and
+  /// the client picks from it deterministically.
+  final List<String> objectGlyphs;
 
   final String? boardLabel;
 
-  /// The glyph for an object kind, falling back to the catalog default.
-  String glyphFor(GameObjectKind kind) =>
-      objectGlyphs[kind.wire] ?? kind.defaultGlyph;
+  /// Glyph for an object kind.
+  ///
+  /// The palette is indexed by the kind's stable ordinal, which only means
+  /// something if there is one entry per kind. A shorter palette is decoration
+  /// rather than an assignment, and mislabelling a `target` with a `node`
+  /// glyph is worse than showing plain text — so below full length we ignore it
+  /// entirely and use the catalog defaults.
+  String glyphFor(GameObjectKind kind) {
+    if (objectGlyphs.length < GameObjectKind.values.length) return kind.defaultGlyph;
+    return objectGlyphs[kind.paletteIndex % objectGlyphs.length];
+  }
 }
 
 class Vocabulary {
@@ -264,13 +278,25 @@ class SpecDebrief {
     );
   }
 
-  /// `mapping` arrives as a list of `[gameTerm, algorithmTerm]` tuples.
+  /// `mapping` arrives as a list of `{gameTerm, algorithmTerm}` objects.
+  ///
+  /// The older `[from, to]` tuple form is still accepted: a spec persisted by
+  /// a previous build can outlive a hot reload, and dropping its table would
+  /// look like a data bug rather than a migration.
   static MappingRow? _mappingFrom(Object? raw) {
-    if (raw is! List || raw.length < 2) return null;
-    final a = Json.strOrNull(raw[0]);
-    final b = Json.strOrNull(raw[1]);
-    if (a == null || b == null) return null;
-    return MappingRow(gameTerm: a, algorithmTerm: b);
+    if (raw is Map) {
+      final a = Json.strOrNull(raw['gameTerm']);
+      final b = Json.strOrNull(raw['algorithmTerm']);
+      if (a == null || b == null) return null;
+      return MappingRow(gameTerm: a, algorithmTerm: b);
+    }
+    if (raw is List && raw.length >= 2) {
+      final a = Json.strOrNull(raw[0]);
+      final b = Json.strOrNull(raw[1]);
+      if (a == null || b == null) return null;
+      return MappingRow(gameTerm: a, algorithmTerm: b);
+    }
+    return null;
   }
 
   /// One-paragraph recap of what the player actually did.

@@ -1,5 +1,5 @@
 /**
- * The 4-tier chain: opencode -> openrouter -> local-llm -> template.
+ * The 5-tier chain: OpenCode Go -> local OpenCode -> OpenRouter -> local LLM -> template.
  *
  * Two invariants:
  *   1. A provider's throw never escapes. Every failure becomes a

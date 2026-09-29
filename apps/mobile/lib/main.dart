@@ -11,14 +11,16 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'adventure/progress_store.dart';
 import 'screens/topic_screen.dart';
 import 'services/api_client.dart';
 import 'state/catalogue_controller.dart';
 import 'state/game_controller.dart';
 import 'theme/palette.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(const [
     // Portrait-first: the board, the action bar and the debrief are all laid
@@ -27,15 +29,27 @@ void main() {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  runApp(const DsaGameApp());
+  // Progression storage is best-effort: when platform storage is unavailable
+  // the app still runs, with progress kept for the session.
+  ProgressBackend backend;
+  try {
+    backend = AdventureKeyBackend(SharedPreferencesStore(await SharedPreferences.getInstance()));
+  } catch (_) {
+    backend = MemoryBackend();
+  }
+  runApp(DsaGameApp(adventureBackend: backend));
 }
 
 class DsaGameApp extends StatefulWidget {
-  const DsaGameApp({this.api, super.key});
+  const DsaGameApp({this.api, this.adventureBackend, super.key});
 
   /// Injected by tests so the whole tree can run against a mocked transport;
   /// production leaves it null and gets a client built from [ApiConfig].
   final ApiClient? api;
+
+  /// Injected by tests so progression runs on memory; production passes the
+  /// platform-storage backend built in [main].
+  final ProgressBackend? adventureBackend;
 
   @override
   State<DsaGameApp> createState() => _DsaGameAppState();
@@ -46,6 +60,7 @@ class _DsaGameAppState extends State<DsaGameApp> {
   late final bool _ownsApi;
   late final CatalogueController _catalogue;
   late final GameController _game;
+  late final AdventureController _adventure;
 
   @override
   void initState() {
@@ -54,12 +69,14 @@ class _DsaGameAppState extends State<DsaGameApp> {
     _api = widget.api ?? ApiClient(config: ApiConfig.defaults);
     _catalogue = CatalogueController(_api);
     _game = GameController(_api);
+    _adventure = AdventureController(widget.adventureBackend ?? MemoryBackend());
   }
 
   @override
   void dispose() {
     _game.dispose();
     _catalogue.dispose();
+    _adventure.dispose();
     if (_ownsApi) _api.close();
     super.dispose();
   }
@@ -71,6 +88,7 @@ class _DsaGameAppState extends State<DsaGameApp> {
         Provider<ApiClient>.value(value: _api),
         ChangeNotifierProvider<CatalogueController>.value(value: _catalogue),
         ChangeNotifierProvider<GameController>.value(value: _game),
+        ChangeNotifierProvider<AdventureController>.value(value: _adventure),
       ],
       child: MaterialApp(
         title: 'DSA by playing',

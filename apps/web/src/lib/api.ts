@@ -30,6 +30,7 @@ import type {
   HintResponse,
   ProviderTier,
 } from '@dsa/game-schema'
+import { API_ERRORS } from '@dsa/game-schema'
 
 const RAW_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8787'
 /** Trailing slashes would produce `//api/...` and some servers 404 on that. */
@@ -45,7 +46,7 @@ const TIMEOUT_MS = (() => {
  *
  * This MUST exceed the server's worst case, or the client aborts while the
  * server is still working. The server allows 200s per provider tier, and the
- * first tier that actually answers (opencode, a real model writing a few
+ * first tier that actually answers (OpenCode Go, a real model writing a few
  * thousand tokens of JSON) was measured at ~126s — so the previous 90s here
  * guaranteed a "took too long" error on exactly the tier that writes the best
  * games. 240s leaves headroom over the server budget without letting a genuine
@@ -209,6 +210,12 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       code: shaped?.code ?? `HTTP_${response.status}`,
       message: shaped?.message ?? `${method} ${path} failed with ${response.status}.`,
       status: response.status,
+      // A problem that is listed but not implemented is a permanent fact about
+      // the catalogue, not a transient fault. It must NOT be retryable: the
+      // generic rule is `status >= 500`, and this used to come back as a 500,
+      // so the debrief screen offered "Try again" for a request that could never
+      // succeed however many times it was sent.
+      retryable: response.status < 500 && shaped?.code !== API_ERRORS.problemNotPlayable,
       details: shaped?.details ?? (parsed ?? rawText.slice(0, 400)),
     })
   }

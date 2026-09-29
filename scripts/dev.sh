@@ -75,7 +75,7 @@ if [[ "$WITH_LLM" == "1" ]]; then
   bash scripts/local-llm.sh start
 fi
 
-echo "starting api (tsx watch)..."
+echo "starting api (Node watch with the tsx loader)..."
 pnpm --filter @dsa/api dev &
 PIDS+=($!)
 

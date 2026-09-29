@@ -143,8 +143,67 @@ describe('buildTemplateSpec', () => {
     for (const problem of PROBLEMS) {
       if (!problem.allowedMechanics.includes('submitAnswer')) continue
       for (const difficulty of DIFFICULTIES) {
-        const ids = chooseTemplateMechanics(problem.allowedMechanics, difficulty)
+        const ids = chooseTemplateMechanics(
+          problem.allowedMechanics,
+          difficulty,
+          problem.requiredMechanics,
+        )
         expect(ids).toContain('submitAnswer')
+      }
+    }
+  })
+
+  it('never omits a required mechanic, at any difficulty', () => {
+    // Regression: the old rule took the first N allowed mechanics, which for
+    // binary search dropped choosePath — the only way lo/hi move — and made the
+    // generated game unwinnable while still validating against the schema.
+    for (const problem of PROBLEMS) {
+      for (const difficulty of DIFFICULTIES) {
+        const ids = chooseTemplateMechanics(
+          problem.allowedMechanics,
+          difficulty,
+          problem.requiredMechanics,
+        )
+        for (const need of problem.requiredMechanics) {
+          expect(
+            ids,
+            `${problem.id}/${difficulty} dropped required mechanic ${need}`,
+          ).toContain(need)
+        }
+      }
+    }
+  })
+
+  it('keeps binary search completable: the window can actually move', () => {
+    // The concrete failure this guards: no choosePath means lo/hi never change,
+    // so the player loops forever and the game can never be won.
+    const bs = PROBLEMS.find((p) => p.id === 'binary-search')
+    expect(bs).toBeDefined()
+    for (const difficulty of DIFFICULTIES) {
+      const ids = chooseTemplateMechanics(
+        bs!.allowedMechanics,
+        difficulty,
+        bs!.requiredMechanics,
+      )
+      expect(ids).toContain('choosePath')
+      expect(ids).toContain('comparePair')
+      expect(ids).toContain('submitAnswer')
+    }
+  })
+
+  it('rejects a required mechanic that is not in the allowed set', () => {
+    expect(() =>
+      chooseTemplateMechanics(['comparePair', 'submitAnswer'], 'easy', ['choosePath']),
+    ).toThrow(/required but not in the allowed set/)
+  })
+
+  it('every problem declares required mechanics as a subset of allowed', () => {
+    for (const problem of PROBLEMS) {
+      for (const need of problem.requiredMechanics) {
+        expect(
+          problem.allowedMechanics,
+          `${problem.id} requires ${need} but does not allow it`,
+        ).toContain(need)
       }
     }
   })
@@ -168,16 +227,36 @@ describe('buildTemplateSpec', () => {
     expect(spec.specVersion).toBe(1)
   })
 
-  it('derives hintPool from canonicalAlgorithm so hints cannot be false', () => {
+  /**
+   * The pool used to be `canonicalAlgorithm` split on sentence punctuation, on
+   * the argument that a hint "cannot be false because it IS the algorithm".
+   * That shipped the algorithm in `lo=0, hi=n-1` notation, as an ordered recipe,
+   * after three requests on the default tier. It is now a ladder keyed by
+   * operation, which is exhaustive by construction instead of by inspection.
+   *
+   * `template-prose.test.ts` covers the content guarantees in detail. This is
+   * the schema-level floor that the pool still exists, is bounded, and is
+   * problem-specific.
+   */
+  it('builds a problem-specific hintPool within the schema bounds', () => {
     for (const problem of PROBLEMS) {
       const spec = buildTemplateSpec(inputFor(problem, 5, 'medium'))
       expect(spec.narration.hintPool.length).toBeGreaterThanOrEqual(2)
       expect(spec.narration.hintPool.length).toBeLessThanOrEqual(6)
-      // At least the first hint must quote a real fragment of the algorithm.
-      const first = spec.narration.hintPool[0]!
-      const fragment = first.replace(/^First move:\s*/, '').replace(/\.$/, '')
-      expect(problem.canonicalAlgorithm).toContain(fragment.slice(0, 20))
+      for (const hint of spec.narration.hintPool) {
+        expect(hint.trim()).not.toBe('')
+        expect(hint).not.toMatch(/\{[a-zA-Z]+\}/)
+      }
     }
+  })
+
+  it('gives different problems different hint pools', () => {
+    // Keyed by the problem's own operations, so two problems with disjoint
+    // required mechanics cannot produce the same pool.
+    const pools = PROBLEMS.map(
+      (problem) => buildTemplateSpec(inputFor(problem, 5, 'medium')).narration.hintPool.join('|'),
+    )
+    expect(new Set(pools).size).toBeGreaterThan(1)
   })
 
   it('never leaks a correctness claim into narration or debrief', () => {
@@ -395,18 +474,48 @@ describe('jsonSchemaToGbnf', () => {
   })
 
   it('quotes every array bracket and tuple comma', () => {
-    const gbnf = jsonSchemaToGbnf(gameSpecJsonSchema()) ?? ''
+    // Fed a synthetic schema rather than the real one: the GameSpec no longer
+    // contains a tuple (its `mapping` became objects, because opencode-go
+    // rejects `items: [ ... ]`), but the converter must still quote a bare `[`
+    // and a tuple comma if one ever appears, or a following schema change
+    // reintroduces a silent grammar bug.
+    // Shaped exactly as zod emits a `z.tuple`, so this exercises the real
+    // construct rather than a hand-written approximation.
+    const withTuple = {
+      type: 'object',
+      properties: {
+        pair: {
+          type: 'array',
+          prefixItems: [{ type: 'string' }, { type: 'string' }],
+          items: false,
+          minItems: 2,
+          maxItems: 2,
+        },
+      },
+      required: ['pair'],
+      additionalProperties: false,
+    }
+    const gbnf = jsonSchemaToGbnf(withTuple) ?? ''
     // A bare `[` would be read as the start of a character range.
     expect(gbnf).toContain('"["')
     expect(gbnf).toContain('"]"')
-    // mapping is the only tuple in the schema; its separator must be `","`.
     expect(gbnf).toContain('""," ')
   })
 
   it('allows map types to be populated instead of forcing an empty object', () => {
-    // objectGlyphs / actionMeaning are Record<string, string>; a grammar that
-    // only admitted "{}" would make those fields impossible for a model to fill.
-    const gbnf = jsonSchemaToGbnf(gameSpecJsonSchema()) ?? ''
+    // `actionMeaning` is a Record<string, string>; a grammar that only admitted
+    // "{}" would make that field impossible for a model to fill. Synthetic
+    // schema, so the test does not depend on whether the GameSpec happens to
+    // contain a map today.
+    const gbnf =
+      jsonSchemaToGbnf({
+        type: 'object',
+        properties: {
+          objectGlyphs: { type: 'object', additionalProperties: { type: 'string' } },
+        },
+        required: ['objectGlyphs'],
+        additionalProperties: false,
+      }) ?? ''
     const i = gbnf.indexOf('"objectGlyphs"')
     expect(i).toBeGreaterThan(-1)
     const around = gbnf.slice(i, i + 400)
@@ -423,12 +532,19 @@ describe('jsonSchemaToGbnf', () => {
   })
 
   it('strips items:false so llama.cpp can build a parser from the schema', () => {
-    const raw = gameSpecJsonSchema() as unknown as Record<string, never>
-    // The input has the construct that makes llama.cpp's converter throw.
+    // Synthetic input again: the GameSpec itself is free of `items:false` now,
+    // but the converter's whole job is surviving a schema that has one, so the
+    // behaviour must stay tested against a schema that does.
+    const raw = {
+      type: 'object',
+      properties: { nothing: { type: 'array', items: false }, list: { type: 'array', items: { type: 'string' } } },
+      required: ['list'],
+      additionalProperties: false,
+    } as unknown as Record<string, never>
     expect(JSON.stringify(raw)).toContain('"items":false')
     const normalised = schemaForLlamaCpp(raw) as Record<string, never>
     expect(JSON.stringify(normalised)).not.toContain('"items":false')
-    // And it must be a copy, not an in-place mutation of a shared cache.
+    // And it must be a copy, not an in-place mutation of the caller's object.
     expect(JSON.stringify(raw)).toContain('"items":false')
   })
 
@@ -654,11 +770,18 @@ describe('opencode-go provider', () => {
   }
 
   /** A 200 OpenAI-shaped envelope carrying `content` verbatim. */
-  const completion = (content: string, finishReason = 'stop'): Response =>
-    new Response(JSON.stringify({ choices: [{ message: { content }, finish_reason: finishReason }] }), {
-      status: 200,
-      headers: { 'content-type': 'application/json' },
-    })
+  const completion = (
+    content: string,
+    finishReason = 'stop',
+    extra: Record<string, unknown> = {},
+  ): Response =>
+    new Response(
+      JSON.stringify({ choices: [{ message: { content }, finish_reason: finishReason }], ...extra }),
+      {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      },
+    )
 
   /** The exact body a bad key produces, per the verified contract. */
   const authFailure = (): Response =>
@@ -813,19 +936,59 @@ describe('opencode-go provider', () => {
       expect(spec.seed).toBe(4)
     })
 
-    it('sends only the two required headers and no x-opencode-* session headers', async () => {
-      // `x-opencode-client` / `-directory` / `-session` / `-ticket` / `-workspace`
-      // exist in the opencode binary for the LOCAL `opencode serve` session API.
-      // This endpoint is a public metered API that needs none of them, and stray
-      // headers are how you get throttled — so the absence is asserted.
+    it('sends the headers opencode-go documents as required', async () => {
+      // https://opencode.ai/docs/go/#where-can-i-use-it asks for two things
+      // beyond auth: a client-specific user-agent, and a stable
+      // x-opencode-session per conversation. Omitting the session header is a
+      // live 400 ("Request is missing x-opencode-session and cannot be routed
+      // efficiently"), which reads like a schema bug rather than a header.
+      //
+      // An earlier version of this test asserted the OPPOSITE — that no
+      // x-opencode-* header should ever be sent — based on the wrong belief
+      // that they were private to the local serve API. Corrected against the
+      // published contract.
       const calls = stubFetch(() => completion(JSON.stringify(validSpecJson())))
       await pinned().generate(inputFor(PROBLEM, 4, 'easy'))
 
       const headers = headersOf(calls[0]!)
-      expect(Object.keys(headers).map((h) => h.toLowerCase()).sort()).toEqual(['authorization', 'content-type'])
+      const names = Object.keys(headers).map((h) => h.toLowerCase()).sort()
+      expect(names).toEqual(['authorization', 'content-type', 'user-agent', 'x-opencode-session'])
       expect(headers['authorization']).toBe(`Bearer ${KEY}`)
       expect(headers['content-type']).toBe('application/json')
-      for (const name of Object.keys(headers)) expect(name).not.toMatch(/^x-opencode-/i)
+      // Must identify the client, not a generic SDK/HTTP library.
+      expect(headers['user-agent']).toMatch(/^dsa-game\//)
+      expect(headers['user-agent']).not.toMatch(/node|undici|axios|fetch/i)
+      expect(headers['x-opencode-session']).toBeTruthy()
+    })
+
+    it('gives each generate call its own session id, and keeps it stable within a call', async () => {
+      // A stable id is what lets opencode-go route and cache. Stable WITHIN a
+      // conversation, distinct BETWEEN conversations: sharing one id across
+      // unrelated GameSpecs would misattribute the traffic the header exists to
+      // attribute correctly.
+      const calls = stubFetch(() => completion(JSON.stringify(validSpecJson())))
+      const p = pinned()
+      await p.generate(inputFor(PROBLEM, 4, 'easy'))
+      await p.generate(inputFor(PROBLEM, 5, 'easy'))
+
+      const first = headersOf(calls[0]!)['x-opencode-session']
+      const second = headersOf(calls[1]!)['x-opencode-session']
+      expect(first).toBeTruthy()
+      expect(second).toBeTruthy()
+      expect(first).not.toBe(second)
+    })
+
+    it('honours an explicitly pinned session id', async () => {
+      const calls = stubFetch(() => completion(JSON.stringify(validSpecJson())))
+      const provider = new OpencodeGoProvider({
+        enabled: true,
+        apiKey: KEY,
+        baseUrl: 'https://go.test/v1',
+        model: 'test-model',
+        sessionId: 'pinned-session',
+      })
+      await provider.generate(inputFor(PROBLEM, 4, 'easy'))
+      expect(headersOf(calls[0]!)['x-opencode-session']).toBe('pinned-session')
     })
 
     it('sends the system and user prompts and a strict per-problem json_schema', async () => {
@@ -967,6 +1130,36 @@ describe('opencode-go provider', () => {
       stubFetch(() => completion('{"specVersion": 1, "theme": {"title": "cut off', 'length'))
       await expect(pinned({ maxTokens: 4000 }).generate(inputFor(PROBLEM, 4, 'easy'))).rejects.toThrow(
         /truncated.*max_tokens/is,
+      )
+    })
+
+    it('diagnoses an EMPTY reply as truncation when reasoning ate the budget', async () => {
+      // Regression, and the exact failure this tier hit in production. A
+      // reasoning model given max_tokens=4000 spent all 4000 on
+      // `reasoning_tokens` and returned 200 with an empty message and
+      // finish_reason "length". The empty-content check used to run first and
+      // reported "200 with no message.content", which names neither the cause
+      // nor the fix.
+      stubFetch(() =>
+        completion('', 'length', {
+          usage: {
+            prompt_tokens: 3380,
+            completion_tokens: 4000,
+            completion_tokens_details: { reasoning_tokens: 4000 },
+          },
+        }),
+      )
+      await expect(pinned({ maxTokens: 4000 }).generate(inputFor(PROBLEM, 4, 'easy'))).rejects.toThrow(
+        /truncated.*max_tokens=4000.*reasoning_tokens=4000/is,
+      )
+    })
+
+    it('still says "no content" when the reply is empty for a NON-truncation reason', async () => {
+      // The fix must not swallow the genuinely-different case: an empty reply
+      // that was NOT cut off is a different problem and needs a different fix.
+      stubFetch(() => completion('', 'stop', { usage: { completion_tokens: 3 } }))
+      await expect(pinned().generate(inputFor(PROBLEM, 4, 'easy'))).rejects.toThrow(
+        /no choices\[0\]\.message\.content.*finish_reason=stop/is,
       )
     })
 

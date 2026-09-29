@@ -58,6 +58,16 @@ export async function buildDebrief(input: BuildDebriefInput): Promise<Debrief> {
 
   const mapping = mergeMappings(spec.debrief.mapping, mapGameActionToCode(playedTrace))
 
+  const code: DebriefResponse['code'] = {
+    javascript: oracle.code('javascript'),
+    python: oracle.code('python'),
+    typescript: oracle.code('typescript'),
+  }
+  if (spec.problemId === 'linked-list-traversal' || spec.problemId === 'reverse-linked-list') {
+    code.java = oracle.code('java')
+    code.cpp = oracle.code('cpp')
+  }
+
   return {
     problemId: spec.problemId,
     phase: state.phase === 'won' ? 'won' : 'lost',
@@ -65,21 +75,29 @@ export async function buildDebrief(input: BuildDebriefInput): Promise<Debrief> {
     canonicalTrace,
     answer: safeAnswer(oracle, state),
     pseudocode: oracle.pseudocode(),
-    code: {
-      javascript: oracle.code('javascript'),
-      python: oracle.code('python'),
-      typescript: oracle.code('typescript'),
-    },
+    code,
     complexity: oracle.complexity(),
     summary: composeSummary(spec, score, tag.label),
     actionMeaning: spec.debrief.actionMeaning,
     mapping,
     stats: {
       ...stats,
-      misconception: tag.label,
-      confidence: tag.totalMistakes === 0 ? 1 : tag.count / tag.totalMistakes,
+      // `no-mistakes` is a sentinel meaning "there was nothing to tag", and it
+      // was being rendered to a twelve-year-old as though it were a diagnosis,
+      // directly under the words "likely misconception". A learner who did
+      // nothing wrong should be told nothing, not told they have no mistakes in
+      // a way that reads as a finding. The field stays on the wire (it is typed
+      // and a client may want the distinction) but carries no value to show.
+      misconception: tag.label === 'no-mistakes' ? '' : tag.label,
+      confidence: tag.totalMistakes === 0 ? 0 : tag.count / tag.totalMistakes,
     },
-    hintPool: spec.narration.hintPool,
+    // The debrief is the wrong place to print the unused hint pool, and it
+    // actively leaked: on the template tier the pool WAS the canonical
+    // algorithm, so a player who spent zero hints was shown all five steps of
+    // binary search under the heading "Hints you did not need". Only hints the
+    // player actually spent are worth revisiting after the fact, and the ladder
+    // has already replaced the ones that would have spoiled anything.
+    hintPool: spec.narration.hintPool.slice(0, Math.max(0, state.progress.hintsUsed)),
   }
 }
 
@@ -113,19 +131,18 @@ function composeSummary(
  * same operation twice — once in theme, once in flat generic English.
  */
 function mergeMappings(
-  specRows: readonly (readonly [string, string])[] | MappingRow[],
+  specRows: readonly MappingRow[],
   engineRows: { gameTerm: string; algorithmTerm: string }[],
 ): MappingRow[] {
   const out: MappingRow[] = []
   const seenGame = new Set<string>()
 
   for (const row of specRows) {
-    const [gameTerm, algorithmTerm] = row as readonly [string, string]
-    if (!gameTerm || !algorithmTerm) continue
-    const key = gameTerm.toLowerCase()
+    if (!row.gameTerm || !row.algorithmTerm) continue
+    const key = row.gameTerm.toLowerCase()
     if (seenGame.has(key)) continue
     seenGame.add(key)
-    out.push({ gameTerm, algorithmTerm })
+    out.push({ gameTerm: row.gameTerm, algorithmTerm: row.algorithmTerm })
   }
 
   // Only add an engine row when the themed table says nothing about it. A rough

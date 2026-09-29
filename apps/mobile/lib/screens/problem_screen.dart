@@ -13,6 +13,9 @@ import 'package:provider/provider.dart';
 
 import '../models/provider.dart';
 import '../models/problem.dart';
+import '../adventure/progress_store.dart';
+import '../adventure/world_scene.dart';
+import '../adventure/worlds.dart';
 import '../state/catalogue_controller.dart';
 import '../state/game_controller.dart';
 import '../theme/palette.dart';
@@ -21,9 +24,12 @@ import '../widgets/generation_loader.dart';
 import 'play_screen.dart';
 
 class ProblemScreen extends StatefulWidget {
-  const ProblemScreen({required this.topic, super.key});
+  const ProblemScreen({required this.topic, this.initialProblemId, super.key});
 
   final TopicDto topic;
+
+  /// Pre-selects a mission, so the adventure map can deep-link straight to it.
+  final String? initialProblemId;
 
   @override
   State<ProblemScreen> createState() => _ProblemScreenState();
@@ -36,7 +42,12 @@ class _ProblemScreenState extends State<ProblemScreen> {
   @override
   void initState() {
     super.initState();
-    _selected = widget.topic.problems.isEmpty ? null : widget.topic.problems.first;
+    final problems = widget.topic.problems;
+    ProblemMeta? initial;
+    for (final problem in problems) {
+      if (problem.id == widget.initialProblemId) initial ??= problem;
+    }
+    _selected = problems.isEmpty ? null : (initial ?? problems.first);
   }
 
   @override
@@ -47,7 +58,6 @@ class _ProblemScreenState extends State<ProblemScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.gameColors;
     final selected = _selected;
     final controller = context.watch<GameController>();
 
@@ -57,10 +67,7 @@ class _ProblemScreenState extends State<ProblemScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 6, 16, 32),
           children: [
-            Text(
-              'Choose a problem. Each one is a real algorithm you can lose.',
-              style: TextStyle(fontSize: 12.5, height: 1.35, color: colors.muted),
-            ),
+            _MissionPreview(topic: widget.topic, problem: selected),
             const SizedBox(height: 12),
             for (final problem in widget.topic.problems)
               Padding(
@@ -150,6 +157,58 @@ class _ProblemScreenState extends State<ProblemScreen> {
   }
 }
 
+/// Compact scene preview: the world and the algorithm side by side, so the
+/// learner can connect the metaphor to the concept before starting.
+class _MissionPreview extends StatelessWidget {
+  const _MissionPreview({required this.topic, required this.problem});
+
+  final TopicDto topic;
+  final ProblemMeta? problem;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.gameColors;
+    final world = worldForTopic(topic.topic?.wire ?? topic.id);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.muted.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: world.color,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  world.mark,
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.white),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${world.name} · ${problem?.title ?? topic.label}',
+                  style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900, color: colors.onSurface),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          WorldScene(world: world, height: 96),
+        ],
+      ),
+    );
+  }
+}
+
 class _ProblemOption extends StatelessWidget {
   const _ProblemOption({required this.problem, required this.selected, required this.onTap});
 
@@ -160,6 +219,7 @@ class _ProblemOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.gameColors;
+    final solved = context.watch<AdventureController>().progress.completed.containsKey(problem.id);
     return Material(
       color: selected ? Color.lerp(colors.surface, colors.primary, 0.14) : colors.surface,
       borderRadius: BorderRadius.circular(14),
@@ -178,9 +238,17 @@ class _ProblemOption extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                selected ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
+                selected
+                    ? Icons.radio_button_checked_rounded
+                    : solved
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
                 size: 17,
-                color: selected ? colors.primary : colors.muted.withValues(alpha: 0.6),
+                color: selected
+                    ? colors.primary
+                    : solved
+                    ? colors.success
+                    : colors.muted.withValues(alpha: 0.6),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -468,7 +536,7 @@ class _GenerateButton extends StatelessWidget {
       label: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Text(
-          busy ? 'Generate again' : 'Generate a game',
+          busy ? 'Generate again' : 'Start mission',
           style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
         ),
       ),
