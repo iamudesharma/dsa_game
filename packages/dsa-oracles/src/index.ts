@@ -31,6 +31,14 @@ export {
   createValidPalindromeOracle,
 } from './problems/patterns.js'
 export {
+  createBstSearchOracle,
+  createBstValidateOracle,
+  createTreeLevelOrderOracle,
+  createTreeTraversalsOracle,
+  createTreeOracle,
+} from './problems/trees.js'
+export { createKthLargestHeapOracle } from './problems/heap.js'
+export {
   createLinkedListTraversalOracle,
   createMoveZeroesOracle,
   createQueueOperationsOracle,

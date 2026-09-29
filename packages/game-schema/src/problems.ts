@@ -6,7 +6,8 @@
  * 2 linked list) plus the highest-yield gaps — array patterns (sliding window,
  * two pointers, prefix sum, Kadane, intervals), monotonic stack, rotated
  * binary search, linked-list cycle detection, hash-table frequency counting,
- * anagrams, and palindrome checking.
+ * anagrams, palindrome checking, binary trees (traversals, BST validation,
+ * level order, BST search), and heaps (kth largest via a size-k min-heap).
  *
  * `instanceHints` tells the instance generator how to build valid data
  * (e.g. "sorted, unique, target present") and `allowedMechanics` is the
@@ -24,6 +25,8 @@ export type DsaTopic =
   | 'linked-list'
   | 'hash-table'
   | 'strings'
+  | 'trees'
+  | 'heap'
 
 export const DSA_TOPICS: readonly DsaTopic[] = [
   'arrays',
@@ -34,6 +37,8 @@ export const DSA_TOPICS: readonly DsaTopic[] = [
   'linked-list',
   'hash-table',
   'strings',
+  'trees',
+  'heap',
 ] as const
 
 export const TOPIC_LABELS: Readonly<Record<DsaTopic, string>> = {
@@ -45,6 +50,8 @@ export const TOPIC_LABELS: Readonly<Record<DsaTopic, string>> = {
   'linked-list': 'Linked List',
   'hash-table': 'Hash Table',
   strings: 'Strings',
+  trees: 'Trees',
+  heap: 'Heap',
 }
 
 export type Difficulty = 'easy' | 'medium' | 'hard'
@@ -409,6 +416,81 @@ export const PROBLEMS: readonly ProblemMeta[] = [
     instanceHints: { minLength: 4, maxLength: 8, tokenAlphabet: ['a', 'b', 'c', 'd', 'e'] },
     complexity: { time: 'O(n)', space: 'O(1)' },
     defaultDifficulty: 'easy',
+  },
+  {
+    id: 'tree-traversals',
+    allowedMechanics: ['selectObject', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'submitAnswer'],
+
+    topic: 'trees',
+    title: 'Binary tree traversals (pre/in/post-order)',
+    learningObjective:
+      'Preorder, inorder, and postorder differ only in when the node itself is visited relative to its children — the routes are the same walk.',
+    canonicalAlgorithm:
+      'Walk the tree recursively: preorder visits node, left, right; inorder visits left, node, right; postorder visits left, right, node. Record each visit.',
+    instanceHints: { minLength: 5, maxLength: 9, unique: true, valueRange: [1, 99] },
+    complexity: { time: 'O(n)', space: 'O(h)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'bst-validate',
+    allowedMechanics: ['selectObject', 'comparePair', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'comparePair', 'submitAnswer'],
+
+    topic: 'trees',
+    title: 'Validate a binary search tree',
+    learningObjective:
+      "A binary tree is a BST exactly when its inorder walk is sorted: one descending adjacent pair anywhere disproves the whole tree.",
+    canonicalAlgorithm:
+      'Walk the nodes inorder, comparing each value with the previous one. If any value is smaller than its predecessor the tree is not a BST; otherwise it is.',
+    instanceHints: { minLength: 5, maxLength: 9, unique: true, valueRange: [1, 99] },
+    complexity: { time: 'O(n)', space: 'O(h)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'tree-level-order',
+    allowedMechanics: ['selectObject', 'pushPop', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'pushPop', 'submitAnswer'],
+
+    topic: 'trees',
+    title: 'Level-order traversal with a queue',
+    learningObjective:
+      'Breadth-first order falls out of a FIFO queue: dequeue a node, visit it, enqueue its children, and levels emerge left to right.',
+    canonicalAlgorithm:
+      'Enqueue the root. While the queue is nonempty, dequeue the front, visit it, then enqueue its left child and right child when they exist.',
+    instanceHints: { minLength: 5, maxLength: 9, unique: true, valueRange: [1, 99] },
+    complexity: { time: 'O(n)', space: 'O(w)' },
+    defaultDifficulty: 'easy',
+  },
+  {
+    id: 'bst-search',
+    allowedMechanics: ['selectObject', 'comparePair', 'choosePath', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'comparePair', 'choosePath', 'submitAnswer'],
+
+    topic: 'trees',
+    title: 'Search in a binary search tree',
+    learningObjective:
+      'The BST invariant decides the direction at every node: smaller goes left, larger goes right, and each step discards a whole subtree.',
+    canonicalAlgorithm:
+      'Start at the root. Compare the target with the node: equal stops, smaller descends to the left child, larger to the right child. Repeat until found.',
+    instanceHints: { minLength: 5, maxLength: 9, unique: true, targetGuaranteed: true, valueRange: [1, 99] },
+    complexity: { time: 'O(h)', space: 'O(1)' },
+    defaultDifficulty: 'medium',
+  },
+  {
+    id: 'kth-largest-heap',
+    allowedMechanics: ['selectObject', 'comparePair', 'swapPair', 'submitAnswer'],
+    requiredMechanics: ['selectObject', 'comparePair', 'swapPair', 'submitAnswer'],
+
+    topic: 'heap',
+    title: 'Kth largest with a size-k min-heap',
+    learningObjective:
+      'A min-heap of size k holds exactly the k largest values seen: anything smaller than its minimum is irrelevant, anything larger replaces it.',
+    canonicalAlgorithm:
+      'Heapify the first k values into a min-heap. For each remaining value, if it exceeds the heap minimum, replace the root and sift down. The root is the kth largest.',
+    instanceHints: { minLength: 6, maxLength: 9, unique: true, valueRange: [1, 99] },
+    complexity: { time: 'O(n log k)', space: 'O(k)' },
+    defaultDifficulty: 'medium',
   },
 ] as const
 

@@ -41,6 +41,8 @@ const CONTAINER_TERM: Record<DsaTopic, string> = {
   'linked-list': 'the linked list',
   'hash-table': 'the frequency table',
   strings: 'the string',
+  trees: 'the level-order array',
+  heap: 'the array with its heap zone',
 }
 
 const SCOPE_TERM: Record<DsaTopic, string> = {
@@ -52,6 +54,8 @@ const SCOPE_TERM: Record<DsaTopic, string> = {
   'linked-list': 'the position the cursor has reached so far',
   'hash-table': 'the counts recorded so far',
   strings: 'the pair of positions still unchecked',
+  trees: 'the subtree still under consideration',
+  heap: 'the heap zone at the front of the array',
 }
 
 /**

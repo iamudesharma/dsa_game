@@ -10,6 +10,8 @@ export const WORLDS: WorldDefinition[] = [
   { id: 'linked-list', name: 'Linked-list Railway', subtitle: 'Follow the connections.', color: '#8c4b65', pale: '#f4d4df', mark: '06' },
   { id: 'hash-table', name: 'Hash Bazaar', subtitle: 'Count everything once.', color: '#7a5c2e', pale: '#f3e5c3', mark: '07' },
   { id: 'strings', name: 'String Atelier', subtitle: 'Read from both ends.', color: '#3f6b4f', pale: '#d7ecd9', mark: '08' },
+  { id: 'trees', name: 'Tree Canopy', subtitle: 'Branch down, visit every node.', color: '#2e5d50', pale: '#cfe8d8', mark: '09' },
+  { id: 'heap', name: 'Heap Foundry', subtitle: 'Keep the k largest, drop the rest.', color: '#6b3a4d', pale: '#f2d3de', mark: '10' },
 ]
 export function worldForProblem(id?: string) { return WORLDS.find(w => w.id === PROBLEMS.find(p => p.id === id)?.topic) ?? WORLDS[0]! }
 export interface PlayerPreferences { mapFrame: DsaTopic | 'default' }

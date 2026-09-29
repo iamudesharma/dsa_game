@@ -206,7 +206,9 @@ enum DsaTopic {
   binarySearch('binary-search'),
   linkedList('linked-list'),
   hashTable('hash-table'),
-  strings('strings');
+  strings('strings'),
+  trees('trees'),
+  heap('heap');
 
   const DsaTopic(this.wire);
 
@@ -222,6 +224,8 @@ enum DsaTopic {
     DsaTopic.linkedList => 'Linked List',
     DsaTopic.hashTable => 'Hash Table',
     DsaTopic.strings => 'Strings',
+    DsaTopic.trees => 'Trees',
+    DsaTopic.heap => 'Heap',
   };
 
   String get blurb => switch (this) {
@@ -233,6 +237,8 @@ enum DsaTopic {
     DsaTopic.linkedList => 'No indexing — follow pointers one node at a time.',
     DsaTopic.hashTable => 'Count everything once, look everything up fast.',
     DsaTopic.strings => 'Read from both ends toward the middle.',
+    DsaTopic.trees => 'Branch down from the root, visit every node.',
+    DsaTopic.heap => 'Keep the k largest, let the rest go.',
   };
 
   /// `Icons` lives in the Flutter SDK; the model layer is allowed to depend on
@@ -247,6 +253,8 @@ enum DsaTopic {
     DsaTopic.linkedList => Icons.linear_scale,
     DsaTopic.hashTable => Icons.table_chart,
     DsaTopic.strings => Icons.text_fields,
+    DsaTopic.trees => Icons.account_tree,
+    DsaTopic.heap => Icons.filter_list,
   };
 
   static final Map<String, DsaTopic> _byWire = {for (final v in values) v.wire: v};

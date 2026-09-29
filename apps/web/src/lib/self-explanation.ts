@@ -159,6 +159,36 @@ const PROMPTS: Record<string, SelfExplanationPrompts> = {
     integration:
       'What stayed true about the pairs you had already checked, all the way toward the middle?',
   },
+  'tree-traversals': {
+    retention:
+      'Preorder, inorder, and postorder visit the same nodes in different orders. Why did the node itself come exactly when it did on one of your visits rather than earlier or later?',
+    integration:
+      'No matter which of the three orders you played, what stayed true about when a parent was visited relative to its children?',
+  },
+  'bst-validate': {
+    retention:
+      'You compared each inorder value with its predecessor. Why does one descending pair disprove the whole tree rather than just that pair?',
+    integration:
+      'What stayed true about the inorder values you had already checked, right up until the answer was decided?',
+  },
+  'tree-level-order': {
+    retention:
+      'You dequeued from the front but enqueued at the back. Why that discipline rather than taking from wherever was convenient?',
+    integration:
+      'What stayed true about the order nodes left the queue, from the root down to the last level?',
+  },
+  'bst-search': {
+    retention:
+      'Think of one node where you descended left — or right. Why that child rather than the other one?',
+    integration:
+      'From the root to the target, what stayed true about where the target could still be at every node?',
+  },
+  'kth-largest-heap': {
+    retention:
+      'When a scan value beat the heap minimum you replaced the root and sifted down. Why replace rather than just remember the value — or the reverse?',
+    integration:
+      'What stayed true about the k values sitting in the heap zone after every step, from the first scan to the last?',
+  },
 }
 
 /** Generic fallback for a problem id the catalogue does not know yet. */

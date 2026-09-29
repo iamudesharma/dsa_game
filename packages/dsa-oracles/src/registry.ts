@@ -46,6 +46,13 @@ import {
   createValidAnagramOracle,
   createValidPalindromeOracle,
 } from './problems/patterns.js'
+import {
+  createBstSearchOracle,
+  createBstValidateOracle,
+  createTreeLevelOrderOracle,
+  createTreeTraversalsOracle,
+} from './problems/trees.js'
+import { createKthLargestHeapOracle } from './problems/heap.js'
 import { createSortOracle } from './problems/sorts.js'
 import {
   createLinkedListTraversalOracle,
@@ -85,6 +92,11 @@ export const ORACLES: Readonly<Record<string, Oracle>> = {
   'frequency-count': createFrequencyCountOracle(),
   'valid-anagram': createValidAnagramOracle(),
   'valid-palindrome': createValidPalindromeOracle(),
+  'tree-traversals': createTreeTraversalsOracle(),
+  'bst-validate': createBstValidateOracle(),
+  'tree-level-order': createTreeLevelOrderOracle(),
+  'bst-search': createBstSearchOracle(),
+  'kth-largest-heap': createKthLargestHeapOracle(),
 }
 
 const IMPLEMENTED_IDS: ReadonlySet<string> = new Set(Object.keys(ORACLES))

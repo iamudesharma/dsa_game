@@ -406,6 +406,70 @@ const KEYWORDS: Readonly<Record<string, { specific: readonly string[]; topic: re
     specific: ['palindrome', 'valid palindrome', 'symmetric string', 'reads the same', 'outside in'],
     topic: ['palindrome', 'string', 'symmetric', 'mirror'],
   },
+  'tree-traversals': {
+    specific: [
+      'tree traversal',
+      'traverse a tree',
+      'preorder',
+      'pre order',
+      'inorder',
+      'in order traversal',
+      'postorder',
+      'post order',
+      'dfs tree',
+      'visit left',
+    ],
+    topic: ['tree', 'traversal', 'binary tree', 'root', 'child', 'subtree'],
+  },
+  'bst-validate': {
+    specific: [
+      'validate bst',
+      'validate binary search tree',
+      'is bst',
+      'is valid bst',
+      'inorder sorted',
+      'bst property',
+      'kth smallest',
+    ],
+    topic: ['bst', 'binary search tree', 'valid', 'sorted', 'inorder'],
+  },
+  'tree-level-order': {
+    specific: [
+      'level order',
+      'level order traversal',
+      'breadth first',
+      'breadth first search',
+      'bfs',
+      'bfs tree',
+      'queue traversal',
+      'level by level',
+    ],
+    topic: ['level', 'breadth', 'queue', 'tree', 'levels'],
+  },
+  'bst-search': {
+    specific: [
+      'search bst',
+      'search binary search tree',
+      'bst search',
+      'bst lookup',
+      'find in bst',
+      'search a tree',
+    ],
+    topic: ['search', 'bst', 'tree', 'target', 'descend'],
+  },
+  'kth-largest-heap': {
+    specific: [
+      'kth largest',
+      'k largest',
+      'min heap',
+      'size k heap',
+      'top k',
+      'heap',
+      'heapify',
+      'sift down',
+    ],
+    topic: ['heap', 'largest', 'kth', 'top', 'minimum'],
+  },
 }
 
 const W_TOPIC = 2
@@ -517,6 +581,8 @@ const TOPIC_ENTRY: Readonly<Record<DsaTopic, string>> = {
   'linked-list': 'linked-list-traversal',
   'hash-table': 'frequency-count',
   strings: 'valid-palindrome',
+  trees: 'tree-traversals',
+  heap: 'kth-largest-heap',
 }
 
 /** Score at which a match is considered as strong as it plausibly gets. */

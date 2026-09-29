@@ -166,16 +166,17 @@ Two further measured constraints, both found by calling the live endpoint:
 
 ## Status
 
-- **22 problems** are in the catalogue (`packages/game-schema/src/problems.ts`),
+- **27 problems** are in the catalogue (`packages/game-schema/src/problems.ts`),
   each with `allowedMechanics` and `requiredMechanics`.
-- **All 22 catalogue problems have deterministic oracles**: arrays (maximum /
+- **All 27 catalogue problems have deterministic oracles**: arrays (maximum /
   minimum, Two Sum, move zeroes, sliding-window max sum, sorted two-pointers
   pair, prefix-sum range, Kadane's max subarray, merge intervals), sorting
   (bubble and selection), stack (valid parentheses, push / pop, next greater
   element), queue operations, binary search (classic and rotated), linked
   lists (traversal, reversal, and cycle detection), hash tables (frequency
-  count, valid anagram), and strings (valid palindrome). The same registry
-  drives both clients and the API.
+  count, valid anagram), strings (valid palindrome), trees (pre/in/post-order
+  traversals, BST validation, level order, BST search), and heaps (kth largest
+  via a size-k min-heap). The same registry drives both clients and the API.
 - Low, medium, and high choose increasing instance sizes within each problem's
   declared bounds. The template provider can generate every game without model
   keys or sidecars, so the full catalogue remains playable offline.

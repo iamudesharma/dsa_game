@@ -25,7 +25,7 @@ class WorldDefinition {
   final String subtitle;
   final Color color;
 
-  /// The printed world number on the map ("01" … "08").
+  /// The printed world number on the map ("01" … "10").
   final String mark;
 }
 
@@ -85,6 +85,20 @@ const List<WorldDefinition> worlds = [
     subtitle: 'Read from both ends.',
     color: Color(0xFF3F6B4F),
     mark: '08',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.trees,
+    name: 'Tree Canopy',
+    subtitle: 'Branch down, visit every node.',
+    color: Color(0xFF2E5D50),
+    mark: '09',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.heap,
+    name: 'Heap Foundry',
+    subtitle: 'Keep the k largest, drop the rest.',
+    color: Color(0xFF6B3A4D),
+    mark: '10',
   ),
 ];
 
