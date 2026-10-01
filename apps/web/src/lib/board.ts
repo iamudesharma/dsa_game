@@ -44,6 +44,13 @@ export interface BoardLane {
   kind: BoardLaneKind
   label: string
   cells: BoardCell[]
+  /**
+   * Fixed column count for a 2D grid lane. Set from
+   * `instance.extras.gridCols` when the oracle plays on a grid (islands,
+   * rotting oranges, word search): the same slot ids lay out row-major, so
+   * the lane is still one ordered list and only the presentation wraps.
+   */
+  columns?: number
 }
 
 export interface PathOption {
@@ -175,11 +182,18 @@ export function buildBoard(state: GameState, spec: GameSpec): BoardModel {
   })
 
   if (slotCells.length > 0) {
+    const extras = state.instance.extras as Record<string, unknown> | undefined
+    const rawCols = extras?.['gridCols']
+    const columns =
+      typeof rawCols === 'number' && Number.isInteger(rawCols) && rawCols >= 2 && rawCols <= slotCells.length
+        ? rawCols
+        : undefined
     lanes.push({
       id: 'slots',
       kind: 'slots',
       label: spec.visual.boardLabel ?? 'the board',
       cells: slotCells,
+      ...(columns !== undefined ? { columns } : {}),
     })
   }
 

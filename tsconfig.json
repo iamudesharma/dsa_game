@@ -8,7 +8,8 @@
       "@dsa/game-engine": ["./packages/game-engine/src/index.ts"],
       "@dsa/dsa-oracles": ["./packages/dsa-oracles/src/index.ts"],
       "@dsa/provider-chain": ["./packages/provider-chain/src/index.ts"],
-      "@dsa/decision-layer": ["./packages/decision-layer/src/index.ts"]
+      "@dsa/decision-layer": ["./packages/decision-layer/src/index.ts"],
+      "@dsa/account": ["./packages/account/src/index.ts"]
     }
   },
   "include": [

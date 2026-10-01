@@ -200,11 +200,16 @@ class SlotGrid extends StatelessWidget {
     if (slots.isEmpty) return const SizedBox.shrink();
     final colors = context.gameColors;
     final pointerMap = state.cursor.slotPointers;
+    // A grid oracle (islands, rotting oranges, word search) promises row-major
+    // ids plus `gridCols` in the instance extras: lay out exact rows so
+    // up/down neighbours sit one row apart. Otherwise wrap by width as before.
+    final forced = state.instance.extras.number('gridCols')?.toInt();
+    final gridCols = forced != null && forced >= 2 && forced <= slots.length ? forced : null;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final cols = _columnsFor(width, slots.length);
+        final cols = gridCols ?? _columnsFor(width, slots.length);
         final cellWidth = ((width - kCellGap * (cols - 1)) / cols).clamp(kMinCellWidth, 66.0);
         // Centre the cells when they are wider than the row allows.
         final rowWidth = cellWidth * cols + kCellGap * (cols - 1);
@@ -236,7 +241,10 @@ class SlotGrid extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 for (var r = 0; r < rows.length; r++) ...[
-                  if (r > 0)
+                  // The "continues" marker only makes sense for incidental
+                  // wrapping. A forced grid's row breaks are the layout, not
+                  // an overflow, so they stay silent.
+                  if (r > 0 && gridCols == null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Row(

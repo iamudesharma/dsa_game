@@ -62,6 +62,47 @@ const GENERATE_TIMEOUT_MS = (() => {
 
 export type DsaApiErrorKind = 'network' | 'timeout' | 'http' | 'contract' | 'unknown'
 
+// ------------------------------------------------------------------- auth
+// The session token is the bearer fallback for localhost-vs-127.0.0.1 (see
+// services/api/src/auth/middleware.ts): cookies cannot cross those hosts, so
+// the client keeps the token the server returned once and sends it back.
+// The cookie still rides along via `credentials: 'include'` for same-host runs.
+
+const TOKEN_KEY = 'dsa-auth-token'
+
+export function getAuthToken(): string | null {
+  try {
+    return window.localStorage.getItem(TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function setAuthToken(token: string): void {
+  try {
+    window.localStorage.setItem(TOKEN_KEY, token)
+  } catch {
+    // Private mode: the in-memory session still works for this tab.
+  }
+}
+
+export function clearAuthToken(): void {
+  try {
+    window.localStorage.removeItem(TOKEN_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+function authHeaders(): Record<string, string> {
+  try {
+    const token = window.localStorage.getItem(TOKEN_KEY)
+    return token ? { authorization: `Bearer ${token}` } : {}
+  } catch {
+    return {}
+  }
+}
+
 /**
  * The single error type every call rejects with. `retryable` is what the UI
  * keys off to decide between "Try again" and "Go back home".
@@ -128,7 +169,7 @@ function readErrorBody(body: unknown): { code: string; message: string; details:
 }
 
 interface RequestOptions {
-  method?: 'GET' | 'POST' | 'DELETE'
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   body?: unknown
   signal?: AbortSignal
   /** Overrides the default timeout (generation gets longer). */
@@ -164,12 +205,15 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       signal: controller.signal,
       headers: {
         accept: 'application/json',
+        ...authHeaders(),
         ...(body === undefined ? {} : { 'content-type': 'application/json' }),
       },
       body: body === undefined ? undefined : JSON.stringify(body),
       // The API is stateful (it owns the game); never let a cached response be
-      // treated as truth.
+      // treated as truth. `include` carries the httpOnly session cookie on
+      // same-host runs; the bearer header covers cross-host loopback.
       cache: 'no-store',
+      credentials: 'include',
     })
   } catch (cause) {
     if (timedOut) {
@@ -505,4 +549,188 @@ export async function postDecide(body: DecideRequest, signal?: AbortSignal): Pro
     throw contractError('decide response', res)
   }
   return res as unknown as DecideResponse
+}
+
+// ----------------------------------------------------------------- account
+// Signed-in only. Game play stays anonymous; these power resume/interview.
+
+import type {
+  InterviewQuestion,
+  Resume,
+  Target,
+} from '@dsa/account'
+
+export interface AuthUser {
+  id: string
+  email: string
+}
+
+export interface AuthResult {
+  user: AuthUser
+  token: string
+  expiresAt: number
+}
+
+export async function postSignup(email: string, password: string, signal?: AbortSignal): Promise<AuthResult> {
+  const res = assertObject(
+    await request<unknown>('/api/auth/signup', { method: 'POST', body: { email, password }, signal, label: 'sign up' }),
+    'signup response',
+  )
+  const user = assertObject(res.user, 'signup response user')
+  if (typeof user.id !== 'string' || typeof user.email !== 'string' || typeof res.token !== 'string') {
+    throw contractError('signup response', res)
+  }
+  return res as unknown as AuthResult
+}
+
+export async function postLogin(email: string, password: string, signal?: AbortSignal): Promise<AuthResult> {
+  const res = assertObject(
+    await request<unknown>('/api/auth/login', { method: 'POST', body: { email, password }, signal, label: 'sign in' }),
+    'login response',
+  )
+  const user = assertObject(res.user, 'login response user')
+  if (typeof user.id !== 'string' || typeof user.email !== 'string' || typeof res.token !== 'string') {
+    throw contractError('login response', res)
+  }
+  return res as unknown as AuthResult
+}
+
+export async function postLogout(signal?: AbortSignal): Promise<void> {
+  await request<unknown>('/api/auth/logout', { method: 'POST', signal, label: 'sign out' })
+}
+
+export interface MeResponse {
+  user: AuthUser
+  resume: Resume
+  target: Target | null
+  progress: Record<string, string>
+}
+
+export async function getMe(signal?: AbortSignal): Promise<MeResponse> {
+  const res = assertObject(await request<unknown>('/api/auth/me', { signal, label: 'session' }), 'me response')
+  return res as unknown as MeResponse
+}
+
+export async function getResume(signal?: AbortSignal): Promise<Resume> {
+  const res = assertObject(await request<unknown>('/api/me/resume', { signal, label: 'resume' }), 'resume response')
+  return res.resume as Resume
+}
+
+export async function putResume(resume: Resume, signal?: AbortSignal): Promise<Resume> {
+  const res = assertObject(
+    await request<unknown>('/api/me/resume', { method: 'PUT', body: resume, signal, label: 'resume' }),
+    'resume response',
+  )
+  return res.resume as Resume
+}
+
+export interface ParseResumeResult {
+  resume: Resume
+  unparsed: string[]
+  saved: boolean
+}
+
+export async function postParseResume(text: string, save: boolean, signal?: AbortSignal): Promise<ParseResumeResult> {
+  const res = assertObject(
+    await request<unknown>('/api/me/parse-resume', { method: 'POST', body: { text, save }, signal, label: 'resume parse' }),
+    'parse response',
+  )
+  return res as unknown as ParseResumeResult
+}
+
+export async function getTarget(signal?: AbortSignal): Promise<Target | null> {
+  const res = assertObject(await request<unknown>('/api/me/target', { signal, label: 'target' }), 'target response')
+  return (res.target ?? null) as Target | null
+}
+
+export async function putTarget(target: Target, signal?: AbortSignal): Promise<Target> {
+  const res = assertObject(
+    await request<unknown>('/api/me/target', { method: 'PUT', body: target, signal, label: 'target' }),
+    'target response',
+  )
+  return res.target as Target
+}
+
+export async function getServerProgress(signal?: AbortSignal): Promise<Record<string, string>> {
+  const res = assertObject(
+    await request<unknown>('/api/me/progress', { signal, label: 'progress' }),
+    'progress response',
+  )
+  return (res.completed ?? {}) as Record<string, string>
+}
+
+export async function postServerProgress(completed: Record<string, string>, signal?: AbortSignal): Promise<Record<string, string>> {
+  const res = assertObject(
+    await request<unknown>('/api/me/progress', { method: 'POST', body: { completed }, signal, label: 'progress' }),
+    'progress response',
+  )
+  return (res.completed ?? {}) as Record<string, string>
+}
+
+export interface CompanyProfileDto {
+  id: string
+  label: string
+  aliases: string[]
+  values: string[]
+  hiringAxes: { id: string; label: string; weight: number; categories: string[] }[]
+  rounds: { name: string; focus: string }[]
+  techSignals: string[]
+}
+
+export async function getCompanies(signal?: AbortSignal): Promise<CompanyProfileDto[]> {
+  const res = assertObject(await request<unknown>('/api/companies', { signal, label: 'companies' }), 'companies response')
+  if (!Array.isArray(res.companies)) throw contractError('companies response', res)
+  return res.companies as CompanyProfileDto[]
+}
+
+// --------------------------------------------------------------- interview
+
+export interface InterviewKitResult {
+  kitId: string
+  target: Target
+  questions: InterviewQuestion[]
+  usedTier: string
+  notes: string[]
+  createdAt: number
+}
+
+export async function postInterviewGenerate(
+  body: { target?: Target; newAngle?: boolean; seed?: number },
+  signal?: AbortSignal,
+): Promise<InterviewKitResult> {
+  const res = assertObject(
+    await request<unknown>('/api/interview/generate', {
+      method: 'POST',
+      body,
+      signal,
+      label: 'interview prep',
+      timeoutMs: Math.max(TIMEOUT_MS, 120_000),
+    }),
+    'interview response',
+  )
+  if (!Array.isArray(res.questions)) throw contractError('interview response', res)
+  return res as unknown as InterviewKitResult
+}
+
+export interface InterviewKitSummary {
+  kitId: string
+  target: Target
+  usedTier: string
+  createdAt: number
+  count: number
+}
+
+export async function getInterviewKits(signal?: AbortSignal): Promise<InterviewKitSummary[]> {
+  const res = assertObject(await request<unknown>('/api/interview/kits', { signal, label: 'interview kits' }), 'kits response')
+  if (!Array.isArray(res.kits)) throw contractError('kits response', res)
+  return res.kits as InterviewKitSummary[]
+}
+
+export async function getInterviewKit(kitId: string, signal?: AbortSignal): Promise<InterviewKitResult> {
+  const res = assertObject(
+    await request<unknown>(`/api/interview/kits/${encodeURIComponent(kitId)}`, { signal, label: 'interview kit' }),
+    'kit response',
+  )
+  if (!Array.isArray(res.questions)) throw contractError('kit response', res)
+  return res as unknown as InterviewKitResult
 }

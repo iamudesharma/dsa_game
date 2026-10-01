@@ -1,6 +1,8 @@
 'use client'
 import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react'
 import { useGameStore } from '@/store/game'
+import { useAuth } from '@/components/auth/AuthProvider'
+import { getServerProgress, postServerProgress } from '@/lib/api'
 import { completedWorlds, freshProgress, readProgress, recordCompletion, saveProgress, PROGRESS_KEY, type AdventureProgress, type PlayerPreferences } from '@/lib/adventure'
 
 const Context = createContext({ progress: freshProgress(), ready: false, warning: false, selectFrame: (_: PlayerPreferences['mapFrame']) => {} })
@@ -11,6 +13,8 @@ export function AdventureProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false)
   const [warning, setWarning] = useState(false)
   const state = useGameStore(s => s.state)
+  const { user, ready: authReady } = useAuth()
+  const syncedUser = useRef<string | null>(null)
   const commit = useCallback((next: AdventureProgress) => {
     current.current = next
     setProgress(next)
@@ -44,8 +48,36 @@ export function AdventureProvider({ children }: { children: ReactNode }) {
       base = { ...base, completed: { ...disk.completed, ...base.completed } }
     } catch { setWarning(true) }
     const next = recordCompletion(base, state)
-    if (next !== base) commit(next)
+    if (next !== base) {
+      commit(next)
+      // Best-effort server mirror for signed-in learners; local is the truth.
+      if (syncedUser.current) {
+        void postServerProgress(next.completed).catch(() => {})
+      }
+    }
   }, [ready, state, commit])
+  // First-login merge: push the device-local map up, adopt the union. Runs
+  // once per sign-in; sign-out leaves local play untouched.
+  useEffect(() => {
+    if (!authReady || !ready || !user || syncedUser.current === user.id) return
+    syncedUser.current = user.id
+    const local = current.current.completed
+    void (async () => {
+      try {
+        const merged = await postServerProgress(local)
+        const server = await getServerProgress().catch(() => merged)
+        const union = { ...merged, ...server }
+        const next = { ...current.current, completed: union }
+        commit(next)
+      } catch {
+        // Offline or expired: local play continues; merge retries next sign-in.
+        syncedUser.current = null
+      }
+    })()
+  }, [authReady, ready, user, commit])
+  useEffect(() => {
+    if (!user) syncedUser.current = null
+  }, [user])
   const selectFrame = (mapFrame: PlayerPreferences['mapFrame']) => {
     if (mapFrame !== 'default' && !completedWorlds(current.current).some(w => w.id === mapFrame)) return
     commit({ ...current.current, preferences: { mapFrame } })

@@ -5,9 +5,11 @@ import type { CatalogueResponse, HealthResponse } from '@dsa/game-schema'
 import { DsaApiError, getCatalogue, getHealth } from '@/lib/api'
 import { WORLDS, completedWorlds, nextMission } from '@/lib/adventure'
 import { useAdventure } from '@/components/adventure/AdventureProvider'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { WorldScene, RobotGuide } from '@/components/adventure/WorldScene'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { topicLabel, PROVIDER_TIER_LABELS } from '@/lib/contract'
+import { ONBOARDING_TIPS, dismissOnboarding, resetOnboarding, shouldShowOnboarding } from '@/lib/onboarding'
 
 export function HomeView() {
   const [catalogue, setCatalogue] = useState<CatalogueResponse | null>(null)
@@ -15,7 +17,9 @@ export function HomeView() {
   const [healthFailed, setHealthFailed] = useState(false)
   const [error, setError] = useState<DsaApiError | null>(null)
   const [reload, setReload] = useState(0)
+  const [showTips, setShowTips] = useState(false)
   const { progress, ready, warning, selectFrame } = useAdventure()
+  const { user, ready: authReady } = useAuth()
   const badges = completedWorlds(progress)
   const next = nextMission(progress)
   const frame = WORLDS.find(w => w.id === progress.preferences.mapFrame)
@@ -29,19 +33,32 @@ export function HomeView() {
     void getHealth(controller.signal).then(setHealth).catch(() => { if (!controller.signal.aborted) setHealthFailed(true) })
     return () => controller.abort()
   }, [reload])
+  // First visit only: the tips dismiss forever (see `lib/onboarding`), so a
+  // returning learner never sees this strip again.
+  useEffect(() => {
+    setShowTips(shouldShowOnboarding())
+  }, [])
   return <main className="adventure-home" style={frame ? { '--map-frame': frame.color } as CSSProperties : undefined}>
     <nav className="adventure-nav" aria-label="Main navigation">
       <Link href="/" className="brand"><span className="brand-icon" aria-hidden="true">✦</span> PLAY THE ALGORITHMS</Link>
-      <div className="flex flex-wrap gap-2"><Link href="/learn/linked-list" className="btn">Field notebook ↗</Link><a href="#collection" className="btn">✧ Collection · {Object.keys(progress.completed).length}/11</a></div>
+      <div className="flex flex-wrap gap-2"><Link href="/learn/linked-list" className="btn">Field notebook ↗</Link><Link href="/patterns" className="btn">Patterns ↗</Link><Link href="/tracks" className="btn">Tracks ↗</Link><Link href="/account" className="btn">Interview prep ↗</Link>{authReady && (user ? <Link href="/account" className="btn btn-primary">{user.email}</Link> : <Link href="/login" className="btn">Sign in</Link>)}<a href="#collection" className="btn">✧ Collection · {Object.keys(progress.completed).length}/{catalogue?.topics.reduce((sum, t) => sum + t.problems.length, 0) ?? '…'}</a></div>
     </nav>
     <header className="adventure-hero">
       <div><p className="eyebrow">YOUR NEXT LITTLE BIG ADVENTURE</p><h1>Big ideas.<br/><span>Small adventures.</span></h1><p className="hero-copy">Swap, stack, search, and explore. Discover how algorithms work, one playful move at a time.</p>
         {catalogue && ready && <Link className="btn btn-primary hero-cta" href={next ? `/problem/${next.id}` : '/problem/array-max-min'}>{Object.keys(progress.completed).length ? 'Keep exploring' : 'Let’s play'} <span aria-hidden="true">→</span></Link>}
-        <p className="hero-note">6 worlds · 11 missions · your own pace</p>
+        <p className="hero-note">{WORLDS.length} worlds · {catalogue?.topics.reduce((sum, t) => sum + t.problems.length, 0) ?? '…'} missions · your own pace</p>
       </div>
       <div className="hero-diorama" aria-hidden="true"><span className="orbit-star star-one">✦</span><span className="orbit-star star-two">✧</span><div className="diorama-label">A WORLD OF AHA!</div><WorldScene world={WORLDS[0]!}/><div className="diorama-pieces"><span>3</span><span>1</span><span>7</span></div><RobotGuide/><span className="diorama-caption">Curiosity is your superpower.</span></div>
     </header>
     <section className="journey-heading"><div><p className="eyebrow">THE ADVENTURE MAP</p><h2>Where shall we go?</h2></div><p>Every world is open. Pick what sparks your curiosity.</p></section>
+    {showTips && <section className="panel p-5" aria-label="How to play">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div><p className="eyebrow">FIRST VISIT · HOW TO PLAY</p><h2 className="text-lg font-bold text-[var(--dsa-ink)]">Three things, then go explore</h2></div>
+        <button className="btn" onClick={() => { dismissOnboarding(); setShowTips(false) }}>Got it — hide these</button>
+      </div>
+      <ul className="mt-3 space-y-2">{ONBOARDING_TIPS.map(tip => <li key={tip.id} className="text-sm text-[var(--dsa-muted)]"><strong className="text-[var(--dsa-ink)]">{tip.title}.</strong> {tip.body}</li>)}</ul>
+    </section>}
+    {!showTips && <p className="px-1 text-xs text-[var(--dsa-ink-faint)]"><button className="underline underline-offset-4 hover:text-[var(--dsa-accent)]" onClick={() => { resetOnboarding(); setShowTips(true) }}>Show the how-to-play tips</button></p>}
     {error && <ErrorState error={error} onRetry={() => setReload(r => r + 1)}/>}
     {!catalogue && !error && <div className="map-loading" role="status"><RobotGuide>Unfolding your adventure map…</RobotGuide></div>}
     <div className="world-map">

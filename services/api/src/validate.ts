@@ -7,6 +7,7 @@
 import { z } from 'zod'
 import { ACTION_TYPES, DIFFICULTIES, LEARNER_BANDS } from '@dsa/game-schema'
 import type { Difficulty, LearnerBand } from '@dsa/game-schema'
+import { ResumeSchema, TargetSchema } from '@dsa/account'
 
 const ActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('selectObject'), objectId: z.string().min(1), actionId: z.string().optional() }),
@@ -130,5 +131,46 @@ export type GenerateBody = z.infer<typeof GenerateBodySchema>
 export type ActionBody = z.infer<typeof ActionBodySchema>
 export type DecideBody = z.infer<typeof DecideBodySchema>
 export type CoachAskBody = z.infer<typeof CoachAskBodySchema>
+
+/**
+ * `POST /api/auth/signup` and `/api/auth/login`. Bounds match the service:
+ * email is normalised + regex-checked there; the schema keeps the wire honest.
+ */
+export const AuthBodySchema = z
+  .object({
+    email: z.string().min(3).max(160),
+    password: z.string().min(8).max(200),
+  })
+  .strict()
+
+/** `PUT /api/me/resume`. The full object; the client edits, the server validates. */
+export const ResumeBodySchema = ResumeSchema
+
+/** `PUT /api/me/target`. */
+export const TargetBodySchema = TargetSchema
+
+/** `POST /api/me/parse-resume`. Pasted text, parsed deterministically. */
+export const ParseResumeBodySchema = z
+  .object({
+    text: z.string().min(1).max(20000),
+    save: z.boolean().optional(),
+  })
+  .strict()
+
+/** `POST /api/interview/generate`. Target comes from the stored profile unless overridden. */
+export const InterviewGenerateBodySchema = z
+  .object({
+    target: TargetSchema.optional(),
+    newAngle: z.boolean().optional(),
+    seed: z.number().int().nonnegative().optional(),
+  })
+  .strict()
+
+/** `POST /api/me/progress`. Device-local completion map merged server-side. */
+export const ProgressBodySchema = z
+  .object({
+    completed: z.record(z.string().min(1).max(80), z.string().min(1).max(40)),
+  })
+  .strict()
 
 export { ActionSchema, ACTION_TYPES }

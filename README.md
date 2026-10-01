@@ -166,12 +166,52 @@ Two further measured constraints, both found by calling the live endpoint:
 
 ## Status
 
-- **11 problems** are in the catalogue (`packages/game-schema/src/problems.ts`),
+- **45 problems** are in the catalogue (`packages/game-schema/src/problems.ts`),
   each with `allowedMechanics` and `requiredMechanics`.
-- **All 11 catalogue problems have deterministic oracles**: arrays (maximum /
-  minimum, Two Sum, move zeroes), sorting (bubble and selection), stack (valid
-  parentheses, push / pop), queue operations, binary search, and linked lists
-  (traversal and reversal). The same registry drives both clients and the API.
+- **All 45 catalogue problems have deterministic oracles**: arrays (maximum /
+  minimum, Two Sum, move zeroes, sliding-window max sum, sorted two-pointers
+  pair, prefix-sum range, Kadane's max subarray, merge intervals), sorting
+  (bubble and selection), stack (valid parentheses, push / pop, next greater
+  element), queue operations, binary search (classic and rotated), linked
+  lists (traversal, reversal, and cycle detection), hash tables (frequency
+  count, valid anagram), strings (valid palindrome), trees (pre/in/post-order
+  traversals, BST validation, level order, BST search), heaps (kth largest
+  via a size-k min-heap), graphs (number of islands, max area, rotting
+  oranges, word search, union-find components, network delay via Dijkstra,
+  minimum connection cost via Kruskal), dynamic programming (climbing stairs,
+  house robber, coin change, unique paths through obstacles, longest common
+  subsequence and edit distance on a string table), backtracking
+  (subsets, permutations), greedy (jump game), bit manipulation (single
+  number), and tries (prefix search). The same registry drives both
+  clients and the API.
+- Grid games (`num-islands`, `max-area-island`, `rotting-oranges`,
+  `word-search`, `unique-paths`, `lcs-length`, `edit-distance`) declare
+  `gridCols` in their instance extras; both clients lay
+  the slots lane out as fixed rows from it, so row-major ids read as a real
+  2D board with no per-problem renderer. The string-table games pair numeric
+  match-bit values with letter-spelling tokens (the word-search precedent).
+
+## Learning library (web)
+
+- `/patterns` — the 20-pattern library (`apps/web/src/lib/patterns.ts`):
+  when to use it, a reusable template, LeetCode practice references (name +
+  number, never fabricated links), deep-dives verbatim from
+  awesome-leetcode-resources, and a straight line into every playable game.
+- `/tracks` — curated checklists (`apps/web/src/lib/tracks.ts`): an
+  Interview Classics list across every category mapped to the games that
+  train each item (study-only items show their LeetCode number, never a play
+  button), plus a Full Tour derived from the catalogue so it cannot drift.
+  Progress is the adventure store's own completion map.
+- Every problem page carries a Study resources drawer (`apps/web/src/lib/resources.ts`):
+  which patterns train the game, which classics it stamps, and the verbatim
+  deep-dives — the mobile client mirrors the mappings with its own resource
+  card (`apps/mobile/lib/learn/resources.dart`, deep-dives as text since the
+  client has no link launcher).
+- First-visit onboarding tips (`apps/web/src/lib/onboarding.ts`): three
+  sentences on the adventure map, dismissible forever, degradable to visible
+  when storage is unavailable. The mobile map carries the same three tips
+  (`apps/mobile/lib/learn/onboarding.dart`), persisted through the adventure
+  store under a separate key so tips can never mint or erase a stamp.
 - Low, medium, and high choose increasing instance sizes within each problem's
   declared bounds. The template provider can generate every game without model
   keys or sidecars, so the full catalogue remains playable offline.
@@ -196,9 +236,9 @@ your local opencode auth, tier 3 is OpenRouter, and tier 5 is the template.
 ## Testing
 
 ```bash
-pnpm test              # vitest across all packages  (444 passing)
+pnpm test              # vitest across all packages  (754 passing)
 pnpm typecheck
-cd apps/mobile && flutter test    # 25 passing
+cd apps/mobile && flutter test    # 71 passing
 
 bash scripts/play-through.sh      # drives a generated game to a win, via the API only
 ```

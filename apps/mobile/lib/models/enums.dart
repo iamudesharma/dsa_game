@@ -204,7 +204,17 @@ enum DsaTopic {
   stack('stack'),
   queue('queue'),
   binarySearch('binary-search'),
-  linkedList('linked-list');
+  linkedList('linked-list'),
+  hashTable('hash-table'),
+  strings('strings'),
+  trees('trees'),
+  heap('heap'),
+  graphs('graphs'),
+  dp('dp'),
+  backtracking('backtracking'),
+  greedy('greedy'),
+  bitManip('bit-manip'),
+  trie('trie');
 
   const DsaTopic(this.wire);
 
@@ -218,6 +228,16 @@ enum DsaTopic {
     DsaTopic.queue => 'Queue',
     DsaTopic.binarySearch => 'Binary Search',
     DsaTopic.linkedList => 'Linked List',
+    DsaTopic.hashTable => 'Hash Table',
+    DsaTopic.strings => 'Strings',
+    DsaTopic.trees => 'Trees',
+    DsaTopic.heap => 'Heap',
+    DsaTopic.graphs => 'Graphs',
+    DsaTopic.dp => 'Dynamic Programming',
+    DsaTopic.backtracking => 'Backtracking',
+    DsaTopic.greedy => 'Greedy',
+    DsaTopic.bitManip => 'Bit Manipulation',
+    DsaTopic.trie => 'Trie',
   };
 
   String get blurb => switch (this) {
@@ -227,6 +247,16 @@ enum DsaTopic {
     DsaTopic.queue => 'First in, first out. Enqueue behind, dequeue in front.',
     DsaTopic.binarySearch => 'Halve the space on every comparison.',
     DsaTopic.linkedList => 'No indexing — follow pointers one node at a time.',
+    DsaTopic.hashTable => 'Count everything once, look everything up fast.',
+    DsaTopic.strings => 'Read from both ends toward the middle.',
+    DsaTopic.trees => 'Branch down from the root, visit every node.',
+    DsaTopic.heap => 'Keep the k largest, let the rest go.',
+    DsaTopic.graphs => 'Flood islands, ride waves, trace words.',
+    DsaTopic.dp => 'Small answers build big ones.',
+    DsaTopic.backtracking => 'Choose, explore, undo.',
+    DsaTopic.greedy => 'How far can you reach?',
+    DsaTopic.bitManip => 'Fold bits until one survives.',
+    DsaTopic.trie => 'Shared prefixes, shared paths.',
   };
 
   /// `Icons` lives in the Flutter SDK; the model layer is allowed to depend on
@@ -239,6 +269,16 @@ enum DsaTopic {
     DsaTopic.queue => Icons.format_list_numbered,
     DsaTopic.binarySearch => Icons.zoom_in,
     DsaTopic.linkedList => Icons.linear_scale,
+    DsaTopic.hashTable => Icons.table_chart,
+    DsaTopic.strings => Icons.text_fields,
+    DsaTopic.trees => Icons.account_tree,
+    DsaTopic.heap => Icons.filter_list,
+    DsaTopic.graphs => Icons.hub,
+    DsaTopic.dp => Icons.table_rows,
+    DsaTopic.backtracking => Icons.route,
+    DsaTopic.greedy => Icons.bolt,
+    DsaTopic.bitManip => Icons.memory,
+    DsaTopic.trie => Icons.park,
   };
 
   static final Map<String, DsaTopic> _byWire = {for (final v in values) v.wire: v};

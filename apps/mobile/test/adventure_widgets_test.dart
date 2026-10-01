@@ -59,8 +59,19 @@ void main() {
     await _bootMap(tester, backend: MemoryBackend(seed: _seedWith(['binary-search'])));
 
     // The binary-search world has one mission in the fixture catalogue, so it
-    // completes outright.
+    // completes outright. The map is a lazy list, so the completed world is
+    // scrolled into view before asserting.
+    for (var i = 0; i < 10 && find.text('★ complete').evaluate().isEmpty; i++) {
+      await tester.drag(find.byType(ListView).first, const Offset(0, -400));
+      await tester.pumpAndSettle();
+    }
     expect(find.text('★ complete'), findsOneWidget);
+    // The suggested mission lives on the following world card, which needs
+    // its own scroll — each expect runs while its row is built.
+    for (var i = 0; i < 10 && find.text('Suggested next adventure').evaluate().isEmpty; i++) {
+      await tester.drag(find.byType(ListView).first, const Offset(0, -400));
+      await tester.pumpAndSettle();
+    }
     expect(find.text('Suggested next adventure'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Your collection'));
@@ -75,9 +86,66 @@ void main() {
     await _bootMap(tester);
     await tester.tap(find.byTooltip('Your collection'));
     await tester.pumpAndSettle();
+    // Sixteen world rows push the frame picker below the fold of the sheet's
+    // lazy list, so it is not built until scrolled to. Drag the sheet's own
+    // (always built) title upward until the picker materialises.
+    for (var i = 0; i < 10 && find.text('Original').evaluate().isEmpty; i++) {
+      await tester.drag(find.text('Your collection'), const Offset(0, -400));
+      await tester.pumpAndSettle();
+    }
     // Only the original frame is offered; no world is complete.
     expect(find.text('Original'), findsOneWidget);
     expect(find.text('Collected!'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the onboarding tips show once, dismiss, and come back on re-show', (tester) async {
+    final backend = MemoryBackend();
+    await _bootMap(tester, backend: backend);
+
+    expect(find.text('Three things, then go explore'), findsOneWidget);
+    expect(find.textContaining('highlighted tiles', findRichText: true), findsOneWidget);
+
+    await tester.tap(find.text('Got it'));
+    await tester.pumpAndSettle();
+    expect(find.text('Three things, then go explore'), findsNothing);
+    expect(await backend.readKey('play-the-algorithms:onboarding:v1'), 'seen');
+
+    // The dismissed card leaves a re-show affordance, mirroring the web map.
+    expect(find.text('Show the how-to-play tips'), findsOneWidget);
+    await tester.tap(find.text('Show the how-to-play tips'));
+    await tester.pumpAndSettle();
+    expect(find.text('Three things, then go explore'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the problem screen shows study resources for the mission', (tester) async {
+    await _bootMap(tester);
+
+    // The fixture catalogue's binary-search mission trains a pattern and
+    // stamps a classic, so its resource card has both halves. The map is a
+    // lazy list under the onboarding card: scroll before tapping.
+    for (var i = 0; i < 10 && find.text('Find the target in a sorted array').evaluate().isEmpty; i++) {
+      await tester.fling(find.byType(ListView).first, const Offset(0, -500), 800);
+      await tester.pumpAndSettle();
+    }
+    final mission = find.text('Find the target in a sorted array');
+    await tester.ensureVisible(mission.first);
+    await tester.pumpAndSettle();
+    await tester.tap(mission.first);
+    await tester.pumpAndSettle();
+    final list = find.byKey(const ValueKey('problem-list'));
+    for (var i = 0; i < 12 && find.text('STUDY RESOURCES').evaluate().isEmpty; i++) {
+      await tester.fling(list, const Offset(0, -500), 800);
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('STUDY RESOURCES'), findsOneWidget);
+    for (var i = 0; i < 6 && find.text('Modified Binary Search').evaluate().isEmpty; i++) {
+      await tester.fling(list, const Offset(0, -500), 800);
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('Modified Binary Search'), findsOneWidget);
+    expect(find.text('#704 Binary Search · Binary Search'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

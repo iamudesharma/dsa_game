@@ -16,6 +16,7 @@ import '../models/problem.dart';
 import '../adventure/progress_store.dart';
 import '../adventure/world_scene.dart';
 import '../adventure/worlds.dart';
+import '../learn/resources.dart';
 import '../state/catalogue_controller.dart';
 import '../state/game_controller.dart';
 import '../theme/palette.dart';
@@ -65,6 +66,7 @@ class _ProblemScreenState extends State<ProblemScreen> {
       appBar: AppBar(title: Text(widget.topic.label)),
       body: SafeArea(
         child: ListView(
+          key: const ValueKey('problem-list'),
           padding: const EdgeInsets.fromLTRB(16, 6, 16, 32),
           children: [
             _MissionPreview(topic: widget.topic, problem: selected),
@@ -129,6 +131,8 @@ class _ProblemScreenState extends State<ProblemScreen> {
               const SectionHeading(title: 'the theory', icon: Icons.menu_book_rounded),
               const SizedBox(height: 9),
               _DetailCard(problem: selected),
+              const SizedBox(height: 12),
+              _ResourceCard(problem: selected),
             ],
           ],
         ),
@@ -359,6 +363,70 @@ class _DetailCard extends StatelessWidget {
                 MiniLabel(text: mechanic.wire, icon: Icons.circle, color: colors.accent),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Where this game fits: training patterns with their LeetCode numbers, the
+/// Interview Classics it stamps, and the verbatim deep-dive URLs as text.
+/// Deep-dives stay text because this client has no link launcher — a row that
+/// looks tappable but goes nowhere would be the dishonest control.
+class _ResourceCard extends StatelessWidget {
+  const _ResourceCard({required this.problem});
+
+  final ProblemMeta problem;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.gameColors;
+    final res = resourcesForProblem(problem.id);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.muted.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeading(title: 'study resources', icon: Icons.library_books_rounded),
+          const SizedBox(height: 6),
+          if (res.patterns.isEmpty)
+            Text(
+              'A foundations drill: it teaches the moves other patterns build on, so no pattern claims it. The classics below still stamp it.',
+              style: TextStyle(fontSize: 12, height: 1.4, color: colors.muted),
+            ),
+          for (final pattern in res.patterns) ...[
+            Text(
+              pattern.name,
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: colors.onSurface),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Deep dive: ${pattern.deepDive}',
+              style: TextStyle(fontSize: 10, fontFamily: 'monospace', color: colors.muted),
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (res.trackMentions.isNotEmpty) ...[
+            Text(
+              'Stamps these classics',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: colors.onSurface),
+            ),
+            const SizedBox(height: 3),
+            for (final mention in res.trackMentions)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  '#${mention.n} ${mention.name} · ${mention.category}',
+                  style: TextStyle(fontSize: 11.5, color: colors.muted),
+                ),
+              ),
+          ],
         ],
       ),
     );

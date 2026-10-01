@@ -17,6 +17,46 @@ export { createBinarySearchOracle, annotatedCode } from './problems/binary-searc
 export { createArrayMaxMinOracle } from './problems/array-max-min.js'
 export { createBubbleSortOracle, createSelectionSortOracle, createSortOracle } from './problems/sorts.js'
 export {
+  createFrequencyCountOracle,
+  createKadaneMaxSubarrayOracle,
+  createLinkedListCycleOracle,
+  createMergeIntervalsOracle,
+  createNextGreaterElementOracle,
+  createPatternOracle,
+  createPrefixSumRangeOracle,
+  createRotatedSearchOracle,
+  createSlidingWindowMaxSumOracle,
+  createTwoPointersPairOracle,
+  createValidAnagramOracle,
+  createValidPalindromeOracle,
+} from './problems/patterns.js'
+export {
+  createBstSearchOracle,
+  createBstValidateOracle,
+  createTreeLevelOrderOracle,
+  createTreeTraversalsOracle,
+  createTreeOracle,
+} from './problems/trees.js'
+export { createKthLargestHeapOracle } from './problems/heap.js'
+export {
+  createGraphOracle,
+  createEditDistanceOracle,
+  createKruskalMstOracle,
+  createLcsLengthOracle,
+  createMaxAreaIslandOracle,
+  createNetworkDelayTimeOracle,
+  createNumIslandsOracle,
+  createRottingOrangesOracle,
+  createUnionFindConnectOracle,
+  createUniquePathsOracle,
+  createWordSearchOracle,
+} from './problems/graphs.js'
+export { createClimbingStairsOracle, createCoinChangeOracle, createDpOracle, createHouseRobberOracle } from './problems/dp.js'
+export { createBacktrackingOracle, createPermutationsOracle, createSubsetsOracle } from './problems/backtracking.js'
+export { createJumpGameOracle } from './problems/greedy.js'
+export { createSingleNumberOracle } from './problems/bit-manip.js'
+export { createTriePrefixSearchOracle } from './problems/trie.js'
+export {
   createLinkedListTraversalOracle,
   createMoveZeroesOracle,
   createQueueOperationsOracle,

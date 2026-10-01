@@ -33,6 +33,43 @@ import { PROBLEM_IDS } from '@dsa/game-schema'
 import type { Oracle } from '@dsa/game-schema'
 import { createArrayMaxMinOracle } from './problems/array-max-min.js'
 import { createBinarySearchOracle } from './problems/binary-search.js'
+import {
+  createFrequencyCountOracle,
+  createKadaneMaxSubarrayOracle,
+  createLinkedListCycleOracle,
+  createMergeIntervalsOracle,
+  createNextGreaterElementOracle,
+  createPrefixSumRangeOracle,
+  createRotatedSearchOracle,
+  createSlidingWindowMaxSumOracle,
+  createTwoPointersPairOracle,
+  createValidAnagramOracle,
+  createValidPalindromeOracle,
+} from './problems/patterns.js'
+import {
+  createBstSearchOracle,
+  createBstValidateOracle,
+  createTreeLevelOrderOracle,
+  createTreeTraversalsOracle,
+} from './problems/trees.js'
+import { createKthLargestHeapOracle } from './problems/heap.js'
+import {
+  createEditDistanceOracle,
+  createKruskalMstOracle,
+  createLcsLengthOracle,
+  createMaxAreaIslandOracle,
+  createNetworkDelayTimeOracle,
+  createNumIslandsOracle,
+  createRottingOrangesOracle,
+  createUnionFindConnectOracle,
+  createUniquePathsOracle,
+  createWordSearchOracle,
+} from './problems/graphs.js'
+import { createClimbingStairsOracle, createCoinChangeOracle, createHouseRobberOracle } from './problems/dp.js'
+import { createPermutationsOracle, createSubsetsOracle } from './problems/backtracking.js'
+import { createJumpGameOracle } from './problems/greedy.js'
+import { createSingleNumberOracle } from './problems/bit-manip.js'
+import { createTriePrefixSearchOracle } from './problems/trie.js'
 import { createSortOracle } from './problems/sorts.js'
 import {
   createLinkedListTraversalOracle,
@@ -61,6 +98,40 @@ export const ORACLES: Readonly<Record<string, Oracle>> = {
   'queue-operations': createQueueOperationsOracle(),
   'linked-list-traversal': createLinkedListTraversalOracle(),
   'reverse-linked-list': createReverseLinkedListOracle(),
+  'sliding-window-max-sum': createSlidingWindowMaxSumOracle(),
+  'two-pointers-pair': createTwoPointersPairOracle(),
+  'prefix-sum-range': createPrefixSumRangeOracle(),
+  'kadane-max-subarray': createKadaneMaxSubarrayOracle(),
+  'merge-intervals': createMergeIntervalsOracle(),
+  'next-greater-element': createNextGreaterElementOracle(),
+  'rotated-search': createRotatedSearchOracle(),
+  'linked-list-cycle': createLinkedListCycleOracle(),
+  'frequency-count': createFrequencyCountOracle(),
+  'valid-anagram': createValidAnagramOracle(),
+  'valid-palindrome': createValidPalindromeOracle(),
+  'tree-traversals': createTreeTraversalsOracle(),
+  'bst-validate': createBstValidateOracle(),
+  'tree-level-order': createTreeLevelOrderOracle(),
+  'bst-search': createBstSearchOracle(),
+  'kth-largest-heap': createKthLargestHeapOracle(),
+  'num-islands': createNumIslandsOracle(),
+  'max-area-island': createMaxAreaIslandOracle(),
+  'rotting-oranges': createRottingOrangesOracle(),
+  'word-search': createWordSearchOracle(),
+  'union-find-connect': createUnionFindConnectOracle(),
+  'network-delay-time': createNetworkDelayTimeOracle(),
+  'kruskal-mst': createKruskalMstOracle(),
+  'unique-paths': createUniquePathsOracle(),
+  'lcs-length': createLcsLengthOracle(),
+  'edit-distance': createEditDistanceOracle(),
+  'climbing-stairs': createClimbingStairsOracle(),
+  'house-robber': createHouseRobberOracle(),
+  'coin-change': createCoinChangeOracle(),
+  'subsets': createSubsetsOracle(),
+  'permutations': createPermutationsOracle(),
+  'jump-game': createJumpGameOracle(),
+  'single-number': createSingleNumberOracle(),
+  'trie-prefix-search': createTriePrefixSearchOracle(),
 }
 
 const IMPLEMENTED_IDS: ReadonlySet<string> = new Set(Object.keys(ORACLES))

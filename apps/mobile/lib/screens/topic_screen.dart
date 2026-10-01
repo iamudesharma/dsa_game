@@ -1,4 +1,4 @@
-/// The adventure map: six illustrated world destinations with mission nodes.
+/// The adventure map: illustrated world destinations with mission nodes.
 ///
 /// Replaces the old topic-card grid. Every mission stays accessible from the
 /// start — completion stamps, the collection sheet and the suggested next
@@ -15,12 +15,17 @@ import '../adventure/progress_store.dart';
 import '../adventure/robot_guide.dart';
 import '../adventure/world_scene.dart';
 import '../adventure/worlds.dart';
+import '../learn/onboarding.dart';
 import '../models/problem.dart';
+import '../state/auth_controller.dart';
 import '../state/catalogue_controller.dart';
 import '../theme/palette.dart';
 import '../widgets/common.dart';
+import 'account_screen.dart';
 import 'learn_screen.dart';
+import 'patterns_screen.dart';
 import 'problem_screen.dart';
+import 'tracks_screen.dart';
 
 class TopicScreen extends StatefulWidget {
   const TopicScreen({super.key});
@@ -45,6 +50,7 @@ class _TopicScreenState extends State<TopicScreen> {
   Widget build(BuildContext context) {
     final controller = context.watch<CatalogueController>();
     final adventure = context.watch<AdventureController>();
+    final auth = context.watch<AuthController>();
     final catalogue = controller.catalogue;
 
     return Scaffold(
@@ -52,11 +58,32 @@ class _TopicScreenState extends State<TopicScreen> {
         title: const Text('Play the Algorithms'),
         actions: [
           IconButton(
+            onPressed: () => AccountScreen.open(context),
+            icon: auth.signedIn
+                ? const Icon(Icons.account_circle_rounded)
+                : const Icon(Icons.account_circle_outlined),
+            tooltip: auth.signedIn ? 'Your profile (${auth.user?.email ?? ''})' : 'Sign in',
+          ),
+          IconButton(
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const LearnScreen()),
             ),
             icon: const Icon(Icons.menu_book_outlined),
             tooltip: 'Field notebook',
+          ),
+          IconButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const PatternsScreen()),
+            ),
+            icon: const Icon(Icons.pattern_rounded),
+            tooltip: 'Patterns',
+          ),
+          IconButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const TracksScreen()),
+            ),
+            icon: const Icon(Icons.route_rounded),
+            tooltip: 'Tracks',
           ),
           IconButton(
             onPressed: catalogue == null ? null : () => _openCollection(context, catalogue),
@@ -135,6 +162,8 @@ class _TopicScreenState extends State<TopicScreen> {
             text: 'Progress storage is unavailable or was reset. You can keep playing; new stamps may not be kept.',
           ),
         _Hero(nextProblem: nextProblem, catalogue: catalogue),
+        const SizedBox(height: 12),
+        const _OnboardingCard(),
         const SizedBox(height: 16),
         const SectionHeading(title: 'the adventure map', icon: Icons.map_outlined),
         const SizedBox(height: 4),
@@ -216,7 +245,7 @@ class _Hero extends StatelessWidget {
             ),
           const SizedBox(height: 6),
           Text(
-            '6 worlds · ${catalogue.problemCount} missions · your own pace',
+            '${worlds.length} worlds · ${catalogue.problemCount} missions · your own pace',
             style: TextStyle(fontSize: 11, color: colors.muted),
           ),
         ],
@@ -234,6 +263,112 @@ class _Hero extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => ProblemScreen(topic: topic, initialProblemId: problem.id),
+      ),
+    );
+  }
+}
+
+/// First-visit tips, dismissible forever through the adventure store's own
+/// key-value surface (a separate key, so tips can never mint or erase a
+/// stamp). A missing store shows the tips; a dismissed card leaves a re-show
+/// affordance, mirroring the web map.
+class _OnboardingCard extends StatefulWidget {
+  const _OnboardingCard();
+
+  @override
+  State<_OnboardingCard> createState() => _OnboardingCardState();
+}
+
+class _OnboardingCardState extends State<_OnboardingCard> {
+  bool? _visible;
+
+  @override
+  void initState() {
+    super.initState();
+    shouldShowOnboarding(context.read<AdventureController>().keyValueStore).then((value) {
+      if (mounted) setState(() => _visible = value);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = _visible;
+    if (visible == null) return const SizedBox.shrink();
+    if (!visible) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton(
+          onPressed: () async {
+            await resetOnboarding(context.read<AdventureController>().keyValueStore);
+            if (mounted) setState(() => _visible = true);
+          },
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: const Text('Show the how-to-play tips', style: TextStyle(fontSize: 11.5)),
+        ),
+      );
+    }
+    final colors = context.gameColors;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.muted.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Three things, then go explore',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: colors.onSurface),
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  await dismissOnboarding(context.read<AdventureController>().keyValueStore);
+                  if (mounted) setState(() => _visible = false);
+                },
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('Got it', style: TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          for (final tip in onboardingTips)
+            Padding(
+              padding: const EdgeInsets.only(top: 5),
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '${tip.title}. ',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: colors.onSurface,
+                      ),
+                    ),
+                    TextSpan(
+                      text: tip.body,
+                      style: TextStyle(fontSize: 12, height: 1.35, color: colors.muted),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -444,6 +579,7 @@ class _CollectionSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.gameColors;
     final adventure = context.watch<AdventureController>();
+    final signedIn = context.watch<AuthController>().signedIn;
     final missionIds = {
       for (final topic in catalogue.topics)
         worldForTopic(topic.topic?.wire ?? topic.id): [for (final p in topic.problems) p.id],
@@ -496,7 +632,9 @@ class _CollectionSheet extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Saved on this device. No account needed.',
+            signedIn
+                ? 'Stamps sync to your account. Play stays open to everyone.'
+                : 'Saved on this device. No account needed.',
             style: TextStyle(fontSize: 11, color: colors.muted),
           ),
         ],

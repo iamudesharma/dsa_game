@@ -12,6 +12,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/action.dart';
+import '../models/account.dart';
 import '../models/api.dart';
 import '../models/json.dart';
 import '../models/problem.dart';
@@ -59,6 +60,14 @@ class ApiClient {
 
   final ApiConfig config;
   final http.Client _http;
+
+  /// Bearer fallback for loopback hosts. The server also sets an httpOnly
+  /// cookie, but `localhost` vs `127.0.0.1` are different hosts to the
+  /// cookie jar, so the mobile client always sends the token explicitly —
+  /// same as the web client's `Authorization` header.
+  String? _authToken;
+
+  void setAuthToken(String? token) => _authToken = (token == null || token.isEmpty) ? null : token;
 
   void close() => _http.close();
 
@@ -124,6 +133,106 @@ class ApiClient {
     return DecideResponse.from(body);
   }
 
+  // ------------------------------------------------------- accounts & resume
+  // Signed-in only. Game play stays anonymous; these power resume/interview.
+
+  Future<AuthResult> signup({required String email, required String password}) async {
+    final body = await _post('/api/auth/signup', {'email': email, 'password': password});
+    return AuthResult.from(body);
+  }
+
+  Future<AuthResult> login({required String email, required String password}) async {
+    final body = await _post('/api/auth/login', {'email': email, 'password': password});
+    return AuthResult.from(body);
+  }
+
+  Future<void> logout() async {
+    await _post('/api/auth/logout', const <String, Object?>{});
+  }
+
+  Future<MeResponse> me() async {
+    final body = await _get('/api/auth/me');
+    return MeResponse.from(body);
+  }
+
+  Future<Resume> fetchResume() async {
+    final body = await _get('/api/me/resume');
+    if (body is! Map) throw const MalformedResponse('resume response is not an object');
+    return Resume.from(body['resume']);
+  }
+
+  Future<Resume> saveResume(Resume resume) async {
+    final body = await _put('/api/me/resume', resume.toJson());
+    if (body is! Map) throw const MalformedResponse('resume response is not an object');
+    return Resume.from(body['resume']);
+  }
+
+  /// Deterministic paste → parse. The parser never invents facts; anything it
+  /// cannot place comes back as `unparsed` lines for the user to fix by hand.
+  Future<ParseResumeResult> parseResume(String text, {required bool save}) async {
+    final body = await _post('/api/me/parse-resume', {'text': text, 'save': save});
+    return ParseResumeResult.from(body);
+  }
+
+  Future<Target?> fetchTarget() async {
+    final body = await _get('/api/me/target');
+    if (body is! Map) throw const MalformedResponse('target response is not an object');
+    final raw = body['target'];
+    return raw == null ? null : Target.from(raw);
+  }
+
+  Future<Target> saveTarget(Target target) async {
+    final body = await _put('/api/me/target', target.toJson());
+    if (body is! Map) throw const MalformedResponse('target response is not an object');
+    return Target.from(body['target']);
+  }
+
+  Future<Map<String, String>> fetchProgress() async {
+    final body = await _get('/api/me/progress');
+    if (body is! Map) throw const MalformedResponse('progress response is not an object');
+    final out = <String, String>{};
+    Json.map(body['completed']).forEach((key, value) {
+      if (value is String) out[key] = value;
+    });
+    return Map.unmodifiable(out);
+  }
+
+  /// First-login merge: posts the device-local completion map, gets the union.
+  Future<Map<String, String>> pushProgress(Map<String, String> completed) async {
+    final body = await _post('/api/me/progress', {'completed': completed});
+    if (body is! Map) throw const MalformedResponse('progress response is not an object');
+    final out = <String, String>{};
+    Json.map(body['completed']).forEach((key, value) {
+      if (value is String) out[key] = value;
+    });
+    return Map.unmodifiable(out);
+  }
+
+  Future<List<CompanyProfile>> fetchCompanies() async {
+    final body = await _get('/api/companies');
+    if (body is! Map) throw const MalformedResponse('companies response is not an object');
+    final raw = body['companies'];
+    if (raw is! List) throw const MalformedResponse('companies response has no list');
+    return Json.listOf(raw, CompanyProfile.from).whereType<CompanyProfile>().toList(growable: false);
+  }
+
+  Future<InterviewKit> generateInterview({bool newAngle = false, int? seed}) async {
+    final body = await _post(
+      '/api/interview/generate',
+      {'newAngle': newAngle, 'seed': ?seed},
+      timeout: const Duration(seconds: 120),
+    );
+    return InterviewKit.from(body);
+  }
+
+  Future<List<InterviewKitSummary>> fetchInterviewKits() async {
+    final body = await _get('/api/interview/kits');
+    if (body is! Map) throw const MalformedResponse('kits response is not an object');
+    final raw = body['kits'];
+    if (raw is! List) throw const MalformedResponse('kits response has no list');
+    return Json.listOf(raw, InterviewKitSummary.from).whereType<InterviewKitSummary>().toList(growable: false);
+  }
+
   // ------------------------------------------------------------- transport
 
   Future<Object?> _get(String path, {Duration? timeout}) => _send(
@@ -144,9 +253,20 @@ class ApiClient {
     semanticCodes: semanticCodes,
   );
 
-  Map<String, String> get _headers => const {
+  Future<Object?> _put(
+    String path,
+    Map<String, Object?> payload, {
+    Duration? timeout,
+  }) => _send(
+    () => _http.put(config.endpoint(path), headers: _headers, body: jsonEncode(payload)),
+    path,
+    timeout ?? config.requestTimeout,
+  );
+
+  Map<String, String> get _headers => {
     'content-type': 'application/json',
     'accept': 'application/json',
+    if (_authToken != null) 'authorization': 'Bearer $_authToken',
   };
 
   /// Runs [send] and normalises every outcome into a model or an

@@ -93,6 +93,210 @@ const PROMPTS: Record<string, SelfExplanationPrompts> = {
     integration:
       'What stayed true about the part of the list behind you — the part already reversed — at every step?',
   },
+  'sliding-window-max-sum': {
+    retention:
+      'When you slid the window one step, you added one value and dropped one value instead of re-adding everything. Why was that enough rather than not?',
+    integration:
+      'What stayed true about the best window sum you had recorded, from the first window to the last?',
+  },
+  'two-pointers-pair': {
+    retention:
+      'When the pair sum missed the target, you moved exactly one pointer. Why that pointer rather than the other one?',
+    integration:
+      'What stayed true about where the answer could still be every time you moved a pointer inward?',
+  },
+  'prefix-sum-range': {
+    retention:
+      'You answered the range query with one subtraction instead of re-adding the range. Why does prefix[r+1] − prefix[l] give the right total rather than not?',
+    integration:
+      'What stayed true about what prefix[i] held after each step of the build, from the first element to the last?',
+  },
+  'kadane-max-subarray': {
+    retention:
+      'Think of one step where you extended the running sum — or restarted it at the current value. Why extend there rather than restart, or the reverse?',
+    integration:
+      'What stayed true about the best sum you had seen so far, even while the running sum kept changing?',
+  },
+  'merge-intervals': {
+    retention:
+      'When the next interval started inside the running one, you extended the end instead of emitting. Why extend rather than emit — or the reverse?',
+    integration:
+      'What stayed true about the intervals already emitted, every time you moved to the next one?',
+  },
+  'next-greater-element': {
+    retention:
+      'When a new value arrived, you popped every smaller value off the stack before pushing. Why pop those rather than keep them?',
+    integration:
+      'What stayed true about the values left sitting on the stack, from the first element to the last?',
+  },
+  'rotated-search': {
+    retention:
+      'Think of one turn where you kept one half and discarded the other. How did you know that half was sorted — and why did that decide it rather than not?',
+    integration:
+      'From the first midpoint to the last, what stayed true about where the target could still be?',
+  },
+  'linked-list-cycle': {
+    retention:
+      'The fast pointer moved two links for every one of the slow pointer. Why does meeting prove a cycle, rather than just a coincidence?',
+    integration:
+      'What stayed true about the distance between the two pointers each round when a cycle was there — and when it was not?',
+  },
+  'frequency-count': {
+    retention:
+      'Each time you saw a value you bumped its count instead of rescanning the array. Why was the stored count trustworthy rather than not?',
+    integration:
+      'What stayed true about the counts map after every element, from the first to the last?',
+  },
+  'valid-anagram': {
+    retention:
+      'You added the first string and subtracted the second instead of sorting either one. Why does all-zeroes at the end mean anagram rather than not?',
+    integration:
+      'What stayed true about what a nonzero count meant, at any point in the game?',
+  },
+  'valid-palindrome': {
+    retention:
+      'You compared the outermost unchecked pair first. Why was one mismatch enough to decide the whole answer rather than not?',
+    integration:
+      'What stayed true about the pairs you had already checked, all the way toward the middle?',
+  },
+  'tree-traversals': {
+    retention:
+      'Preorder, inorder, and postorder visit the same nodes in different orders. Why did the node itself come exactly when it did on one of your visits rather than earlier or later?',
+    integration:
+      'No matter which of the three orders you played, what stayed true about when a parent was visited relative to its children?',
+  },
+  'bst-validate': {
+    retention:
+      'You compared each inorder value with its predecessor. Why does one descending pair disprove the whole tree rather than just that pair?',
+    integration:
+      'What stayed true about the inorder values you had already checked, right up until the answer was decided?',
+  },
+  'tree-level-order': {
+    retention:
+      'You dequeued from the front but enqueued at the back. Why that discipline rather than taking from wherever was convenient?',
+    integration:
+      'What stayed true about the order nodes left the queue, from the root down to the last level?',
+  },
+  'bst-search': {
+    retention:
+      'Think of one node where you descended left — or right. Why that child rather than the other one?',
+    integration:
+      'From the root to the target, what stayed true about where the target could still be at every node?',
+  },
+  'kth-largest-heap': {
+    retention:
+      'When a scan value beat the heap minimum you replaced the root and sifted down. Why replace rather than just remember the value — or the reverse?',
+    integration:
+      'What stayed true about the k values sitting in the heap zone after every step, from the first scan to the last?',
+  },
+  'num-islands': {
+    retention:
+      'When you started a flood on an unvisited land cell, why did that mean a new island rather than part of the previous one?',
+    integration:
+      'What stayed true about every cell your floods had already claimed, each time you started a new one?',
+  },
+  'max-area-island': {
+    retention:
+      'You measured each island as you claimed it instead of recounting at the end. Why was the running best trustworthy rather than not?',
+    integration:
+      'What stayed true about the largest area you had recorded, from the first island to the last?',
+  },
+  'rotting-oranges': {
+    retention:
+      'The wave rotted neighbours minute by minute rather than all at once. Why does the minute a cell rotted equal its distance rather than not?',
+    integration:
+      'What stayed true about the order cells rotted in, from minute zero to the last wave?',
+  },
+  'word-search': {
+    retention:
+      'When a path died you unmarked its cells instead of leaving them marked. Why was undoing necessary rather than optional?',
+    integration:
+      'What stayed true about the marked path every time you were one letter deeper?',
+  },
+  'union-find-connect': {
+    retention:
+      'When two roots differed you attached one under the other; when they matched you did nothing. Why attach there rather than not — or the reverse?',
+    integration:
+      'What stayed true about nodes that shared a root, from the first edge to the last?',
+  },
+  'climbing-stairs': {
+    retention:
+      'Each count was the sum of the two before it. Why add those two rather than count the paths from scratch?',
+    integration:
+      'What stayed true about what dp[i] meant after every step, from the ground to the top?',
+  },
+  'house-robber': {
+    retention:
+      'Think of one house where you took the money — or skipped it. Why take there rather than skip, or the reverse?',
+    integration:
+      'What stayed true about the best loot so far, even on the nights you skipped?',
+  },
+  'subsets': {
+    retention:
+      'For one element you explored both including it and excluding it. Why was the unmarking step necessary rather than optional?',
+    integration:
+      'What stayed true about the marked elements every time you went one level deeper?',
+  },
+  'permutations': {
+    retention:
+      'You tried every unused value in each open position. Why was freeing a value after its branch necessary rather than optional?',
+    integration:
+      'What stayed true about the used flags along any single root-to-leaf path?',
+  },
+  'jump-game': {
+    retention:
+      'You kept one running reach instead of rechecking every earlier cell. Why was that number trustworthy rather than not?',
+    integration:
+      'What stayed true about every index at or below the reach, the whole way through?',
+  },
+  'single-number': {
+    retention:
+      'Each fold cancelled at most one pair. Why does the survivor have to be the unpaired value rather than anything else?',
+    integration:
+      'What stayed true about the accumulator after every pair had cancelled, from the first fold to the last?',
+  },
+  'trie-prefix-search': {
+    retention:
+      'You followed one link per query letter instead of scanning all words. Why was following enough rather than not?',
+    integration:
+      'What stayed true about every word below the node you landed on?',
+  },
+  'network-delay-time': {
+    retention:
+      'Each round you settled the closest unsettled node instead of any other. Why was its distance final rather than still improvable?',
+    integration:
+      'What stayed true about every settled node, from the source to the last one?',
+  },
+  'coin-change': {
+    retention:
+      'For one amount you took one coin plus the best for the remainder instead of counting from scratch. Why was the stored remainder trustworthy rather than not?',
+    integration:
+      'What stayed true about what dp[x] meant after every amount, from zero to the target?',
+  },
+  'kruskal-mst': {
+    retention:
+      'You took the lightest edge across two groups but skipped a light edge inside one group. Why was the skipped edge useless rather than just cheap?',
+    integration:
+      'What stayed true about nodes that shared a root, from the first edge to the last?',
+  },
+  'unique-paths': {
+    retention:
+      'Each open cell added the counts from above and the left instead of recounting routes from the start. Why was adding those two enough rather than not?',
+    integration:
+      'What stayed true about what a recorded cell meant every time you moved one step further along a row?',
+  },
+  'lcs-length': {
+    retention:
+      'A match extended the diagonal by one while a mismatch took the larger neighbour. Why does a match earn the plus-one rather than just the diagonal?',
+    integration:
+      'What stayed true about what a recorded cell meant every time you moved one letter deeper into either string?',
+  },
+  'edit-distance': {
+    retention:
+      'A match copied the diagonal free while a mismatch paid one plus the cheapest neighbour. Why is one operation always enough per cell rather than more?',
+    integration:
+      'What stayed true about what a recorded cell meant, from the empty prefixes down to the full strings?',
+  },
 }
 
 /** Generic fallback for a problem id the catalogue does not know yet. */

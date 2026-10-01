@@ -117,14 +117,16 @@ lib/
     problem.dart                ProblemMeta, TopicDto, CatalogueResponse
     provider.dart               ProviderTier, CoachSource, availability
     api.dart                    requests, responses, ActionOutcome, Debrief
+    account.dart                AuthUser, Resume, Target, CompanyProfile, InterviewKit
   services/
     api_client.dart             typed HTTP, one place for every failure mode
     api_exception.dart          sealed error taxonomy
   state/
     catalogue_controller.dart   GET /api/catalogue + health probe
     game_controller.dart        generate → play → debrief, history, hints
+    auth_controller.dart        session token, sign-in/out, progress merge
   theme/palette.dart            Material 3 theme from spec.visual.palette
-  screens/                      topic · problem · play · debrief
+  screens/                      topic · problem · play · debrief · auth · account
   widgets/
     board/                      the board: tiles, slots, nodes, links, pools
     mechanics/                  one widget per mechanic + the registry
@@ -136,11 +138,14 @@ lib/
     generation_loader.dart      themed loading state
 ```
 
-### State: two `ChangeNotifier`s
+### State: three `ChangeNotifier`s
 
 `CatalogueController` owns the topic list. `GameController` owns one game:
 `gameId`, `spec`, `state`, `outcome`, `phase`, `debrief`, the hint, and a
-**history of full state snapshots**.
+**history of full state snapshots**. `AuthController` owns the session: the
+bearer token (platform storage, memory in tests), sign-in/out, the first-login
+progress merge, and best-effort win mirroring. Play stays anonymous — auth
+only gates resume/interview, and local progress is always the truth.
 
 ### About that "undo stack"
 

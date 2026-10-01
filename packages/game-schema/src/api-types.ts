@@ -249,6 +249,17 @@ export const API_ERRORS = {
    * could never succeed no matter how many times it was sent.
    */
   problemNotPlayable: 'PROBLEM_NOT_PLAYABLE',
+  /**
+   * No valid session. The client should redirect to `/login`; the game loop
+   * itself stays anonymous, so this only appears on account-scoped routes.
+   */
+  unauthorized: 'UNAUTHORIZED',
+  /** Signup with an email that already has an account (message stays generic). */
+  emailTaken: 'EMAIL_TAKEN',
+  /** Login with a wrong email or password (message stays generic). */
+  invalidCredentials: 'INVALID_CREDENTIALS',
+  /** Too many attempts; the client should back off. */
+  rateLimited: 'RATE_LIMITED',
   internal: 'INTERNAL',
 } as const
 

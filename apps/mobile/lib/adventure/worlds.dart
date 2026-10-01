@@ -1,4 +1,4 @@
-/// The six curated topic worlds of the adventure map.
+/// The eight curated topic worlds of the adventure map.
 ///
 /// Generated titles, stories and object labels still come from the provider
 /// chain, but the *visual* presentation is constrained to this table: a world
@@ -25,7 +25,7 @@ class WorldDefinition {
   final String subtitle;
   final Color color;
 
-  /// The printed world number on the map ("01" … "06").
+  /// The printed world number on the map ("01" … "16").
   final String mark;
 }
 
@@ -71,6 +71,76 @@ const List<WorldDefinition> worlds = [
     subtitle: 'Follow the connections.',
     color: Color(0xFF8C4B65),
     mark: '06',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.hashTable,
+    name: 'Hash Bazaar',
+    subtitle: 'Count everything once.',
+    color: Color(0xFF7A5C2E),
+    mark: '07',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.strings,
+    name: 'String Atelier',
+    subtitle: 'Read from both ends.',
+    color: Color(0xFF3F6B4F),
+    mark: '08',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.trees,
+    name: 'Tree Canopy',
+    subtitle: 'Branch down, visit every node.',
+    color: Color(0xFF2E5D50),
+    mark: '09',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.heap,
+    name: 'Heap Foundry',
+    subtitle: 'Keep the k largest, drop the rest.',
+    color: Color(0xFF6B3A4D),
+    mark: '10',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.graphs,
+    name: 'Graph Archipelago',
+    subtitle: 'Islands, waves, and wandering words.',
+    color: Color(0xFF2B5D7D),
+    mark: '11',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.dp,
+    name: 'DP Observatory',
+    subtitle: 'Small answers build big ones.',
+    color: Color(0xFF5D4A7D),
+    mark: '12',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.backtracking,
+    name: 'Backtrack Maze',
+    subtitle: 'Choose, explore, undo.',
+    color: Color(0xFF7D5A2B),
+    mark: '13',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.greedy,
+    name: 'Greedy Frontier',
+    subtitle: 'How far can you reach?',
+    color: Color(0xFF3D6B35),
+    mark: '14',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.bitManip,
+    name: 'Bit Forge',
+    subtitle: 'Fold bits until one survives.',
+    color: Color(0xFF555A6B),
+    mark: '15',
+  ),
+  WorldDefinition(
+    topic: DsaTopic.trie,
+    name: 'Trie Grove',
+    subtitle: 'Shared prefixes, shared paths.',
+    color: Color(0xFF2F6B5E),
+    mark: '16',
   ),
 ];
 
