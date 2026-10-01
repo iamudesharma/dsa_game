@@ -236,9 +236,9 @@ your local opencode auth, tier 3 is OpenRouter, and tier 5 is the template.
 ## Testing
 
 ```bash
-pnpm test              # vitest across all packages  (444 passing)
+pnpm test              # vitest across all packages  (754 passing)
 pnpm typecheck
-cd apps/mobile && flutter test    # 25 passing
+cd apps/mobile && flutter test    # 71 passing
 
 bash scripts/play-through.sh      # drives a generated game to a win, via the API only
 ```

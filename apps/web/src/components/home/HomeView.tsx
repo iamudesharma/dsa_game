@@ -5,6 +5,7 @@ import type { CatalogueResponse, HealthResponse } from '@dsa/game-schema'
 import { DsaApiError, getCatalogue, getHealth } from '@/lib/api'
 import { WORLDS, completedWorlds, nextMission } from '@/lib/adventure'
 import { useAdventure } from '@/components/adventure/AdventureProvider'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { WorldScene, RobotGuide } from '@/components/adventure/WorldScene'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { topicLabel, PROVIDER_TIER_LABELS } from '@/lib/contract'
@@ -18,6 +19,7 @@ export function HomeView() {
   const [reload, setReload] = useState(0)
   const [showTips, setShowTips] = useState(false)
   const { progress, ready, warning, selectFrame } = useAdventure()
+  const { user, ready: authReady } = useAuth()
   const badges = completedWorlds(progress)
   const next = nextMission(progress)
   const frame = WORLDS.find(w => w.id === progress.preferences.mapFrame)
@@ -39,7 +41,7 @@ export function HomeView() {
   return <main className="adventure-home" style={frame ? { '--map-frame': frame.color } as CSSProperties : undefined}>
     <nav className="adventure-nav" aria-label="Main navigation">
       <Link href="/" className="brand"><span className="brand-icon" aria-hidden="true">✦</span> PLAY THE ALGORITHMS</Link>
-      <div className="flex flex-wrap gap-2"><Link href="/learn/linked-list" className="btn">Field notebook ↗</Link><Link href="/patterns" className="btn">Patterns ↗</Link><Link href="/tracks" className="btn">Tracks ↗</Link><a href="#collection" className="btn">✧ Collection · {Object.keys(progress.completed).length}/{catalogue?.topics.reduce((sum, t) => sum + t.problems.length, 0) ?? '…'}</a></div>
+      <div className="flex flex-wrap gap-2"><Link href="/learn/linked-list" className="btn">Field notebook ↗</Link><Link href="/patterns" className="btn">Patterns ↗</Link><Link href="/tracks" className="btn">Tracks ↗</Link><Link href="/account" className="btn">Interview prep ↗</Link>{authReady && (user ? <Link href="/account" className="btn btn-primary">{user.email}</Link> : <Link href="/login" className="btn">Sign in</Link>)}<a href="#collection" className="btn">✧ Collection · {Object.keys(progress.completed).length}/{catalogue?.topics.reduce((sum, t) => sum + t.problems.length, 0) ?? '…'}</a></div>
     </nav>
     <header className="adventure-hero">
       <div><p className="eyebrow">YOUR NEXT LITTLE BIG ADVENTURE</p><h1>Big ideas.<br/><span>Small adventures.</span></h1><p className="hero-copy">Swap, stack, search, and explore. Discover how algorithms work, one playful move at a time.</p>

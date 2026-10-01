@@ -17,9 +17,11 @@ import '../adventure/world_scene.dart';
 import '../adventure/worlds.dart';
 import '../learn/onboarding.dart';
 import '../models/problem.dart';
+import '../state/auth_controller.dart';
 import '../state/catalogue_controller.dart';
 import '../theme/palette.dart';
 import '../widgets/common.dart';
+import 'account_screen.dart';
 import 'learn_screen.dart';
 import 'patterns_screen.dart';
 import 'problem_screen.dart';
@@ -48,12 +50,20 @@ class _TopicScreenState extends State<TopicScreen> {
   Widget build(BuildContext context) {
     final controller = context.watch<CatalogueController>();
     final adventure = context.watch<AdventureController>();
+    final auth = context.watch<AuthController>();
     final catalogue = controller.catalogue;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Play the Algorithms'),
         actions: [
+          IconButton(
+            onPressed: () => AccountScreen.open(context),
+            icon: auth.signedIn
+                ? const Icon(Icons.account_circle_rounded)
+                : const Icon(Icons.account_circle_outlined),
+            tooltip: auth.signedIn ? 'Your profile (${auth.user?.email ?? ''})' : 'Sign in',
+          ),
           IconButton(
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const LearnScreen()),
@@ -569,6 +579,7 @@ class _CollectionSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.gameColors;
     final adventure = context.watch<AdventureController>();
+    final signedIn = context.watch<AuthController>().signedIn;
     final missionIds = {
       for (final topic in catalogue.topics)
         worldForTopic(topic.topic?.wire ?? topic.id): [for (final p in topic.problems) p.id],
@@ -621,7 +632,9 @@ class _CollectionSheet extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Saved on this device. No account needed.',
+            signedIn
+                ? 'Stamps sync to your account. Play stays open to everyone.'
+                : 'Saved on this device. No account needed.',
             style: TextStyle(fontSize: 11, color: colors.muted),
           ),
         ],

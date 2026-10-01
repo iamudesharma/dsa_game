@@ -42,6 +42,10 @@ export const API_ERROR_CODES = {
   UNKNOWN_PROBLEM: API_ERRORS.unknownProblem,
   UNKNOWN_GAME: API_ERRORS.unknownGame,
   GENERATION_FAILED: API_ERRORS.generationFailed,
+  UNAUTHORIZED: API_ERRORS.unauthorized,
+  EMAIL_TAKEN: API_ERRORS.emailTaken,
+  INVALID_CREDENTIALS: API_ERRORS.invalidCredentials,
+  RATE_LIMITED: API_ERRORS.rateLimited,
   INTERNAL: API_ERRORS.internal,
 } as const
 

@@ -192,4 +192,21 @@ class AdventureController extends ChangeNotifier {
     _progress = AdventureProgress(completed: _progress.completed, mapFrame: frame);
     _save();
   }
+
+  /// Adopts a server-side completion union (first-login merge). Entries already
+  /// stamped locally keep their local timestamp; new ids are added. Saves only
+  /// when the union actually adds something.
+  void mergeCompleted(Map<String, String> server) {
+    var changed = false;
+    final merged = Map<String, String>.of(_progress.completed);
+    server.forEach((id, stamp) {
+      if (!merged.containsKey(id) && DateTime.tryParse(stamp) != null) {
+        merged[id] = stamp;
+        changed = true;
+      }
+    });
+    if (!changed) return;
+    _progress = AdventureProgress(completed: Map.unmodifiable(merged), mapFrame: _progress.mapFrame);
+    _save();
+  }
 }

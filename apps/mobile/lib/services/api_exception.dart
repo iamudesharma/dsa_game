@@ -27,12 +27,19 @@ final class ApiServerException extends ApiException {
 
   final int statusCode;
 
-  /// `BAD_REQUEST` | `UNKNOWN_PROBLEM` | `UNKNOWN_GAME` | `GENERATION_FAILED` | `INTERNAL`.
+  /// `BAD_REQUEST` | `UNKNOWN_PROBLEM` | `UNKNOWN_GAME` | `GENERATION_FAILED` |
+  /// `UNAUTHORIZED` | `EMAIL_TAKEN` | `INVALID_CREDENTIALS` | `RATE_LIMITED` |
+  /// `INTERNAL`.
   final String code;
 
   bool get isUnknownGame => code == 'UNKNOWN_GAME';
   bool get isUnknownProblem => code == 'UNKNOWN_PROBLEM';
   bool get isGenerationFailure => code == 'GENERATION_FAILED';
+
+  /// A signed-out caller hit an account-scoped route: the fix is sign-in, not
+  /// retry. `EMAIL_TAKEN` / `INVALID_CREDENTIALS` are credential problems, so
+  /// they are not retryable either.
+  bool get isUnauthorized => code == 'UNAUTHORIZED';
 
   @override
   bool get isRetryable => statusCode >= 500 || code == 'GENERATION_FAILED';

@@ -33,13 +33,46 @@ import { createDecisionEngine, pickHint, routeProblem, scoreProblems } from '@ds
 import { getSession, newGameId, popUndo, pushUndo, putSession, sessionCount } from './store.js'
 import { buildDebrief } from './debrief.js'
 import { getCoachService, deleteThread as deleteCoachThread, UnknownCoachThreadError } from './coach/index.js'
+import { getDb } from './db/index.js'
+import { hashPassword, isValidEmail, normaliseEmail, verifyPassword } from './auth/password.js'
+import {
+  AUTH_EMAIL_LIMIT,
+  AUTH_EMAIL_WINDOW_MS,
+  AUTH_IP_LIMIT,
+  AUTH_IP_WINDOW_MS,
+  INTERVIEW_LIMIT,
+  INTERVIEW_WINDOW_MS,
+  checkRateLimit,
+} from './auth/rate-limit.js'
+import {
+  clearSessionCookie,
+  createSession,
+  revokeSession,
+  sessionCookie,
+  tokenFromAuthHeader,
+  tokenFromCookieHeader,
+} from './auth/session.js'
+import { createUser, findUserByEmail, getRequestIp, resolveUser } from './auth/middleware.js'
+import { getKit, getProgress, getResume, getTarget, listKits, mergeProgress, putResume, putTarget, saveKit } from './account/store.js'
+import { generateInterviewKit } from './interview/service.js'
+import {
+  COMPANY_PROFILES,
+  parseResumeText,
+  type Target,
+} from '@dsa/account'
 import {
   ActionBodySchema,
+  AuthBodySchema,
   CoachAskBodySchema,
   CoachThreadsQuerySchema,
   DecideBodySchema,
   GenerateBodySchema,
   HintBodySchema,
+  InterviewGenerateBodySchema,
+  ParseResumeBodySchema,
+  ProgressBodySchema,
+  ResumeBodySchema,
+  TargetBodySchema,
   UndoBodySchema,
 } from './validate.js'
 
@@ -72,8 +105,11 @@ export function createApp(deps: AppDeps): Hono {
     if (origin && isLoopbackOrigin(origin)) {
       c.header('Access-Control-Allow-Origin', origin)
       c.header('Vary', 'Origin')
-      c.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
-      c.header('Access-Control-Allow-Headers', 'content-type')
+      c.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
+      c.header('Access-Control-Allow-Headers', 'content-type, authorization')
+      // Cookies are the primary session transport when the page and the API
+      // share a host; the bearer fallback covers localhost-vs-127.0.0.1.
+      c.header('Access-Control-Allow-Credentials', 'true')
       c.header('Access-Control-Max-Age', '600')
     }
     if (c.req.method === 'OPTIONS') return c.body(null, 204)
@@ -461,6 +497,218 @@ export function createApp(deps: AppDeps): Hono {
     const deleted = deleteCoachThread(threadId)
     if (!deleted) return fail(c, 404, API_ERRORS.unknownThread, `Unknown coach thread '${threadId}'`)
     return c.json({ threadId, deleted: true })
+  })
+
+  // -------------------------------------------------------------------- auth
+  // Email + password, server-side sessions. The game loop stays anonymous;
+  // these routes only gate resume/interview/progress-sync.
+
+  /**
+   * Signup. Duplicate emails and invalid input return the same generic shape
+   * as login failures so an attacker cannot enumerate accounts. The raw
+   * session token is returned once (bearer fallback) AND set as an httpOnly
+   * cookie (same-host case); both authorize identically.
+   */
+  app.post('/api/auth/signup', async (c) => {
+    const parsed = AuthBodySchema.safeParse(await safeJson(c))
+    if (!parsed.success) return fail(c, 400, API_ERRORS.badRequest, 'Invalid signup request', parsed.error.issues)
+    const ip = getRequestIp(c)
+    const email = normaliseEmail(parsed.data.email)
+    if (!isValidEmail(email)) return fail(c, 400, API_ERRORS.badRequest, 'Enter a valid email address.')
+    const emailGate = checkRateLimit(`auth:email:${email}`, AUTH_EMAIL_LIMIT, AUTH_EMAIL_WINDOW_MS)
+    const ipGate = checkRateLimit(`auth:ip:${ip}`, AUTH_IP_LIMIT, AUTH_IP_WINDOW_MS)
+    if (!emailGate.allowed || !ipGate.allowed) {
+      return fail(c, 429, API_ERRORS.rateLimited, 'Too many attempts. Try again in a few minutes.')
+    }
+    getDb()
+    if (findUserByEmail(email)) {
+      // Generic message: do not reveal the account exists.
+      return fail(c, 409, API_ERRORS.emailTaken, 'Could not create that account. Try signing in instead.')
+    }
+    const user = createUser(email, await hashPassword(parsed.data.password))
+    const sess = createSession(user.id, c.req.header('user-agent') ?? '')
+    c.header('Set-Cookie', sessionCookie(sess.token, sess.expiresAt))
+    return c.json({ user: { id: user.id, email: user.email }, token: sess.token, expiresAt: sess.expiresAt })
+  })
+
+  app.post('/api/auth/login', async (c) => {
+    const parsed = AuthBodySchema.safeParse(await safeJson(c))
+    if (!parsed.success) return fail(c, 400, API_ERRORS.badRequest, 'Invalid login request', parsed.error.issues)
+    const ip = getRequestIp(c)
+    const email = normaliseEmail(parsed.data.email)
+    const emailGate = checkRateLimit(`auth:email:${email}`, AUTH_EMAIL_LIMIT, AUTH_EMAIL_WINDOW_MS)
+    const ipGate = checkRateLimit(`auth:ip:${ip}`, AUTH_IP_LIMIT, AUTH_IP_WINDOW_MS)
+    if (!emailGate.allowed || !ipGate.allowed) {
+      return fail(c, 429, API_ERRORS.rateLimited, 'Too many attempts. Try again in a few minutes.')
+    }
+    getDb()
+    const found = findUserByEmail(email)
+    // Same message and similar work whether or not the account exists.
+    const ok = found ? await verifyPassword(parsed.data.password, found.passwordHash) : false
+    if (!found || !ok) {
+      // Burn comparable time for an unknown email so timing reveals nothing.
+      if (!found) await hashPassword(parsed.data.password)
+      return fail(c, 401, API_ERRORS.invalidCredentials, 'Email or password did not match.')
+    }
+    const sess = createSession(found.id, c.req.header('user-agent') ?? '')
+    c.header('Set-Cookie', sessionCookie(sess.token, sess.expiresAt))
+    return c.json({ user: { id: found.id, email: found.email }, token: sess.token, expiresAt: sess.expiresAt })
+  })
+
+  app.post('/api/auth/logout', async (c) => {
+    const cookie = c.req.header('cookie')
+    const auth = c.req.header('authorization')
+    const t = tokenFromCookieHeader(cookie) ?? tokenFromAuthHeader(auth)
+    if (t) revokeSession(t)
+    c.header('Set-Cookie', clearSessionCookie())
+    return c.json({ ok: true })
+  })
+
+  app.get('/api/auth/me', (c) => {
+    const user = resolveUser(c)
+    if (!user) return fail(c, 401, API_ERRORS.unauthorized, 'Sign in to continue.')
+    getDb()
+    return c.json({
+      user: { id: user.id, email: user.email },
+      resume: getResume(user.id),
+      target: getTarget(user.id),
+      progress: getProgress(user.id),
+    })
+  })
+
+  // ------------------------------------------------------------------ account
+
+  const needUser = (c: any): { id: string; email: string } | null => {
+    const user = resolveUser(c)
+    if (!user) {
+      return null
+    }
+    return { id: user.id, email: user.email }
+  }
+
+  app.get('/api/me/resume', (c) => {
+    const user = needUser(c)
+    if (!user) return fail(c, 401, API_ERRORS.unauthorized, 'Sign in to continue.')
+    return c.json({ resume: getResume(user.id) })
+  })
+
+  app.put('/api/me/resume', async (c) => {
+    const user = needUser(c)
+    if (!user) return fail(c, 401, API_ERRORS.unauthorized, 'Sign in to continue.')
+    const parsed = ResumeBodySchema.safeParse(await safeJson(c))
+    if (!parsed.success) return fail(c, 400, API_ERRORS.badRequest, 'Invalid resume', parsed.error.issues)
+    return c.json({ resume: putResume(user.id, parsed.data) })
+  })
+
+  /**
+   * Deterministic paste → parse. The parser never invents facts; anything it
+   * cannot place comes back as `unparsed` lines for the user to fix by hand.
+   * `save` persists the draft in the same call when the client asks.
+   */
+  app.post('/api/me/parse-resume', async (c) => {
+    const user = needUser(c)
+    if (!user) return fail(c, 401, API_ERRORS.unauthorized, 'Sign in to continue.')
+    const parsed = ParseResumeBodySchema.safeParse(await safeJson(c))
+    if (!parsed.success) return fail(c, 400, API_ERRORS.badRequest, 'Invalid parse request', parsed.error.issues)
+    const { resume, unparsed } = parseResumeText(parsed.data.text)
+    const saved = parsed.data.save === true ? putResume(user.id, resume) : null
+    return c.json({ resume: saved ?? resume, unparsed, saved: saved !== null })
+  })
+
+  app.get('/api/me/target', (c) => {
+    const user = needUser(c)
+    if (!user) return fail(c, 401, API_ERRORS.unauthorized, 'Sign in to continue.')
+    return c.json({ target: getTarget(user.id) })
+  })
+
+  app.put('/api/me/target', async (c) => {
+    const user = needUser(c)
+    if (!user) return fail(c, 401, API_ERRORS.unauthorized, 'Sign in to continue.')
+    const parsed = TargetBodySchema.safeParse(await safeJson(c))
+    if (!parsed.success) return fail(c, 400, API_ERRORS.badRequest, 'Invalid target', parsed.error.issues)
+    return c.json({ target: putTarget(user.id, parsed.data) })
+  })
+
+  app.get('/api/me/progress', (c) => {
+    const user = needUser(c)
+    if (!user) return fail(c, 401, API_ERRORS.unauthorized, 'Sign in to continue.')
+    return c.json({ completed: getProgress(user.id) })
+  })
+
+  /**
+   * First-login merge: the client posts its device-local completion map and
+   * gets the union back. Server wins on conflicts already stored.
+   */
+  app.post('/api/me/progress', async (c) => {
+    const user = needUser(c)
+    if (!user) return fail(c, 401, API_ERRORS.unauthorized, 'Sign in to continue.')
+    const parsed = ProgressBodySchema.safeParse(await safeJson(c))
+    if (!parsed.success) return fail(c, 400, API_ERRORS.badRequest, 'Invalid progress', parsed.error.issues)
+    return c.json({ completed: mergeProgress(user.id, parsed.data.completed) })
+  })
+
+  app.get('/api/companies', (c) => c.json({ companies: COMPANY_PROFILES }))
+
+  // --------------------------------------------------------------- interview
+
+  /**
+   * Generate an interview kit from the stored resume + target.
+   *
+   * The model fills wording; `validateInterviewKit` enforces that every
+   * sourceRef exists in the resume, every practice.problemId is a playable
+   * catalogue problem, and no company process facts are asserted. Any failure
+   * falls back to the deterministic template — the endpoint always returns a
+   * kit, mirroring the game-generation guarantee.
+   */
+  app.post('/api/interview/generate', async (c) => {
+    const user = needUser(c)
+    if (!user) return fail(c, 401, API_ERRORS.unauthorized, 'Sign in to continue.')
+    const gate = checkRateLimit(`interview:${user.id}`, INTERVIEW_LIMIT, INTERVIEW_WINDOW_MS)
+    if (!gate.allowed) return fail(c, 429, API_ERRORS.rateLimited, 'Too many interview kits. Try again later.')
+    const parsed = InterviewGenerateBodySchema.safeParse(await safeJson(c))
+    if (!parsed.success) return fail(c, 400, API_ERRORS.badRequest, 'Invalid interview request', parsed.error.issues)
+
+    const resume = getResume(user.id)
+    let target: Target | null = parsed.data.target ?? getTarget(user.id)
+    if (parsed.data.target) target = putTarget(user.id, parsed.data.target)
+    if (!target) {
+      return fail(c, 400, API_ERRORS.badRequest, 'Set your goal and target company first.', {
+        missing: 'target',
+      })
+    }
+
+    const result = await generateInterviewKit({
+      resume,
+      target,
+      newAngle: parsed.data.newAngle,
+      seed: parsed.data.seed,
+    })
+    const stored = saveKit(user.id, target, result.kit.questions, result.usedTier)
+    return c.json({
+      kitId: stored.id,
+      target,
+      questions: result.kit.questions,
+      usedTier: result.usedTier,
+      notes: result.notes,
+      createdAt: stored.createdAt,
+    })
+  })
+
+  app.get('/api/interview/kits', (c) => {
+    const user = needUser(c)
+    if (!user) return fail(c, 401, API_ERRORS.unauthorized, 'Sign in to continue.')
+    const kits = listKits(user.id, 10)
+    return c.json({
+      kits: kits.map((k) => ({ kitId: k.id, target: k.target, usedTier: k.usedTier, createdAt: k.createdAt, count: k.questions.length })),
+    })
+  })
+
+  app.get('/api/interview/kits/:kitId', (c) => {
+    const user = needUser(c)
+    if (!user) return fail(c, 401, API_ERRORS.unauthorized, 'Sign in to continue.')
+    const kit = getKit(user.id, c.req.param('kitId'))
+    if (!kit) return fail(c, 404, API_ERRORS.badRequest, 'Unknown interview kit')
+    return c.json({ kitId: kit.id, target: kit.target, questions: kit.questions, usedTier: kit.usedTier, createdAt: kit.createdAt })
   })
 
   // --------------------------------------------------------------- game state

@@ -8,6 +8,7 @@ export default defineConfig({
       '@dsa/game-engine': fileURLToPath(new URL('./packages/game-engine/src/index.ts', import.meta.url)),
       '@dsa/dsa-oracles': fileURLToPath(new URL('./packages/dsa-oracles/src/index.ts', import.meta.url)),
       '@dsa/provider-chain': fileURLToPath(new URL('./packages/provider-chain/src/index.ts', import.meta.url)),
+      '@dsa/account': fileURLToPath(new URL('./packages/account/src/index.ts', import.meta.url)),
     },
   },
   test: {
