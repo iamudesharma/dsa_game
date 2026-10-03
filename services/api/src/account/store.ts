@@ -6,6 +6,7 @@
  */
 
 import { emptyResume, ResumeSchema, TargetSchema, type Resume, type Target } from '@dsa/account'
+import { getProblem } from '@dsa/game-schema'
 import { getDb, newId, nowMs } from '../db/index.js'
 
 export function getResume(userId: string): Resume {
@@ -136,7 +137,7 @@ export function getProgress(userId: string): Record<string, string> {
     if (!v || typeof v !== 'object' || Array.isArray(v)) return {}
     const out: Record<string, string> = {}
     for (const [k, val] of Object.entries(v)) {
-      if (PROBLEM_ID_RE.test(k) && typeof val === 'string') out[k] = val
+      if (getProblem(k) && typeof val === 'string' && Number.isFinite(Date.parse(val))) out[k] = val
     }
     return out
   } catch {
@@ -151,7 +152,7 @@ export function mergeProgress(userId: string, completed: Record<string, string>)
   // Validate timestamps loosely; keep anything string-shaped.
   const clean: Record<string, string> = {}
   for (const [k, v] of Object.entries(merged)) {
-    if (PROBLEM_ID_RE.test(k) && typeof v === 'string' && v.length <= 40) clean[k] = v
+    if (getProblem(k) && typeof v === 'string' && v.length <= 40 && Number.isFinite(Date.parse(v))) clean[k] = v
   }
   const db = getDb()
   db.prepare(

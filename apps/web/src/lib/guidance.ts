@@ -192,7 +192,7 @@ export interface BranchChoices {
 }
 
 export function deriveBranchChoices(state: GameState): BranchChoices | null {
-  const midSlotId = state.cursor.midSlotId
+  const midSlotId = state.cursor.midSlotId ?? (typeof state.variables['mid']==='number' ? Object.values(state.slots).find(slot=>slot.index===state.variables['mid'])?.id : undefined)
   if (!midSlotId) return null
   const slot = state.slots[midSlotId]
   if (!slot) return null
@@ -277,7 +277,11 @@ function slotIndexOf(state: GameState, id: string | undefined): number | null {
 }
 
 export function deriveRangeWindow(state: GameState): RangeWindow {
-  const { loSlotId, midSlotId, hiSlotId } = state.cursor
+  const slotFor = (name: string) => typeof state.variables[name] === 'number'
+    ? Object.values(state.slots).find(slot => slot.index === state.variables[name])?.id : undefined
+  const loSlotId = state.cursor.loSlotId ?? slotFor('lo')
+  const midSlotId = state.cursor.midSlotId ?? slotFor('mid')
+  const hiSlotId = state.cursor.hiSlotId ?? slotFor('hi')
   const loIndex = slotIndexOf(state, loSlotId)
   const hiIndex = slotIndexOf(state, hiSlotId)
   const midIndex = slotIndexOf(state, midSlotId)
@@ -385,7 +389,8 @@ export function halvedRatio(state: GameState, live: number): number | null {
 export function deriveWorkCountdown(state: GameState, prompt: TurnPrompt | null): WorkCountdown {
   // Same population the engine counts: the target object is the goal, not work.
   const all = Object.values(state.objects).filter((o) => o.kind !== 'target')
-  const live = all.filter((o) => o.state !== 'eliminated' && o.state !== 'matched').length
+  const window = deriveRangeWindow(state)
+  const live = all.filter(o => o.state !== 'eliminated' && o.state !== 'matched' && (!window.has || (o.slotId && windowRoleFor(state.slots[o.slotId]?.index ?? -1, window) !== 'outside'))).length
   const total = all.length
 
   // Prefer the oracle's own comparison count so the countdown is measured in the
@@ -403,7 +408,7 @@ export function deriveWorkCountdown(state: GameState, prompt: TurnPrompt | null)
   const unit: WorkCountdown['unit'] = counted ? 'comparisons' : 'moves'
 
   const declared = getProblem(state.problemId)?.complexity.time ?? null
-  const worstCase = declared ? (linkedList ? total : worstCaseFor(declared, total)) : null
+  const worstCase = linkedList ? total : counted && ['binary-search','array-max-min','bubble-sort','selection-sort'].includes(state.problemId) && declared ? worstCaseFor(declared, total) : null
 
   void prompt
 

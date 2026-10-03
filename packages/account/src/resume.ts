@@ -36,11 +36,25 @@ function splitSections(text: string): Record<string, string[]> {
   const sections: Record<string, string[]> = { summary: [], experience: [], education: [], skills: [], projects: [] }
   let current: string | null = null
   const unclaimed: string[] = []
+  // A heading can carry content on the SAME line ("Summary: Backend
+  // engineer…", "SKILLS: Go, Postgres"). Splitting here is what stops that
+  // content from being thrown away as an unrecognised heading.
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.trim()
     if (line === '') continue
-    const heading = normaliseHeading(line.replace(/^[#*]+\s*/, ''))
-    if (heading) {
+    const cleaned = line.replace(/^[#*\s]+/, '')
+    const colon = cleaned.indexOf(':')
+    if (colon > 0) {
+      const maybeHeading = normaliseHeading(cleaned.slice(0, colon))
+      const tail = cleaned.slice(colon + 1).trim()
+      if (maybeHeading !== null) {
+        current = maybeHeading
+        if (tail !== '') sections[current]!.push(tail)
+        continue
+      }
+    }
+    const heading = normaliseHeading(cleaned)
+    if (heading !== null) {
       current = heading
       continue
     }
@@ -62,28 +76,77 @@ function splitDates(segment: string): { rest: string; start: string; end: string
   if (!m || m.index === undefined) return { rest: segment.trim(), start: '', end: '' }
   const range = m[0]
   const parts = range.split(/\s*(?:[-–—]|to)\s*/i)
-  const rest = (segment.slice(0, m.index) + ' ' + segment.slice(m.index + range.length)).replace(/[(),|·•]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/[,;:\s]+$/, '')
+  // Only the PUNCTUATION IMMEDIATELY SURROUNDING the removed date range is
+  // cleaned. Stripping every comma in the segment deleted the title/company
+  // separator too ("Senior Engineer, Northwind Labs 2019 - Present" lost its
+  // comma), so the split that follows could never see it.
+  const before = segment.slice(0, m.index).replace(/[\s,;|·•\-–—]+$/, '')
+  const after = segment.slice(m.index + range.length).replace(/^[\s,;|·•\-–—]+/, '')
+  const rest = `${before} ${after}`.replace(/\s+/g, ' ').trim().replace(/[,;:\s]+$/, '')
   return { rest, start: (parts[0] ?? '').trim(), end: (parts[1] ?? 'Present').trim() }
 }
 
 function splitTitleCompany(rest: string): { title: string; company: string } {
   // Prefer an explicit separator; otherwise "Title at Company".
   for (const sep of [' — ', ' – ', ' - ', ' | ', ' @ ', ' at ']) {
-    const i = rest.toLowerCase().indexOf(sep.trim().toLowerCase() === 'at' ? ' at ' : sep)
+    const i = rest.indexOf(sep)
     if (i >= 0) {
       const a = rest.slice(0, i).trim().replace(/^[,\-–—|·•\s]+/, '')
       const b = rest.slice(i + sep.length).trim().replace(/^[,\-–—|·•\s]+/, '')
-      if (a && b) return sep === ' at ' ? { title: a, company: b } : { title: a, company: b }
+      if (a && b) return { title: a, company: b }
     }
   }
+  // A comma split is only trustworthy when the SECOND half looks like an
+  // employer. "Senior Engineer, Northwind Labs" is one; "Engineer, Payments
+  // team" is not, and blindly splitting it invented an employer called
+  // "Payments team" while losing the team from the title.
   const comma = rest.indexOf(',')
   if (comma >= 0) {
     const a = rest.slice(0, comma).trim()
     const b = rest.slice(comma + 1).trim()
-    if (a && b && b.length <= 80) return { title: a, company: b }
+    if (a && b && b.length <= 80) {
+      if (looksLikeCompany(b)) return { title: a, company: b }
+      // Neither half looks like an employer. If the FIRST half is a job title,
+      // the whole line is the title (it may carry a team after the comma).
+      if (TITLE_HINT.test(a)) return { title: rest.slice(0, 200), company: '' }
+      // Otherwise this reads "Acme Corp, Payments team" — employer first.
+      if (looksLikeCompany(a)) return { title: b, company: a }
+      return { title: rest.slice(0, 200), company: '' }
+    }
   }
-  return { title: rest.slice(0, 120), company: '' }
+  return { title: rest.slice(0, 200), company: '' }
 }
+
+/**
+ * Tokens that mark a fragment as an organisation.
+ *
+ * Legal suffixes and the "Labs/Inc/Ltd" shapes carry most real resumes, but a
+ * bare brand name ("Northwind", "Acme") has no marker at all — so this only
+ * ever *adds* confidence, never removes it. When nothing matches, the comma
+ * split is refused (see above) rather than guessed.
+ */
+const COMPANY_WORD_HINT =
+  /\b(inc|llc|ltd|limited|gmbh|corp|corporation|co|company|group|holdings|labs?|technologies|tech|solutions|software|systems|bank|health|studio|studios|agency|partners|ventures|capital|consulting|media|digital|networks|platforms|io|ai)\b/i
+/** An all-caps or CamelCase token: an initialism ("IBM", "OpenAI") or acronym. */
+const COMPANY_SHAPE_HINT = /(?:\b[A-Z]{2,}\b)|(?:[A-Z][a-z]+[A-Z][a-zA-Z]*)/
+
+function looksLikeCompany(fragment: string): boolean {
+  return COMPANY_WORD_HINT.test(fragment) || COMPANY_SHAPE_HINT.test(fragment)
+}
+
+/** Job-title words, used to keep a title that is mostly a noun phrase. */
+const TITLE_HINT = /\b(engineer|developer|manager|director|designer|scientist|analyst|architect|consultant|lead|head|intern|researcher|programmer|administrator|specialist|officer|founder|coordinator|associate|principal|staff)\b/i
+
+/**
+ * Degree abbreviations, used to tell "BSc Computer Science" from "TU Berlin"
+ * when deciding which half of a line is which.
+ *
+ * The bare `BS`/`BA` forms are deliberately NOT here: they collide with
+ * ordinary words ("BS in Computer Science" is fine, but a school line can
+ * contain them too). Matching the multi-letter forms is the safer test, and an
+ * unmatched line simply keeps positional order.
+ */
+const DEGREE_HINT = /\b(bsc|msc|ma\b|ms\b|mba|phd|ph\.d|btech|mtech|b\.tech|m\.tech|be\b|me\b|beng|bs\b|ba\b|bsn|msn|associate|bachelor|master|doctor|diploma|certificat)\b/i
 
 function isBullet(line: string): boolean {
   return /^[-•*▪‣·]\s+/.test(line) || /^\d+[.)]\s+/.test(line)
@@ -146,15 +209,22 @@ export function parseResumeText(text: string): ParsedResume {
   let open: { title: string; company: string; start: string; end: string; bullets: string[] } | null = null
   const flush = () => {
     if (!open) return
-    if (!open.title && open.bullets.length === 0) {
-      unparsed.push([open.company, open.start, open.end].filter(Boolean).join(' '))
+    // Only a line with no title, no company, AND no bullets is unusable; a
+    // header with bullets but no parseable title is still real work.
+    if (!open.title && !open.company && open.bullets.length === 0) {
+      unparsed.push([open.title, open.company, open.start, open.end].filter(Boolean).join(' '))
     } else {
+      // A blank title/company is LEFT BLANK. Writing "Company" here is the
+      // same fabrication the grounding validator refuses to serve, and it is
+      // indistinguishable on screen from a real employer — the whole point of
+      // the empty string is that the user sees what is actually missing and
+      // fills it in. The UI labels the field either way.
       base.experience.push({
         id: nid('exp'),
-        title: open.title || 'Role',
-        company: open.company || 'Company',
+        title: open.title,
+        company: open.company,
         start: open.start,
-        end: open.end || 'Present',
+        end: open.end,
         bullets: open.bullets.slice(0, 12),
       })
     }
@@ -197,10 +267,21 @@ export function parseResumeText(text: string): ParsedResume {
       unparsed.push(line)
       continue
     }
+    // Real lines read both ways: "BSc Computer Science, TU Berlin" (degree
+    // first, common in the UK/Europe) and "TU Berlin — BSc Computer Science"
+    // (school first). Classifying by DEGREE MARKER is the reliable test, not
+    // by position: guessing on position put "BSc Computer Science" in the
+    // school field, which then disagreed with the model and produced two
+    // education rows for one degree.
+    const first = parts[0] ?? rest
+    const second = parts[1] ?? ''
+    const degreeFirst = DEGREE_HINT.test(first) && !DEGREE_HINT.test(second)
+    const school = degreeFirst ? second : first
+    const degree = degreeFirst ? first : second
     base.education.push({
       id: nid('edu'),
-      school: (parts[0] ?? rest).slice(0, 200),
-      degree: (parts[1] ?? '').slice(0, 200),
+      school: school.slice(0, 200),
+      degree: degree.slice(0, 200),
       field: (parts[2] ?? '').slice(0, 120),
       start,
       end,
@@ -248,7 +329,9 @@ export function parseResumeText(text: string): ParsedResume {
   for (const line of unclaimed) unparsed.push(line)
 
   const parsed = ResumeSchema.safeParse(base)
-  if (!parsed.success) return { resume: emptyResume(), unparsed: input.split('\n').map((l) => l.trim()).filter(Boolean) }
+  if (!parsed.success) {
+    return { resume: emptyResume(), unparsed: input.split('\n').map((l) => l.trim()).filter(Boolean) }
+  }
   return { resume: parsed.data, unparsed }
 }
 

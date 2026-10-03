@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest'
 import { getOracle } from '@dsa/dsa-oracles'
 import { deJargon, deriveFeedback, deriveTurnPrompt } from './guidance.js'
 import { createGameRuntime } from './runtime.js'
+import { PROBLEMS } from '@dsa/game-schema'
 import type { Action, GameSpec, GameState } from '@dsa/game-schema'
 
 const oracle = getOracle('binary-search')!
@@ -89,6 +90,38 @@ function play(state: GameState, action: Action): GameState {
 }
 
 describe('deriveTurnPrompt', () => {
+  it('exposes every strict planned assignment destination across registered games', () => {
+    for (const problem of PROBLEMS) {
+      const registered = getOracle(problem.id)
+      if (!registered) continue
+      for (const difficulty of ['easy', 'medium', 'hard'] as const) {
+        const runtime = createGameRuntime(registered)
+        let state = runtime.init(42, difficulty)
+        const spec = { ...makeSpec(), problemId: problem.id }
+        const trace = registered.canonicalTrace(state)
+        for (const frame of trace) {
+          const prompt = deriveTurnPrompt({ state, spec, oracle: registered })
+          if (frame.action.type === 'assignValue' && prompt.mechanic === 'assignValue') {
+            expect(prompt.assignmentTargetIds, `${problem.id}: ${frame.action.targetId}`).toContain(frame.action.targetId)
+          }
+          if (frame.action.type === 'submitAnswer' && prompt.mechanic === 'submitAnswer') {
+            const target = registered.legalActions?.(state)?.[0]?.options?.objectIds?.[0]
+            expect(prompt.answerTargetId).toBe(target ?? 'answer')
+          }
+          state = runtime.apply(state, frame.action).state
+        }
+      }
+    }
+  })
+
+  it('preserves a nonvisual oracle answer destination', () => {
+    const { state, spec } = fresh()
+    const resultOracle = { ...oracle, legalActions: () => [{ type: 'submitAnswer' as const, label: 'Submit', options: { objectIds: ['null'] } }] }
+    const prompt = deriveTurnPrompt({ state, spec, oracle: resultOracle })
+    expect(prompt.answerTargetId).toBe('null')
+    expect(prompt.targets).toEqual([])
+  })
+
   it('names a single object to act on, not the whole legal set', () => {
     // The oracle offers every in-window object as legal. Highlighting all of
     // them tells a learner nothing, so the pointer wins.
@@ -137,6 +170,35 @@ describe('deriveTurnPrompt', () => {
     const text = prompt.targets.map((t) => t.label).join(' | ')
     expect(text).toContain(spec.vocabulary.lowerWord)
     expect(text).toContain(spec.vocabulary.higherWord)
+  })
+
+  it('offers a finish control after an equal binary-search comparison', () => {
+    const { spec } = fresh()
+    let state = fresh().state
+    for (let guard = 0; guard < 20; guard++) {
+      const mid = Number(state.variables['mid'])
+      const value = state.instance.values[mid]!
+      const target = state.instance.target!
+      state = play(state, { type: 'selectObject', objectId: `v${mid}` })
+      state = play(state, {
+        type: 'comparePair',
+        aId: `v${mid}`,
+        bId: 'target',
+        relation: target < value ? 'lt' : target > value ? 'gt' : 'eq',
+      })
+      if (target === value) {
+        const prompt = deriveTurnPrompt({ state, oracle, spec })
+        expect(prompt.mechanic).toBe('choosePath')
+        expect(prompt.dsaOp).toBe('terminate')
+        return
+      }
+      state = play(state, {
+        type: 'choosePath',
+        fromId: `v${mid}`,
+        pathId: target < value ? 'left' : 'right',
+      })
+    }
+    throw new Error('Search did not reach the target')
   })
 
   it('counts the search space down as halves are discarded', () => {
@@ -420,10 +482,7 @@ describe('spoiler safety', () => {
     for (let turn = 0; turn < 12 && s.phase === 'playing'; turn += 1) {
       const prompt = deriveTurnPrompt({ state: s, oracle, spec })
       for (const t of prompt.targets) {
-        expect(
-          s.objects[t.id],
-          `turn ${turn} target "${t.id}" is not a real board object`,
-        ).toBeDefined()
+        expect(s.objects[t.id], `turn ${turn} target "${t.id}" is not a real board object`).toBeDefined()
         // Real object ids only — no synthetic prefixes, ever.
         expect(t.id.startsWith('__')).toBe(false)
       }
@@ -469,5 +528,19 @@ describe('deJargon', () => {
 
   it('leaves ordinary prose alone', () => {
     expect(deJargon('That half is ruled out.')).toBe('That half is ruled out.')
+  })
+})
+
+ describe('restricted selection guidance', () => {
+  it('follows the next legal object when a saved cursor points to the previous turn', () => {
+    const rotated = getOracle('rotated-search')!
+    const state = createGameRuntime(rotated).init(31337, 'hard')
+    const spec = { ...makeSpec(), problemId: 'rotated-search' } as GameSpec
+    // Cursor positions can remain on the previous item between plan steps.
+    state.cursor.iSlotId = Object.values(state.slots).find(s => s.index === 0)!.id
+    const legal = rotated.legalActions!(state)[0]!.options!.objectIds!
+    expect(legal).toHaveLength(1)
+    const prompt = deriveTurnPrompt({state, oracle:rotated, spec})
+    expect(prompt.targets.map(t=>t.id)).toEqual(legal)
   })
 })

@@ -18,11 +18,23 @@ import { objectName, type MechanicProps } from './types'
  * sentence of TypeScript printed under a three-button control, which is a
  * declaration that the learner is reading source code rather than playing.
  */
-export function ComparePair({ spec, model, binding, disabled, picked, setPicked, dispatch, markers }: MechanicProps) {
+export function ComparePair({
+  spec,
+  state,
+  model,
+  binding,
+  disabled,
+  picked,
+  setPicked,
+  dispatch,
+  markers,
+}: MechanicProps) {
   const [aId, bId] = picked
   const ready = Boolean(aId && bId)
-  const a = aId ? model.byId[aId] : undefined
-  const b = bId ? model.byId[bId] : undefined
+  // Binary search asks for the target relative to the middle, regardless of pick order.
+  const targetFirst = state.problemId === 'binary-search'
+  const leftId = targetFirst ? picked.find((id) => id === 'target') : aId
+  const rightId = targetFirst ? picked.find((id) => id !== leftId) : bId
 
   const compare = (relation: Relation): void => {
     if (!aId || !bId) return
@@ -31,7 +43,7 @@ export function ComparePair({ spec, model, binding, disabled, picked, setPicked,
   }
 
   return (
-    <section className="panel p-4" aria-label={binding.label}>
+    <section className="panel p-4" aria-label={binding.label || 'ComparePair'}>
       {/* The host blanks `binding.label` when the instruction is already on
           screen, so this heading disappears with it rather than repeating an
           imperative the learner has just read at 2rem. */}
@@ -39,17 +51,26 @@ export function ComparePair({ spec, model, binding, disabled, picked, setPicked,
         <h2 className="text-[1.05rem] font-bold text-[var(--dsa-ink)]">{binding.label}</h2>
       ) : null}
       <p className="mt-0.5 text-[0.85rem] text-[var(--dsa-muted)]">
-        {binding.hint ?? `Choose two ${spec.vocabulary.objectPlural}, then say which is ${spec.vocabulary.lowerWord}.`}
+        {binding.hint ??
+          `Choose two ${spec.vocabulary.objectPlural}, then say which is ${ready ? `${objectName(model, leftId!)} < ${objectName(model, rightId!)}` : spec.vocabulary.lowerWord}.`}
       </p>
 
       {/* The two operands, side by side, so the three buttons read as
           "which of these two" rather than three abstract options. */}
       <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2" aria-live="polite">
-        <Operand label={aId ? objectName(model, aId) : null} marker={aId ? findMarker(markers, aId) : null} side="A" />
+        <Operand
+          label={leftId ? objectName(model, leftId) : null}
+          marker={leftId ? findMarker(markers, leftId) : null}
+          side="A"
+        />
         <span aria-hidden className="text-[var(--dsa-faint)]">
           vs
         </span>
-        <Operand label={bId ? objectName(model, bId) : null} marker={bId ? findMarker(markers, bId) : null} side="B" />
+        <Operand
+          label={rightId ? objectName(model, rightId) : null}
+          marker={rightId ? findMarker(markers, rightId) : null}
+          side="B"
+        />
       </div>
 
       <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -57,30 +78,43 @@ export function ComparePair({ spec, model, binding, disabled, picked, setPicked,
           variant="primary"
           disabled={disabled || !ready}
           onClick={() => compare('lt')}
-          aria-label={`${objectName(model, aId ?? '')} is less than ${objectName(model, bId ?? '')}`}
+          aria-label={`${objectName(model, leftId ?? '')} is less than ${objectName(model, rightId ?? '')}`}
         >
-          {spec.vocabulary.lowerWord}
+          {ready
+            ? `${objectName(model, leftId!)} < ${objectName(model, rightId!)}`
+            : spec.vocabulary.lowerWord}
         </Button>
         <Button
           variant="primary"
           disabled={disabled || !ready}
           onClick={() => compare('eq')}
-          aria-label={`${objectName(model, aId ?? '')} equals ${objectName(model, bId ?? '')}`}
+          aria-label={`${objectName(model, leftId ?? '')} equals ${objectName(model, rightId ?? '')}`}
         >
-          {spec.vocabulary.equalWord}
+          {ready
+            ? `${objectName(model, leftId!)} = ${objectName(model, rightId!)}`
+            : spec.vocabulary.equalWord}
         </Button>
         <Button
           variant="primary"
           disabled={disabled || !ready}
           onClick={() => compare('gt')}
-          aria-label={`${objectName(model, aId ?? '')} is greater than ${objectName(model, bId ?? '')}`}
+          aria-label={`${objectName(model, leftId ?? '')} is greater than ${objectName(model, rightId ?? '')}`}
         >
-          {spec.vocabulary.higherWord}
+          {ready
+            ? `${objectName(model, leftId!)} > ${objectName(model, rightId!)}`
+            : spec.vocabulary.higherWord}
         </Button>
       </div>
 
+      {picked.length === 2 && <div className="flex gap-2 mt-2"><Button size="sm" disabled={disabled} onClick={()=>setPicked([picked[1]!])}>Change first selection</Button><Button size="sm" disabled={disabled} onClick={()=>setPicked([picked[0]!])}>Change second selection</Button></div>}
       {picked.length > 0 && (
-        <Button size="sm" variant="ghost" className="mt-2.5" disabled={disabled} onClick={() => setPicked([])}>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="mt-2.5"
+          disabled={disabled}
+          onClick={() => setPicked([])}
+        >
           Put them back
         </Button>
       )}

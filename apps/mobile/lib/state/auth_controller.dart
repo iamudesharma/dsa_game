@@ -1,10 +1,9 @@
 /// Session state for the whole app.
 ///
-/// Play stays anonymous: this only gates resume/interview. The token lives in
+/// Play stays anonymous: this gates personalized learning. The token lives in
 /// platform storage (`shared_preferences`, best-effort like everything else
 /// in this client); on boot a stored token revalidates against
-/// `/api/auth/me`, and the first sign-in merges device-local progress
-/// server-side. Wins after that mirror up best-effort — local is the truth.
+/// `/api/auth/me`. Guest stamps are imported only at the user's request.
 library;
 
 import 'dart:async';
@@ -70,7 +69,8 @@ class MemoryTokenStore implements TokenStore {
 }
 
 class AuthController extends ChangeNotifier {
-  AuthController(this._api, {TokenStore? tokenStore}) : _tokens = tokenStore ?? SharedPreferencesTokenStore();
+  AuthController(this._api, {TokenStore? tokenStore})
+    : _tokens = tokenStore ?? SharedPreferencesTokenStore();
 
   final ApiClient _api;
   final TokenStore _tokens;
@@ -84,7 +84,9 @@ class AuthController extends ChangeNotifier {
   AdventureController? _adventure;
   Map<String, String> _lastPosted = const {};
   bool _posting = false;
-  String? _syncedUserId;
+  bool _switching = false;
+  bool guestImportAvailable = false;
+  bool sessionRecoveryAvailable = false;
 
   AuthUser? get user => _user;
   bool get signedIn => _user != null;
@@ -107,8 +109,13 @@ class AuthController extends ChangeNotifier {
   /// Revalidates a stored token. A dead token clears silently — signed-out is
   /// a normal state, not an error worth surfacing.
   Future<void> boot() async {
+    if (_busy) return;
+    _busy = true;
+    _error = null;
     final token = await _tokens.read();
     if (token == null || token.isEmpty) {
+      _busy = false;
+      sessionRecoveryAvailable = false;
       _ready = true;
       _notify();
       return;
@@ -116,16 +123,32 @@ class AuthController extends ChangeNotifier {
     _api.setAuthToken(token);
     try {
       final me = await _api.me();
+      sessionRecoveryAvailable = false;
       _user = me.user;
-      _syncedUserId = me.user.id;
+      _switching = true;
+      await _adventure?.switchAccount(me.user.id);
       // Adopt whatever the server already holds (other device played since).
       _adventure?.mergeCompleted(me.progress);
-      _lastPosted = Map<String, String>.of(_adventure?.progress.completed ?? me.progress);
-    } on ApiException {
+      _lastPosted = Map<String, String>.of(
+        _adventure?.progress.completed ?? me.progress,
+      );
+      guestImportAvailable =
+          ((await _adventure?.guestStamps())?.isNotEmpty ?? false) &&
+          await _adventure?.keyValueStore.readKey('guest-imported') != 'true';
+      _switching = false;
+    } on ApiException catch (e) {
       _api.setAuthToken(null);
-      await _tokens.clear();
+      if (e is ApiServerException && e.isUnauthorized) {
+        await _tokens.clear();
+        sessionRecoveryAvailable = false;
+      } else {
+        sessionRecoveryAvailable = true;
+        _error = e;
+      }
       _user = null;
     }
+    _switching = false;
+    _busy = false;
     _ready = true;
     _notify();
   }
@@ -142,16 +165,30 @@ class AuthController extends ChangeNotifier {
   void _onAdventureChanged() {
     final adventure = _adventure;
     final user = _user;
-    if (adventure == null || user == null || _posting) return;
+    if (adventure == null ||
+        user == null ||
+        _posting ||
+        _switching ||
+        !adventure.ready) {
+      return;
+    }
     final completed = adventure.progress.completed;
     if (_mapsEqual(completed, _lastPosted)) return;
     _posting = true;
-    _lastPosted = Map<String, String>.of(completed);
+    final accountId = user.id;
     unawaited(
-      _api.pushProgress(completed).then((_) {}).catchError((_) {}).whenComplete(() {
-        _posting = false;
-        // A win that landed mid-post posts on the next change notification.
-      }),
+      _api
+          .pushProgress(completed)
+          .then((_) {
+            if (_user?.id == accountId) {
+              _lastPosted = Map<String, String>.of(completed);
+            }
+          })
+          .catchError((_) {})
+          .whenComplete(() {
+            _posting = false;
+            // A win that landed mid-post posts on the next change notification.
+          }),
     );
   }
 
@@ -163,21 +200,16 @@ class AuthController extends ChangeNotifier {
     return true;
   }
 
-  /// First-login merge: pushes the device-local map, adopts the union.
-  /// Runs once per sign-in; sign-out leaves local play untouched.
-  Future<void> _mergeAfterSignIn() async {
-    final adventure = _adventure;
-    final user = _user;
-    if (adventure == null || user == null || _syncedUserId == user.id) return;
-    _syncedUserId = user.id;
-    try {
-      final union = await _api.pushProgress(adventure.progress.completed);
-      adventure.mergeCompleted(union);
-      _lastPosted = Map<String, String>.of(adventure.progress.completed);
-    } on ApiException {
-      // Offline or expired: local play continues; merge retries next sign-in.
-      _syncedUserId = null;
-    }
+  Future<void> importGuest() async {
+    if (_user == null || _switching) return;
+    final id = _user!.id;
+    final stamps = await _adventure?.guestStamps() ?? {};
+    final union = await _api.pushProgress(stamps);
+    if (_user?.id != id) return;
+    _adventure?.mergeCompleted(union);
+    await _adventure?.keyValueStore.writeKey('guest-imported', 'true');
+    guestImportAvailable = false;
+    _notify();
   }
 
   Future<bool> signup({required String email, required String password}) async {
@@ -217,11 +249,24 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<void> _adoptSession(AuthResult res) async {
+    sessionRecoveryAvailable = false;
     _api.setAuthToken(res.token);
     await _tokens.write(res.token);
+    _switching = true;
     _user = res.user;
+    await _adventure?.switchAccount(res.user.id);
+    try {
+      final server = await _api.fetchProgress();
+      _adventure?.mergeCompleted(server);
+      _lastPosted = Map.of(server);
+    } on ApiException {
+      _lastPosted = const {};
+    }
+    guestImportAvailable =
+        ((await _adventure?.guestStamps())?.isNotEmpty ?? false) &&
+        await _adventure?.keyValueStore.readKey('guest-imported') != 'true';
+    _switching = false;
     _notify();
-    await _mergeAfterSignIn();
   }
 
   Future<void> logout() async {
@@ -236,7 +281,9 @@ class AuthController extends ChangeNotifier {
     _api.setAuthToken(null);
     await _tokens.clear();
     _user = null;
-    _syncedUserId = null;
+    sessionRecoveryAvailable = false;
+    guestImportAvailable = false;
+    await _adventure?.switchAccount(null);
     _lastPosted = const {};
     _busy = false;
     _notify();

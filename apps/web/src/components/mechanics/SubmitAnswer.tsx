@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import type { Action } from '@dsa/game-schema'
+import { getProblem, type Action } from '@dsa/game-schema'
 import { Button } from '@/components/ui/Button'
 import { allObjectIds, describeId } from '@/lib/board'
 import { findMarker } from '@/lib/guidance'
@@ -32,13 +32,15 @@ export function SubmitAnswer({
   setPicked,
   dispatch,
   markers,
+  prompt,
 }: MechanicProps) {
   const [targetId, setTargetId] = useState<string>(picked[0] ?? '')
   const [value, setValue] = useState('')
 
   useEffect(() => {
-    if (picked[0]) setTargetId(picked[0])
-  }, [picked])
+    if (prompt?.answerTargetId) setTargetId(prompt.answerTargetId)
+    else if (picked[0]) setTargetId(picked[0])
+  }, [picked, prompt?.answerTargetId])
 
   const suggestions = useMemo(() => {
     const out: string[] = []
@@ -74,7 +76,7 @@ export function SubmitAnswer({
   const submitLabel = binding.label || 'Submit answer'
 
   return (
-    <section className="panel p-4" aria-label={binding.label}>
+    <section className="panel p-4" aria-label={binding.label || 'SubmitAnswer'}>
       {/* The host blanks `binding.label` when the instruction is already on
           screen, so this heading disappears with it rather than repeating an
           imperative the learner has just read at 2rem. */}
@@ -91,29 +93,35 @@ export function SubmitAnswer({
           <select
             className="input"
             value={targetId}
-            disabled={disabled}
+            disabled={disabled || !!prompt?.answerTargetId}
             onChange={(e) => {
               setTargetId(e.target.value)
               setPicked([])
             }}
           >
             <option value="">Choose a {spec.vocabulary.object}…</option>
+            {prompt?.answerTargetId && !model.byId[prompt.answerTargetId] ? <option value={prompt.answerTargetId}>Result</option> : null}
             {allObjectIds(model).map((id) => (
               <option key={id} value={id}>
                 {objectName(model, id)}
               </option>
             ))}
           </select>
-          {marked ? <span className="mt-1 block text-[0.75rem] text-[var(--dsa-accent)]">{marked.target.hint}</span> : null}
+          {marked ? (
+            <span className="mt-1 block text-[0.75rem] text-[var(--dsa-accent)]">{marked.target.hint}</span>
+          ) : null}
         </label>
 
         <label className="block text-[0.78rem] font-semibold text-[var(--dsa-muted)]">
           <span className="mb-1 block">And the answer is</span>
+          <span className="mb-1 block text-xs">
+            {getProblem(state.problemId)?.answerFormat?.label ?? 'Enter the result requested by the task.'}
+          </span>
           <input
             className="input"
             value={value}
             disabled={disabled}
-            placeholder="a number, or a word"
+            placeholder={getProblem(state.problemId)?.answerFormat?.placeholder ?? 'Your result'}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {

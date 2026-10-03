@@ -4,10 +4,12 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import type { Resume, Target } from '@dsa/account'
 import { Button } from '@/components/ui/Button'
+import { chatLink } from '@/lib/learning-api'
 import { Panel } from '@/components/ui/Panel'
 import {
   DsaApiError,
   getInterviewKits,
+  getInterviewKit,
   postInterviewGenerate,
   type InterviewKitResult,
   type InterviewKitSummary,
@@ -39,7 +41,11 @@ export function InterviewTab({ resume, target, onTargetChange }: { resume: Resum
   void onTargetChange
 
   useEffect(() => {
-    void getInterviewKits().then(setHistory).catch(() => setHistory([]))
+    let alive = true
+    void getInterviewKits().then(h => { if (alive) setHistory(h) }).catch(() => { if (alive) setError('Could not load past kits. Retry by reopening this section.') })
+    const id = new URLSearchParams(window.location.search).get('kit')
+    if (id) void getInterviewKit(id).then(k => { if (alive) setKit(k) }).catch(e => { if (alive) setError(e.message) })
+    return () => { alive = false }
   }, [])
 
   const generate = async (newAngle: boolean) => {
@@ -73,7 +79,7 @@ export function InterviewTab({ resume, target, onTargetChange }: { resume: Resum
   if (!target) {
     return (
       <Panel title="Set your target first" subtitle="Pick a goal and a company on the Target tab — questions are generated from that plus your resume.">
-        <p className="text-sm text-[var(--dsa-muted)]">Once your target is saved, come back here for a tailored question set.</p>
+        <p className="text-sm text-[var(--dsa-muted)]">Once your target is saved, come back here for a tailored question set.</p><Link className="btn mt-3" href="/account?tab=target">Set interview target →</Link>
       </Panel>
     )
   }
@@ -106,7 +112,7 @@ export function InterviewTab({ resume, target, onTargetChange }: { resume: Resum
               </div>
               <p className="mt-2 font-medium text-[var(--dsa-ink)]">{q.prompt}</p>
               <p className="mt-1 text-sm text-[var(--dsa-muted)]"><strong className="text-[var(--dsa-ink)]">Why this question:</strong> {q.whyItFits}</p>
-              <p className="mt-1 text-sm text-[var(--dsa-muted)]"><strong className="text-[var(--dsa-ink)]">What they listen for:</strong> {q.listeningFor}</p>
+<details className="mt-2"><summary>Show evaluation guidance</summary><p className="mt-1 text-sm text-[var(--dsa-muted)]">{q.listeningFor}</p></details><Link className="btn mt-2" href={chatLink(`Practise this interview question with me one step at a time: ${q.prompt}`,{type:'interview',kitId:kit.kitId,questionId:q.id})}>Practise in Chat</Link>
               {q.followUps.length > 0 && (
                 <ul className="mt-2 list-disc pl-5 text-sm text-[var(--dsa-muted)]">
                   {q.followUps.map((f, i) => <li key={i}>{f}</li>)}
@@ -126,7 +132,7 @@ export function InterviewTab({ resume, target, onTargetChange }: { resume: Resum
             {history.map((h) => (
               <li key={h.kitId} className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[var(--dsa-muted)]">{new Date(h.createdAt).toLocaleString()} · {h.count} questions · {h.usedTier}</span>
-                {kit?.kitId !== h.kitId && <span className="text-xs text-[var(--dsa-faint)]">{h.kitId.slice(0, 18)}…</span>}
+                <button className="btn" onClick={() => { setError(null); void getInterviewKit(h.kitId).then(setKit).catch(e => setError(e.message)) }}>Open question set</button>
               </li>
             ))}
           </ul>

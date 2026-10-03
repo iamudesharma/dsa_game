@@ -73,7 +73,7 @@ export function HintPanel({ progress, hints, busy, onHint }: HintPanelProps) {
 
       {progress.hintsUsed > 0 && (
         <p className="mt-2.5 text-[0.78rem] text-[var(--dsa-faint)]">
-          {progress.hintsUsed} counted in this run. They cost you nothing except the thinking you skipped.
+          {progress.hintsUsed} counted in this run. Hints support your learning. Try recalling the rule on your next run.
         </p>
       )}
     </section>

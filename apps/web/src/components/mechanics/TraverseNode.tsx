@@ -34,7 +34,7 @@ export function TraverseNode({ spec, model, state, binding, disabled, dispatch, 
 
   if (!currentId) {
     return (
-      <section className="panel p-4" aria-label={binding.label}>
+      <section className="panel p-4" aria-label={binding.label || 'TraverseNode'}>
         {/* The host blanks `binding.label` when the instruction is already on
           screen, so this heading disappears with it rather than repeating an
           imperative the learner has just read at 2rem. */}
@@ -47,7 +47,7 @@ export function TraverseNode({ spec, model, state, binding, disabled, dispatch, 
   }
 
   return (
-    <section className="panel p-4" aria-label={binding.label}>
+    <section className="panel p-4" aria-label={binding.label || 'TraverseNode'}>
       {/* The host blanks `binding.label` when the instruction is already on
           screen, so this heading disappears with it rather than repeating an
           imperative the learner has just read at 2rem. */}

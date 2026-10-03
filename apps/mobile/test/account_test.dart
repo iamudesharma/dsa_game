@@ -39,7 +39,13 @@ Map<String, Object?> get resumeJson => {
   ],
   'education': [],
   'projects': [
-    {'id': 'proj:1', 'name': 'Cache', 'description': 'fast cache', 'tech': ['Dart'], 'link': ''},
+    {
+      'id': 'proj:1',
+      'name': 'Cache',
+      'description': 'fast cache',
+      'tech': ['Dart'],
+      'link': '',
+    },
   ],
   'skills': [
     {'id': 'skill:1', 'name': 'Python'},
@@ -63,7 +69,12 @@ Map<String, Object?> get companiesJson => {
       'aliases': ['faang'],
       'values': ['Ownership'],
       'hiringAxes': [
-        {'id': 'dsa', 'label': 'Data structures & algorithms', 'weight': 0.4, 'categories': ['coding', 'concepts']},
+        {
+          'id': 'dsa',
+          'label': 'Data structures & algorithms',
+          'weight': 0.4,
+          'categories': ['coding', 'concepts'],
+        },
       ],
       'rounds': [
         {'name': 'Phone screen', 'focus': 'One or two coding problems'},
@@ -115,7 +126,13 @@ Map<String, Object?> get kitJson => {
 
 Map<String, Object?> get kitsJson => {
   'kits': [
-    {'kitId': 'kit_abc', 'target': targetJson, 'usedTier': 'template', 'createdAt': 1759000000000, 'count': 2},
+    {
+      'kitId': 'kit_abc',
+      'target': targetJson,
+      'usedTier': 'template',
+      'createdAt': 1759000000000,
+      'count': 2,
+    },
   ],
 };
 
@@ -145,20 +162,34 @@ class AccountRoutes extends MockClient {
         body = catalogueJson;
       case '/api/auth/signup':
       case '/api/auth/login':
-        body = {'user': {'id': 'user_1', 'email': 'dev@example.com'}, 'token': token, 'expiresAt': 9999999999999};
+        body = {
+          'user': {'id': 'user_1', 'email': 'dev@example.com'},
+          'token': token,
+          'expiresAt': 9999999999999,
+        };
       case '/api/auth/logout':
         body = {'ok': true};
       case '/api/auth/me':
         if (!_authed(request)) {
           status = 401;
-          body = {'error': {'code': 'UNAUTHORIZED', 'message': 'Sign in to continue.'}};
+          body = {
+            'error': {
+              'code': 'UNAUTHORIZED',
+              'message': 'Sign in to continue.',
+            },
+          };
         } else {
           body = meJson;
         }
       case '/api/me/resume':
         if (!_authed(request)) {
           status = 401;
-          body = {'error': {'code': 'UNAUTHORIZED', 'message': 'Sign in to continue.'}};
+          body = {
+            'error': {
+              'code': 'UNAUTHORIZED',
+              'message': 'Sign in to continue.',
+            },
+          };
         } else if (request.method == 'PUT') {
           body = {'resume': resumeJson};
         } else {
@@ -169,22 +200,36 @@ class AccountRoutes extends MockClient {
       case '/api/me/target':
         body = {'target': targetJson};
       case '/api/me/progress':
-        body = {'completed': {'binary-search': '2026-09-29T00:00:00.000Z', 'two-sum': '2026-01-02T00:00:00.000Z'}};
+        body = {
+          'completed': {
+            'binary-search': '2026-09-29T00:00:00.000Z',
+            'two-sum': '2026-01-02T00:00:00.000Z',
+          },
+        };
       case '/api/companies':
         body = companiesJson;
       case '/api/interview/generate':
         body = kitJson;
       case '/api/interview/kits':
         body = kitsJson;
+      case '/api/interview/kits/kit_abc':
+        body = kitJson;
       default:
         status = 404;
-        body = {'error': {'code': 'BAD_REQUEST', 'message': 'no route for $path'}};
+        body = {
+          'error': {'code': 'BAD_REQUEST', 'message': 'no route for $path'},
+        };
     }
     final encoded = utf8.encode(jsonEncode(body));
-    return http.StreamedResponse(Stream.value(encoded), status, headers: {'content-type': 'application/json'});
+    return http.StreamedResponse(
+      Stream.value(encoded),
+      status,
+      headers: {'content-type': 'application/json'},
+    );
   }
 
-  static bool _authed(http.BaseRequest request) => request.headers['authorization'] == 'Bearer $token';
+  static bool _authed(http.BaseRequest request) =>
+      request.headers['authorization'] == 'Bearer $token';
 }
 
 void main() {
@@ -195,7 +240,10 @@ void main() {
       expect(resume.experience.single.company, 'Acme');
       expect(resume.experience.single.bullets, ['Built queues']);
       expect(resume.skills.single.name, 'Python');
-      expect(resume.sourceIds, containsAll(['general', 'exp:1', 'skill:1', 'proj:1']));
+      expect(
+        resume.sourceIds,
+        containsAll(['general', 'exp:1', 'skill:1', 'proj:1']),
+      );
       expect(resume.sourceLabel('exp:1'), 'Engineer @ Acme');
       expect(resume.sourceLabel('skill:1'), 'Python');
       expect(resume.sourceLabel('general'), 'general');
@@ -214,7 +262,10 @@ void main() {
       expect(Seniority.parse('senior'), Seniority.senior);
       expect(Seniority.parse('nope'), Seniority.mid);
 
-      final companies = Json.listOf(companiesJson['companies'], CompanyProfile.from).whereType<CompanyProfile>().toList();
+      final companies = Json.listOf(
+        companiesJson['companies'],
+        CompanyProfile.from,
+      ).whereType<CompanyProfile>().toList();
       expect(companies, hasLength(2));
       expect(companies.first.label, 'Big Tech (general)');
       expect(companies.first.hiringAxes.single.categories, contains('coding'));
@@ -230,7 +281,9 @@ void main() {
       expect(kit.questions[1].practiceProblemId, 'binary-search');
       expect(kit.usedTier, 'template');
 
-      final summaries = (kitsJson['kits']! as List).map(InterviewKitSummary.from).toList();
+      final summaries = (kitsJson['kits']! as List)
+          .map(InterviewKitSummary.from)
+          .toList();
       expect(summaries.single.count, 2);
     });
 
@@ -246,7 +299,10 @@ void main() {
     test('login stores the token and sends it back as a bearer', () async {
       final seen = <http.BaseRequest>[];
       final api = ApiClient(httpClient: AccountRoutes(seen));
-      final res = await api.login(email: 'dev@example.com', password: 'correct-horse-99');
+      final res = await api.login(
+        email: 'dev@example.com',
+        password: 'correct-horse-99',
+      );
       expect(res.user.email, 'dev@example.com');
 
       api.setAuthToken(res.token);
@@ -260,17 +316,20 @@ void main() {
       expect(authed.headers['authorization'], 'Bearer ${AccountRoutes.token}');
     });
 
-    test('a missing token surfaces 401 as UNAUTHORIZED, not retryable noise', () async {
-      final api = ApiClient(httpClient: AccountRoutes([]));
-      try {
-        await api.me();
-        fail('expected ApiServerException');
-      } on ApiServerException catch (e) {
-        expect(e.code, 'UNAUTHORIZED');
-        expect(e.isUnauthorized, isTrue);
-        expect(e.isRetryable, isFalse);
-      }
-    });
+    test(
+      'a missing token surfaces 401 as UNAUTHORIZED, not retryable noise',
+      () async {
+        final api = ApiClient(httpClient: AccountRoutes([]));
+        try {
+          await api.me();
+          fail('expected ApiServerException');
+        } on ApiServerException catch (e) {
+          expect(e.code, 'UNAUTHORIZED');
+          expect(e.isUnauthorized, isTrue);
+          expect(e.isRetryable, isFalse);
+        }
+      },
+    );
 
     test('interview generation parses questions and practice links', () async {
       final api = ApiClient(httpClient: AccountRoutes([]));
@@ -286,19 +345,72 @@ void main() {
   });
 
   group('auth controller', () {
-    test('boot revalidates a stored token and merges server progress', () async {
-      final seen = <http.BaseRequest>[];
-      final api = ApiClient(httpClient: AccountRoutes(seen));
+    test(
+      'temporary boot failure retains token and retry restores account',
+      () async {
+        var offline = true;
+        final routes = AccountRoutes([]);
+        final api = ApiClient(
+          httpClient: MockClient((request) async {
+            if (offline) throw http.ClientException('offline');
+            final response = await routes.send(request);
+            return http.Response.fromStream(response);
+          }),
+        );
+        final tokens = MemoryTokenStore();
+        await tokens.write(AccountRoutes.token);
+        final auth = AuthController(api, tokenStore: tokens);
+        await auth.boot();
+        expect(auth.signedIn, isFalse);
+        expect(auth.sessionRecoveryAvailable, isTrue);
+        expect(await tokens.read(), AccountRoutes.token);
+        offline = false;
+        await auth.boot();
+        expect(auth.signedIn, isTrue);
+        expect(auth.sessionRecoveryAvailable, isFalse);
+        expect(auth.error, isNull);
+        auth.dispose();
+      },
+    );
+
+    test('rejected boot token is cleared rather than retried', () async {
+      final api = ApiClient(
+        httpClient: MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'error': {'code': 'UNAUTHORIZED', 'message': 'Expired session'},
+            }),
+            401,
+          ),
+        ),
+      );
       final tokens = MemoryTokenStore();
-      await tokens.write(AccountRoutes.token);
-      final adventure = AdventureController(MemoryBackend());
-      final auth = AuthController(api, tokenStore: tokens)..attachAdventure(adventure);
+      await tokens.write('expired');
+      final auth = AuthController(api, tokenStore: tokens);
       await auth.boot();
-      expect(auth.ready, isTrue);
-      expect(auth.user?.email, 'dev@example.com');
-      // Server held two-sum; the union is adopted locally.
-      expect(adventure.progress.completed, contains('two-sum'));
+      expect(auth.signedIn, isFalse);
+      expect(auth.sessionRecoveryAvailable, isFalse);
+      expect(await tokens.read(), isNull);
+      auth.dispose();
     });
+
+    test(
+      'boot revalidates a stored token and merges server progress',
+      () async {
+        final seen = <http.BaseRequest>[];
+        final api = ApiClient(httpClient: AccountRoutes(seen));
+        final tokens = MemoryTokenStore();
+        await tokens.write(AccountRoutes.token);
+        final adventure = AdventureController(MemoryBackend());
+        final auth = AuthController(api, tokenStore: tokens)
+          ..attachAdventure(adventure);
+        await auth.boot();
+        expect(auth.ready, isTrue);
+        expect(auth.user?.email, 'dev@example.com');
+        // Server held two-sum; the union is adopted locally.
+        expect(adventure.progress.completed, contains('two-sum'));
+      },
+    );
 
     test('boot without a token is silently signed out', () async {
       final api = ApiClient(httpClient: AccountRoutes([]));
@@ -312,9 +424,16 @@ void main() {
       final api = ApiClient(httpClient: AccountRoutes([]));
       final tokens = MemoryTokenStore();
       final adventure = AdventureController(MemoryBackend());
-      final auth = AuthController(api, tokenStore: tokens)..attachAdventure(adventure);
+      final auth = AuthController(api, tokenStore: tokens)
+        ..attachAdventure(adventure);
       await auth.boot();
-      expect(await auth.login(email: 'dev@example.com', password: 'correct-horse-99'), isTrue);
+      expect(
+        await auth.login(
+          email: 'dev@example.com',
+          password: 'correct-horse-99',
+        ),
+        isTrue,
+      );
       expect(auth.signedIn, isTrue);
       expect(await tokens.read(), AccountRoutes.token);
 
@@ -325,7 +444,10 @@ void main() {
   });
 
   group('account screens', () {
-    Future<void> bootApp(WidgetTester tester, List<http.BaseRequest> seen) async {
+    Future<void> bootApp(
+      WidgetTester tester,
+      List<http.BaseRequest> seen,
+    ) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -340,16 +462,26 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('sign-in lands on the account screen with three tabs', (tester) async {
+    testWidgets('sign-in lands on the account screen with three tabs', (
+      tester,
+    ) async {
       final seen = <http.BaseRequest>[];
       await bootApp(tester, seen);
 
-      await tester.tap(find.byTooltip('Sign in'));
+      await tester.tap(find.text('Profile'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sign in'));
       await tester.pumpAndSettle();
       expect(find.text('Sign in'), findsAtLeastNWidgets(1));
 
-      await tester.enterText(find.widgetWithText(TextFormField, 'Email'), 'dev@example.com');
-      await tester.enterText(find.widgetWithText(TextFormField, 'Password (8+ characters)'), 'correct-horse-99');
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Email'),
+        'dev@example.com',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Password (8+ characters)'),
+        'correct-horse-99',
+      );
       await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
       await tester.pumpAndSettle();
 
@@ -357,29 +489,56 @@ void main() {
       expect(find.text('Resume'), findsOneWidget);
       expect(find.text('Target'), findsOneWidget);
       expect(find.text('Interview'), findsOneWidget);
+      expect(find.text('Resume saved'), findsOneWidget);
     });
 
-    testWidgets('interview tab generates grounded question cards', (tester) async {
-      final seen = <http.BaseRequest>[];
-      await bootApp(tester, seen);
+    testWidgets(
+      'interview tab reopens saved kits and generates grounded cards',
+      (tester) async {
+        final seen = <http.BaseRequest>[];
+        await bootApp(tester, seen);
 
-      // Sign in first.
-      await tester.tap(find.byTooltip('Sign in'));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.widgetWithText(TextFormField, 'Email'), 'dev@example.com');
-      await tester.enterText(find.widgetWithText(TextFormField, 'Password (8+ characters)'), 'correct-horse-99');
-      await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
-      await tester.pumpAndSettle();
+        // Sign in first.
+        await tester.tap(find.text('Profile'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Sign in'));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Email'),
+          'dev@example.com',
+        );
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Password (8+ characters)'),
+          'correct-horse-99',
+        );
+        await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Interview'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Generate my questions'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Interview'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.textContaining('2 questions · template'));
+        await tester.pumpAndSettle();
+        expect(
+          seen.any(
+            (request) => request.url.path == '/api/interview/kits/kit_abc',
+          ),
+          isTrue,
+        );
+        expect(
+          find.text('Walk through your work as Engineer at Acme.'),
+          findsOneWidget,
+        );
+        await tester.tap(find.text('Regenerate'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Walk through your work as Engineer at Acme.'), findsOneWidget);
-      expect(find.text('from: Engineer @ Acme'), findsOneWidget);
-      expect(find.text('from: Python'), findsOneWidget);
-      expect(find.text('Practise this'), findsOneWidget);
-    });
+        expect(
+          find.text('Walk through your work as Engineer at Acme.'),
+          findsOneWidget,
+        );
+        expect(find.text('from: Engineer @ Acme'), findsOneWidget);
+        expect(find.text('from: Python'), findsOneWidget);
+        expect(find.text('Practise this'), findsOneWidget);
+      },
+    );
   });
 }

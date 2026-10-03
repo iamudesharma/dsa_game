@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import Link from 'next/link'
+import { useState, useEffect } from 'react'
+import { useAuth } from '@/components/auth/AuthProvider'
 import type { Target } from '@dsa/account'
 import { Button } from '@/components/ui/Button'
 import { Panel } from '@/components/ui/Panel'
@@ -20,6 +22,11 @@ export function TargetTab({ target, companies, onChange }: { target: Target | nu
   const [draft, setDraft] = useState<Target>(
     target ?? { goal: '', companyId: 'faang-general', customCompany: '', seniority: 'mid', focusAreas: [] },
   )
+  const { user }=useAuth()
+  const [draftReady,setDraftReady]=useState(false)
+  const [saved,setSaved]=useState(JSON.stringify(target))
+  useEffect(()=>{try{const raw=localStorage.getItem(`dsa-target-draft:${user?.id}`);if(raw)setDraft(JSON.parse(raw))}catch{}setDraftReady(true)},[user?.id])
+  useEffect(()=>{if(!draftReady)return;try{localStorage.setItem(`dsa-target-draft:${user?.id}`,JSON.stringify(draft))}catch{}},[draft,draftReady,user?.id])
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -29,7 +36,7 @@ export function TargetTab({ target, companies, onChange }: { target: Target | nu
     setSaving(true)
     setError(null)
     try {
-      onChange(await putTarget(draft))
+      const result=await putTarget(draft); onChange(result); setSaved(JSON.stringify(result)); setDraft(result)
       setSavedAt(new Date().toLocaleTimeString())
     } catch (cause) {
       setError(cause instanceof DsaApiError ? cause.message : 'Could not save.')
@@ -42,7 +49,7 @@ export function TargetTab({ target, companies, onChange }: { target: Target | nu
   const isCustom = draft.companyId === 'custom' || (draft.companyId !== '' && !company)
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4"><p role="status">{JSON.stringify(draft)===saved ? 'Target saved' : 'Target has unsaved changes'}</p><p className="text-sm">Your role sets the question topics; seniority sets expected depth; focus areas steer your preparation.</p>{savedAt && <Link className="btn" href="/account?tab=interview">Generate interview questions →</Link>}
       <Panel title="Your goal" subtitle="One sentence: what role are you preparing for?">
         <input
           value={draft.goal}

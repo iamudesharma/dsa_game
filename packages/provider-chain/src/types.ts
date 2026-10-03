@@ -17,6 +17,7 @@ import type {
 } from '@dsa/game-schema'
 
 export interface GenerateSpecInput {
+  signal?: AbortSignal
   problem: ProblemMeta
   instance: ProblemInstance
   seed: number

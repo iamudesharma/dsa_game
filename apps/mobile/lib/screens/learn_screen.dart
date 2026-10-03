@@ -18,7 +18,13 @@ import '../theme/palette.dart';
 import '../widgets/common.dart';
 import 'play_screen.dart';
 
-const List<String> notebookLanguages = ['javascript', 'typescript', 'python', 'java', 'cpp'];
+const List<String> notebookLanguages = [
+  'javascript',
+  'typescript',
+  'python',
+  'java',
+  'cpp',
+];
 
 const Map<String, String> languageLabels = {
   'javascript': 'JavaScript',
@@ -49,17 +55,16 @@ const List<NotebookQuestion> notebookQuestions = [
     id: 'count-nodes',
     title: 'Count the nodes',
     gameProblemId: 'linked-list-traversal',
-    prompt:
-        'Given the head of a singly linked list, return how many nodes it contains. Follow next pointers until you reach null; do not assume the list has an index or a stored length.',
+    prompt: 'Given the head of a singly linked list, return how many nodes it contains. Follow next pointers until you reach null; do not assume the list has an index or a stored length.',
     objective: 'Practice moving a cursor through one node at a time and stopping at null.',
   ),
   NotebookQuestion(
     id: 'reverse-list',
     title: 'Reverse a singly linked list',
     gameProblemId: 'reverse-linked-list',
-    prompt:
-        'Given the head of a singly linked list, reverse its next links in place and return the new head. Keep the rest of the list reachable while you change each pointer.',
-    objective: 'Practice saving the next node before rewiring the current node.',
+    prompt: 'Given the head of a singly linked list, reverse its next links in place and return the new head. Keep the rest of the list reachable while you change each pointer.',
+    objective:
+        'Practice saving the next node before rewiring the current node.',
   ),
 ];
 
@@ -68,7 +73,8 @@ const List<Map<String, String>> notebookReadings = [
     'title': 'Singly linked lists in JavaScript',
     'source': 'trekhleb/javascript-algorithms',
     'href': 'https://github.com/trekhleb/javascript-algorithms/tree/master/src/data-structures/linked-list',
-    'note': 'A linked-list overview with implementation notes and further reading.',
+    'note':
+        'A linked-list overview with implementation notes and further reading.',
   },
   {
     'title': 'Singly linked list in Python',
@@ -172,7 +178,7 @@ class _LearnScreenState extends State<LearnScreen> {
   DraftStore? _drafts;
 
   DraftStore _storeOf(BuildContext context) {
-    final store = context.read<AdventureController>().keyValueStore ?? MemoryBackend();
+    final store = context.read<AdventureController>().keyValueStore;
     return _drafts ??= DraftStore(store);
   }
 
@@ -204,7 +210,11 @@ class _LearnScreenState extends State<LearnScreen> {
                 children: [
                   Text(
                     'Linked lists, page one.',
-                    style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: colors.onSurface),
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                      color: colors.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   const RobotGuide(
@@ -214,12 +224,18 @@ class _LearnScreenState extends State<LearnScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            const SectionHeading(title: 'to read', icon: Icons.menu_book_outlined),
+            const SectionHeading(
+              title: 'to read',
+              icon: Icons.menu_book_outlined,
+            ),
             const SizedBox(height: 8),
             for (final reading in notebookReadings)
               _ReadingCard(reading: reading),
             const SizedBox(height: 16),
-            const SectionHeading(title: 'to try', icon: Icons.edit_note_rounded),
+            const SectionHeading(
+              title: 'to try',
+              icon: Icons.edit_note_rounded,
+            ),
             const SizedBox(height: 4),
             Text(
               'Solve each prompt by carrying out the algorithm on a generated list. Winning the game marks it solved here.',
@@ -260,15 +276,32 @@ class _ReadingCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(reading['title']!, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: colors.onSurface)),
+          Text(
+            reading['title']!,
+            style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w800,
+              color: colors.onSurface,
+            ),
+          ),
           const SizedBox(height: 2),
-          Text(reading['source']!, style: TextStyle(fontSize: 11, color: colors.muted)),
+          Text(
+            reading['source']!,
+            style: TextStyle(fontSize: 11, color: colors.muted),
+          ),
           const SizedBox(height: 4),
-          Text(reading['note']!, style: TextStyle(fontSize: 12, color: colors.muted)),
+          Text(
+            reading['note']!,
+            style: TextStyle(fontSize: 12, color: colors.muted),
+          ),
           const SizedBox(height: 4),
           SelectableText(
             reading['href']!,
-            style: TextStyle(fontSize: 10.5, fontFamily: 'monospace', color: colors.primary),
+            style: TextStyle(
+              fontSize: 10.5,
+              fontFamily: 'monospace',
+              color: colors.primary,
+            ),
           ),
         ],
       ),
@@ -301,7 +334,9 @@ class _QuestionCard extends StatelessWidget {
         color: colors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: solved ? colors.success.withValues(alpha: 0.5) : colors.muted.withValues(alpha: 0.22),
+          color: solved
+              ? colors.success.withValues(alpha: 0.5)
+              : colors.muted.withValues(alpha: 0.22),
         ),
       ),
       child: Column(
@@ -310,7 +345,9 @@ class _QuestionCard extends StatelessWidget {
           Row(
             children: [
               Icon(
-                solved ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                solved
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
                 size: 17,
                 color: solved ? colors.success : colors.muted,
               ),
@@ -318,15 +355,29 @@ class _QuestionCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   question.title,
-                  style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900, color: colors.onSurface),
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w900,
+                    color: colors.onSurface,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          Text(question.prompt, style: TextStyle(fontSize: 12.5, height: 1.4, color: colors.onSurface)),
+          Text(
+            question.prompt,
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.4,
+              color: colors.onSurface,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(question.objective, style: TextStyle(fontSize: 11.5, color: colors.muted)),
+          Text(
+            question.objective,
+            style: TextStyle(fontSize: 11.5, color: colors.muted),
+          ),
           const SizedBox(height: 10),
           Wrap(
             spacing: 6,
@@ -336,7 +387,10 @@ class _QuestionCard extends StatelessWidget {
                 ChoiceChip(
                   selected: language == lang,
                   onSelected: (_) => onLanguage(lang),
-                  label: Text(languageLabels[lang]!, style: const TextStyle(fontSize: 11.5)),
+                  label: Text(
+                    languageLabels[lang]!,
+                    style: const TextStyle(fontSize: 11.5),
+                  ),
                 ),
             ],
           ),
@@ -368,14 +422,17 @@ class _QuestionCard extends StatelessWidget {
     final game = context.read<GameController>();
     await game.generate(problem, routeWish: false);
     if (!context.mounted || !game.hasGame) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const PlayScreen()),
-    );
+    await Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => const PlayScreen()));
   }
 }
 
 class _DraftEditor extends StatefulWidget {
-  const _DraftEditor({required this.question, required this.language, required this.drafts});
+  const _DraftEditor({
+    required this.question,
+    required this.language,
+    required this.drafts,
+  });
 
   final NotebookQuestion question;
   final String language;
@@ -398,7 +455,10 @@ class _DraftEditorState extends State<_DraftEditor> {
     widget.drafts.load(widget.question.id, widget.language).then((_) {
       if (!mounted) return;
       setState(() {
-        _controller.text = widget.drafts.draft(widget.question.id, widget.language);
+        _controller.text = widget.drafts.draft(
+          widget.question.id,
+          widget.language,
+        );
         _loaded = true;
       });
     });
@@ -407,13 +467,20 @@ class _DraftEditorState extends State<_DraftEditor> {
   @override
   void didUpdateWidget(covariant _DraftEditor oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.language != widget.language || oldWidget.question.id != widget.question.id) {
+    if (oldWidget.language != widget.language ||
+        oldWidget.question.id != widget.question.id) {
       _loaded = false;
-      _controller.text = widget.drafts.draft(widget.question.id, widget.language);
+      _controller.text = widget.drafts.draft(
+        widget.question.id,
+        widget.language,
+      );
       widget.drafts.load(widget.question.id, widget.language).then((_) {
         if (!mounted) return;
         setState(() {
-          _controller.text = widget.drafts.draft(widget.question.id, widget.language);
+          _controller.text = widget.drafts.draft(
+            widget.question.id,
+            widget.language,
+          );
           _loaded = true;
         });
       });
@@ -432,11 +499,18 @@ class _DraftEditorState extends State<_DraftEditor> {
       controller: _controller,
       maxLines: 8,
       minLines: 5,
-      style: const TextStyle(fontSize: 12, fontFamily: 'monospace', height: 1.4),
-      decoration: InputDecoration(
-        hintText: _loaded ? 'Write your solution…' : 'Loading your saved draft…',
+      style: const TextStyle(
+        fontSize: 12,
+        fontFamily: 'monospace',
+        height: 1.4,
       ),
-      onChanged: (text) => widget.drafts.save(widget.question.id, widget.language, text),
+      decoration: InputDecoration(
+        hintText: _loaded
+            ? 'Write your solution…'
+            : 'Loading your saved draft…',
+      ),
+      onChanged: (text) =>
+          widget.drafts.save(widget.question.id, widget.language, text),
     );
   }
 }
@@ -463,23 +537,36 @@ class _ReferenceButton extends StatelessWidget {
             children: [
               Text(
                 'Worked answer · ${languageLabels[language]}',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Theme.of(sheetContext).colorScheme.onSurface),
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  color: Theme.of(sheetContext).colorScheme.onSurface,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Available after attempting the question — compare, don\'t copy.',
-                style: TextStyle(fontSize: 11.5, color: Theme.of(sheetContext).colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 10),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(sheetContext).colorScheme.surfaceContainerLowest,
+                  color: Theme.of(sheetContext)
+                      .colorScheme
+                      .surfaceContainerLowest,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: SelectableText(
                   notebookExamples[question.id]?[language] ?? '',
-                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace', height: 1.45),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                    height: 1.45,
+                  ),
                 ),
               ),
             ],

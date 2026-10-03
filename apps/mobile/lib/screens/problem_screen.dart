@@ -23,6 +23,7 @@ import '../theme/palette.dart';
 import '../widgets/common.dart';
 import '../widgets/generation_loader.dart';
 import 'play_screen.dart';
+import 'chat_screen.dart';
 
 class ProblemScreen extends StatefulWidget {
   const ProblemScreen({required this.topic, this.initialProblemId, super.key});
@@ -63,7 +64,21 @@ class _ProblemScreenState extends State<ProblemScreen> {
     final controller = context.watch<GameController>();
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.topic.label)),
+      appBar: AppBar(
+        title: Text(widget.topic.label),
+        actions: [
+          if (selected != null)
+            IconButton(
+              tooltip: 'Ask about this problem',
+              icon: const Icon(Icons.chat_bubble_outline),
+              onPressed: () => ChatScreen.open(
+                context,
+                prompt: 'Explain ${selected.title} with an example.',
+                reference: {'type': 'problem', 'problemId': selected.id},
+              ),
+            ),
+        ],
+      ),
       body: SafeArea(
         child: ListView(
           key: const ValueKey('problem-list'),
@@ -71,21 +86,27 @@ class _ProblemScreenState extends State<ProblemScreen> {
           children: [
             _MissionPreview(topic: widget.topic, problem: selected),
             const SizedBox(height: 12),
-            for (final problem in widget.topic.problems)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _ProblemOption(
-                  problem: problem,
-                  selected: problem.id == selected?.id,
-                  onTap: () => setState(() {
-                    _selected = problem;
-                    _wishController.clear();
-                    context.read<GameController>()
-                      ..setDifficulty(problem.defaultDifficulty)
-                      ..dismissOutcome();
-                  }),
-                ),
-              ),
+            ExpansionTile(
+              title: const Text('Change mission'),
+              subtitle: Text(selected?.title ?? 'Choose a mission'),
+              children: [
+                for (final problem in widget.topic.problems)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _ProblemOption(
+                      problem: problem,
+                      selected: problem.id == selected?.id,
+                      onTap: () => setState(() {
+                        _selected = problem;
+                        _wishController.clear();
+                        context.read<GameController>()
+                          ..setDifficulty(problem.defaultDifficulty)
+                          ..dismissOutcome();
+                      }),
+                    ),
+                  ),
+              ],
+            ),
             if (selected == null)
               Padding(
                 padding: const EdgeInsets.only(top: 20),
@@ -99,14 +120,30 @@ class _ProblemScreenState extends State<ProblemScreen> {
               // phone the detail card is taller than the screen, and a player
               // should never have to scroll past a paragraph of theory to play.
               const SizedBox(height: 6),
+              Text(
+                selected.learningObjective,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 12),
               _WishBox(controller: _wishController, problem: selected),
               const SizedBox(height: 12),
               _DifficultySelector(problem: selected, game: controller),
+              const Text(
+                'Low: smaller instances. Medium: more work. High: larger instances. Hints remain available.',
+              ),
               const SizedBox(height: 14),
               if (controller.isGenerating)
-                GenerationLoader(
-                  problemTitle: selected.title,
-                  tierNote: _tierNote(),
+                Column(
+                  children: [
+                    GenerationLoader(
+                      problemTitle: selected.title,
+                      tierNote: _tierNote(),
+                    ),
+                    TextButton(
+                      onPressed: controller.cancelGeneration,
+                      child: const Text('Cancel preparation'),
+                    ),
+                  ],
                 )
               else ...[
                 _GenerateButton(
@@ -123,12 +160,20 @@ class _ProblemScreenState extends State<ProblemScreen> {
                   ),
                 ],
               ],
+              if (!controller.isGenerating)
+                TextButton(
+                  onPressed: () => _generate(selected, forceTemplate: true),
+                  child: const Text('Start instant practice'),
+                ),
               if (controller.usedTier != null && !controller.isGenerating) ...[
                 const SizedBox(height: 14),
                 _GenerationReport(controller: controller),
               ],
               const SizedBox(height: 20),
-              const SectionHeading(title: 'the theory', icon: Icons.menu_book_rounded),
+              const SectionHeading(
+                title: 'the theory',
+                icon: Icons.menu_book_rounded,
+              ),
               const SizedBox(height: 9),
               _DetailCard(problem: selected),
               const SizedBox(height: 12),
@@ -142,21 +187,27 @@ class _ProblemScreenState extends State<ProblemScreen> {
 
   String? _tierNote() {
     final catalogue = context.read<CatalogueController>().catalogue;
-    final live = catalogue?.tiers.where((tier) => tier.available).toList() ?? const <TierAvailability>[];
-    if (live.isEmpty) return 'only the template tier is available — expect a plainer theme';
+    final live =
+        catalogue?.tiers.where((tier) => tier.available).toList() ??
+        const <TierAvailability>[];
+    if (live.isEmpty) {
+      return 'only the template tier is available — expect a plainer theme';
+    }
     return '${live.map((tier) => tier.tier.label).join(' · ')} available';
   }
 
-  Future<void> _generate(ProblemMeta problem) async {
+  Future<void> _generate(
+    ProblemMeta problem, {
+    bool forceTemplate = false,
+  }) async {
     final game = context.read<GameController>();
     game.setWish(_wishController.text);
-    await game.generate(problem);
+    await game.generate(problem, forceTemplate: forceTemplate);
     if (!mounted) return;
     final state = context.read<GameController>();
     if (state.hasGame) {
-      await Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => const PlayScreen()),
-      );
+      await Navigator.of(context)
+          .push(MaterialPageRoute<void>(builder: (_) => const PlayScreen()));
     }
   }
 }
@@ -193,14 +244,22 @@ class _MissionPreview extends StatelessWidget {
                 ),
                 child: Text(
                   world.mark,
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   '${world.name} · ${problem?.title ?? topic.label}',
-                  style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900, color: colors.onSurface),
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w900,
+                    color: colors.onSurface,
+                  ),
                 ),
               ),
             ],
@@ -214,7 +273,11 @@ class _MissionPreview extends StatelessWidget {
 }
 
 class _ProblemOption extends StatelessWidget {
-  const _ProblemOption({required this.problem, required this.selected, required this.onTap});
+  const _ProblemOption({
+    required this.problem,
+    required this.selected,
+    required this.onTap,
+  });
 
   final ProblemMeta problem;
   final bool selected;
@@ -223,9 +286,15 @@ class _ProblemOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.gameColors;
-    final solved = context.watch<AdventureController>().progress.completed.containsKey(problem.id);
+    final solved = context
+        .watch<AdventureController>()
+        .progress
+        .completed
+        .containsKey(problem.id);
     return Material(
-      color: selected ? Color.lerp(colors.surface, colors.primary, 0.14) : colors.surface,
+      color: selected
+          ? Color.lerp(colors.surface, colors.primary, 0.14)
+          : colors.surface,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -234,7 +303,9 @@ class _ProblemOption extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: selected ? colors.primary : colors.muted.withValues(alpha: 0.22),
+              color: selected
+                  ? colors.primary
+                  : colors.muted.withValues(alpha: 0.22),
               width: selected ? 1.6 : 1,
             ),
           ),
@@ -275,7 +346,10 @@ class _ProblemOption extends StatelessWidget {
                   ],
                 ),
               ),
-              MiniLabel(text: problem.defaultDifficulty.label, color: colors.accent),
+              MiniLabel(
+                text: problem.defaultDifficulty.label,
+                color: colors.accent,
+              ),
             ],
           ),
         ),
@@ -307,17 +381,31 @@ class _DetailCard extends StatelessWidget {
         children: [
           Text(
             problem.title,
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: colors.onSurface),
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              color: colors.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
-          const SectionHeading(title: 'you should internalise', icon: Icons.school_rounded),
+          const SectionHeading(
+            title: 'you should internalise',
+            icon: Icons.school_rounded,
+          ),
           const SizedBox(height: 4),
           Text(
             problem.learningObjective,
-            style: TextStyle(fontSize: 12.5, height: 1.4, color: colors.onSurface.withValues(alpha: 0.9)),
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.4,
+              color: colors.onSurface.withValues(alpha: 0.9),
+            ),
           ),
           const SizedBox(height: 11),
-          const SectionHeading(title: 'the canonical algorithm', icon: Icons.account_tree_rounded),
+          const SectionHeading(
+            title: 'the canonical algorithm',
+            icon: Icons.account_tree_rounded,
+          ),
           const SizedBox(height: 4),
           Text(
             problem.canonicalAlgorithm,
@@ -326,7 +414,10 @@ class _DetailCard extends StatelessWidget {
           const SizedBox(height: 11),
           ComplexityChips(chips: problem.complexityChips),
           const SizedBox(height: 11),
-          const SectionHeading(title: 'the data you will get', icon: Icons.data_array_rounded),
+          const SectionHeading(
+            title: 'the data you will get',
+            icon: Icons.data_array_rounded,
+          ),
           const SizedBox(height: 6),
           Wrap(
             spacing: 6,
@@ -338,12 +429,30 @@ class _DetailCard extends StatelessWidget {
                   icon: Icons.straighten_rounded,
                   color: colors.primary,
                 ),
-              if (hints.sorted) MiniLabel(text: 'sorted', icon: Icons.sort_rounded, color: colors.success),
-              if (hints.unique) MiniLabel(text: 'unique', icon: Icons.filter_alt_rounded, color: colors.success),
+              if (hints.sorted)
+                MiniLabel(
+                  text: 'sorted',
+                  icon: Icons.sort_rounded,
+                  color: colors.success,
+                ),
+              if (hints.unique)
+                MiniLabel(
+                  text: 'unique',
+                  icon: Icons.filter_alt_rounded,
+                  color: colors.success,
+                ),
               if (hints.targetGuaranteed)
-                MiniLabel(text: 'target present', icon: Icons.my_location_rounded, color: colors.accent),
+                MiniLabel(
+                  text: 'target present',
+                  icon: Icons.my_location_rounded,
+                  color: colors.accent,
+                ),
               if (hints.valueRangeLabel case final String range?)
-                MiniLabel(text: 'values $range', icon: Icons.numbers_rounded, color: colors.muted),
+                MiniLabel(
+                  text: 'values $range',
+                  icon: Icons.numbers_rounded,
+                  color: colors.muted,
+                ),
               if (hints.tokenAlphabet.isNotEmpty)
                 MiniLabel(
                   text: 'alphabet ${hints.tokenAlphabet.take(6).join(' ')}',
@@ -353,14 +462,21 @@ class _DetailCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 11),
-          const SectionHeading(title: 'mechanics you can use', icon: Icons.extension_rounded),
+          const SectionHeading(
+            title: 'mechanics you can use',
+            icon: Icons.extension_rounded,
+          ),
           const SizedBox(height: 6),
           Wrap(
             spacing: 6,
             runSpacing: 6,
             children: [
               for (final mechanic in problem.allowedMechanics)
-                MiniLabel(text: mechanic.wire, icon: Icons.circle, color: colors.accent),
+                MiniLabel(
+                  text: mechanic.wire,
+                  icon: Icons.circle,
+                  color: colors.accent,
+                ),
             ],
           ),
         ],
@@ -393,7 +509,10 @@ class _ResourceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeading(title: 'study resources', icon: Icons.library_books_rounded),
+          const SectionHeading(
+            title: 'study resources',
+            icon: Icons.library_books_rounded,
+          ),
           const SizedBox(height: 6),
           if (res.patterns.isEmpty)
             Text(
@@ -403,19 +522,31 @@ class _ResourceCard extends StatelessWidget {
           for (final pattern in res.patterns) ...[
             Text(
               pattern.name,
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: colors.onSurface),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: colors.onSurface,
+              ),
             ),
             const SizedBox(height: 2),
             Text(
               'Deep dive: ${pattern.deepDive}',
-              style: TextStyle(fontSize: 10, fontFamily: 'monospace', color: colors.muted),
+              style: TextStyle(
+                fontSize: 10,
+                fontFamily: 'monospace',
+                color: colors.muted,
+              ),
             ),
             const SizedBox(height: 8),
           ],
           if (res.trackMentions.isNotEmpty) ...[
             Text(
               'Stamps these classics',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: colors.onSurface),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: colors.onSurface,
+              ),
             ),
             const SizedBox(height: 3),
             for (final mention in res.trackMentions)
@@ -448,7 +579,10 @@ class _WishBox extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeading(title: 'anything specific you want?', icon: Icons.edit_note_rounded),
+        const SectionHeading(
+          title: 'anything specific you want?',
+          icon: Icons.edit_note_rounded,
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
@@ -460,7 +594,8 @@ class _WishBox extends StatelessWidget {
           onChanged: (value) => context.read<GameController>().setWish(value),
           style: TextStyle(fontSize: 13, height: 1.3, color: colors.onSurface),
           decoration: const InputDecoration(
-            hintText: 'e.g. make it a heist, and I want to see the pointers move',
+            hintText:
+                'e.g. make it a heist, and I want to see the pointers move',
           ),
         ),
         if (routing != null && game.wish.trim().isNotEmpty)
@@ -469,7 +604,9 @@ class _WishBox extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  routing.source.isLlm ? Icons.psychology_rounded : Icons.rule_rounded,
+                  routing.source.isLlm
+                      ? Icons.psychology_rounded
+                      : Icons.rule_rounded,
                   size: 12,
                   color: routing.source.isLlm ? colors.primary : colors.muted,
                 ),
@@ -512,7 +649,8 @@ class _DifficultySelector extends StatelessWidget {
                   selected: game.difficulty == difficulty,
                   isDefault: problem.defaultDifficulty == difficulty,
                   enabled: !game.isGenerating,
-                  onTap: () => context.read<GameController>().setDifficulty(difficulty),
+                  onTap: () =>
+                      context.read<GameController>().setDifficulty(difficulty),
                 ),
               ),
             ],
@@ -600,7 +738,10 @@ class _GenerateButton extends StatelessWidget {
     final colors = context.gameColors;
     return FilledButton.icon(
       onPressed: onGenerate,
-      icon: Icon(busy ? Icons.refresh_rounded : Icons.play_arrow_rounded, size: 20),
+      icon: Icon(
+        busy ? Icons.refresh_rounded : Icons.play_arrow_rounded,
+        size: 20,
+      ),
       label: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Text(
@@ -661,7 +802,11 @@ class _GenerationReport extends StatelessWidget {
               Flexible(
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: ProviderBadge(tier: controller.usedTier, attempts: attempts, dense: true),
+                  child: ProviderBadge(
+                    tier: controller.usedTier,
+                    attempts: attempts,
+                    dense: true,
+                  ),
                 ),
               ),
             ],
@@ -674,7 +819,9 @@ class _GenerationReport extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(
-                      attempt.ok ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                      attempt.ok
+                          ? Icons.check_circle_rounded
+                          : Icons.cancel_rounded,
                       size: 12,
                       color: attempt.ok ? colors.success : colors.danger,
                     ),
@@ -701,10 +848,17 @@ class _GenerationReport extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.info_outline_rounded, size: 12, color: colors.accent),
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 12,
+                      color: colors.accent,
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Text(note, style: TextStyle(fontSize: 10.5, color: colors.muted)),
+                      child: Text(
+                        note,
+                        style: TextStyle(fontSize: 10.5, color: colors.muted),
+                      ),
                     ),
                   ],
                 ),
@@ -713,7 +867,11 @@ class _GenerationReport extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             'seed ${controller.seed}',
-            style: TextStyle(fontSize: 10, fontFamily: 'monospace', color: colors.muted),
+            style: TextStyle(
+              fontSize: 10,
+              fontFamily: 'monospace',
+              color: colors.muted,
+            ),
           ),
         ],
       ),

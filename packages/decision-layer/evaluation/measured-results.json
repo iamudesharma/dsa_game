@@ -1,0 +1,101 @@
+{
+  "complete": true,
+  "selected": "minilm-l3",
+  "thresholds": {
+    "minScore": 0.35,
+    "minMargin": 0.03,
+    "accuracy": 0.8032786885245902
+  },
+  "bestAccuracy": 0.7704918032786885,
+  "layaMeasured": true,
+  "candidates": [
+    {
+      "candidate": "heuristic",
+      "measuredAt": "2026-10-03T09:31:27.449Z",
+      "sidecarRSSMB": 0,
+      "accuracy": 0.5573770491803278,
+      "macroF1": 0.49878787878787895,
+      "wrongAccepted": 0,
+      "steadyIncrementalMB": 10.354688,
+      "peakIncrementalMB": 16.515072,
+      "warmP95Ms": 3.284999999999968
+    },
+    {
+      "candidate": "minilm-l6",
+      "measuredAt": "2026-10-03T09:25:53.633Z",
+      "sidecarRSSMB": 0,
+      "accuracy": 0.7377049180327869,
+      "macroF1": 0.6745454545454546,
+      "wrongAccepted": 10,
+      "steadyIncrementalMB": 156.205056,
+      "peakIncrementalMB": 211.550208,
+      "warmP95Ms": 6.679417000000058
+    },
+    {
+      "candidate": "minilm-l3",
+      "measuredAt": "2026-10-03T09:25:56.208Z",
+      "sidecarRSSMB": 0,
+      "accuracy": 0.7704918032786885,
+      "macroF1": 0.6878787878787879,
+      "wrongAccepted": 8,
+      "steadyIncrementalMB": 196.739072,
+      "peakIncrementalMB": 196.739072,
+      "warmP95Ms": 5.251666999999998
+    },
+    {
+      "candidate": "xtremedistil",
+      "measuredAt": "2026-10-03T09:25:58.217Z",
+      "sidecarRSSMB": 0,
+      "accuracy": 0.5573770491803278,
+      "macroF1": 0.49878787878787895,
+      "wrongAccepted": 0,
+      "steadyIncrementalMB": 176.078848,
+      "peakIncrementalMB": 176.078848,
+      "warmP95Ms": 185.0178330000001
+    },
+    {
+      "candidate": "deberta-xsmall",
+      "measuredAt": "2026-10-03T09:26:16.520Z",
+      "sidecarRSSMB": 0,
+      "accuracy": 0.5901639344262295,
+      "macroF1": 0.5351515151515153,
+      "wrongAccepted": 0,
+      "steadyIncrementalMB": 282.689536,
+      "peakIncrementalMB": 545.046528,
+      "warmP95Ms": 1032.2561249999999
+    },
+    {
+      "candidate": "laya",
+      "measuredAt": "2026-10-03T14:53:00+05:30",
+      "sidecarPhysicalFootprint": {
+        "steady": "2.6G",
+        "peak": "3.7G"
+      },
+      "sidecarRSSMB": 106.266624,
+      "accuracy": 0.5573770491803278,
+      "macroF1": 0.5018181818181819,
+      "wrongAccepted": 12,
+      "steadyIncrementalMB": -10.56768,
+      "peakIncrementalMB": 23.363584,
+      "warmP95Ms": 252.62191699999948
+    }
+  ],
+  "action": "Candidate qualifies on this fixture set; require downstream and stack checks before enabling.",
+  "environment": {
+    "date": "2026-10-03",
+    "memoryGB": 8,
+    "platform": "macOS arm64",
+    "node": "22.23.2",
+    "stack": "API on 8789 and Next development server on 3011; root page warmed",
+    "dataset": "61 development and 61 held-out requests, all 45 playable problems represented",
+    "laya": "Separate MPS run with typed-decisions revision 55cf4c4ebb4ebe31b2550e8bdf3bd21b99753851; stopped before stack comparisons"
+  },
+  "limitations": [
+    "Small engineering fixture set, not a statistically established general accuracy ranking.",
+    "Eight accepted wrong model choices remain for MiniLM L3; overall accuracy includes heuristic fallbacks.",
+    "First prototype preparation is slower than warmed inference.",
+    "Laya physical footprint includes Metal allocations; its ps RSS is not its total memory use.",
+    "No authenticated live cloud generation/chat calls were made.",
+    "Peak RSS is floored at the observed steady RSS to avoid snapshot ordering artifacts."
+  ]
+}

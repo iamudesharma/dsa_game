@@ -407,3 +407,38 @@ button.btn[aria-pressed=true] { background:#d9ebbf; }
 @media(max-width:1000px){.world-map{grid-template-columns:repeat(2,minmax(0,1fr))}.collection-items{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:640px){.adventure-home{padding:0 18px 24px;border-width:0}.adventure-nav{align-items:flex-start;flex-direction:column;gap:14px;padding:18px 0}.adventure-nav .btn{font-size:12px}.adventure-hero{grid-template-columns:1fr;padding:30px 0;gap:26px}.hero-diorama{min-height:245px;max-width:380px;width:100%;justify-self:center}.hero-diorama .world-scene{height:160px}.adventure-hero h1{font-size:48px}.hero-copy{font-size:15px}.journey-heading{align-items:start;flex-direction:column;gap:8px}.journey-heading>p{text-align:left;max-width:none}.world-map{grid-template-columns:1fr;gap:30px;position:relative}.world-map::before{content:'';position:absolute;left:50%;top:0;bottom:0;border-left:3px dashed #bcb8aa;z-index:-1}.world-scene{height:145px}.collection-drawer>summary span{float:none;display:block;margin:6px 0 0 18px}.collection-items{grid-template-columns:repeat(2,1fr)}.adventure-footer{flex-direction:column}.mission-preview{padding:16px;gap:0}.mission-preview h2{font-size:21px}.mission-preview .world-scene{width:130px;height:100px}.arena-board{padding:15px 10px;min-height:200px}.arena-tools{grid-template-columns:1fr}.hero-cta{min-width:180px}.arena-caption .world-scene{width:100px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* Learning workspace shares the adventure palette. */
+.app-navigation { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.75rem; padding: .8rem max(1rem, calc((100vw - 1280px)/2)); border-bottom:1px solid var(--dsa-border); background:var(--dsa-surface); }
+.app-navigation a[aria-current="page"] { border-color:var(--dsa-accent); background:var(--dsa-surface-2); font-weight:700; }
+.chat-workspace { display:grid; grid-template-columns:260px minmax(0,1fr); gap:1rem; }
+.chat-main { min-width:0; }
+.chat-transcript { height: min(55dvh,650px); overflow:auto; overscroll-behavior:contain; }
+.chat-sidebar { max-height:85dvh; overflow:auto; }
+.chat-message { padding:1rem; margin:.75rem 0; border:1px solid var(--dsa-border); border-radius:1rem; background:var(--dsa-surface); }
+.chat-user { margin-left:10%; background:var(--dsa-surface-2); }
+.chat-markdown { overflow-wrap:anywhere; line-height:1.7; }
+.chat-markdown p { margin:.5rem 0; }
+.chat-markdown ul,.chat-markdown ol { padding-left:1.5rem; }
+.chat-markdown ul { list-style:disc; } .chat-markdown ol { list-style:decimal; }
+.chat-markdown pre { background:#18231d; color:#eaf2e8; border-radius:.75rem; padding:1rem; overflow-x:auto; }
+.chat-markdown table { display:block; overflow:auto; border-collapse:collapse; }
+.chat-markdown td,.chat-markdown th { padding:.5rem; border:1px solid var(--dsa-border); }
+.hljs-keyword,.hljs-selector-tag { color:#c5a3ff; } .hljs-string,.hljs-literal { color:#b9e595; } .hljs-number,.hljs-built_in { color:#ffca8a; } .hljs-comment { color:#adbaaf; }
+:focus-visible { outline:3px solid var(--dsa-accent); outline-offset:3px; }
+@media(max-width:760px) { .chat-workspace { grid-template-columns:minmax(0,1fr); } .chat-sidebar { max-height:220px; } .chat-transcript { height:45dvh; } }
+
+.chat-sidebar-toggle { display:none; }
+@media(max-width:760px) { .chat-sidebar-toggle {display:inline-flex;} .chat-sidebar-body:not(.is-open) {display:none;} }
+.chat-composer { position:sticky; bottom:0; background:var(--dsa-surface); padding:.75rem 0; }
+.chat-composer textarea { resize:none; overflow-y:auto; }
+dialog::backdrop { background:rgb(0 0 0 / .4); }
+dialog { max-width:min(95vw,480px); margin:auto; }
+:focus-visible { outline:3px solid var(--dsa-accent); outline-offset:3px; }
+@media(max-width:760px) {
+ body { padding-bottom:calc(76px + env(safe-area-inset-bottom)); }
+ .app-navigation > div { position:fixed; bottom:0; left:0; right:0; z-index:60; flex-wrap:nowrap; justify-content:space-around; padding:.5rem .25rem calc(.5rem + env(safe-area-inset-bottom)); background:var(--dsa-surface); border-top:1px solid var(--dsa-border); }
+ .app-navigation > div a { font-size:.75rem; padding:.5rem; min-width:0; }
+ .app-navigation > div a:last-child:nth-child(6) { display:none; }
+ .chat-transcript { height:calc(100dvh - 360px); min-height:180px; }
+}

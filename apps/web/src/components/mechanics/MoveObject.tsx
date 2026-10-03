@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import type { Action } from '@dsa/game-schema'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/format'
@@ -30,6 +31,7 @@ export function MoveObject({
   dispatch,
   markers,
 }: MechanicProps) {
+  const [destination,setDestination]=useState('')
   const source = picked[0]
   const sourceObject = source ? model.byId[source] : undefined
   const slotCells = model.lanes.flatMap((lane) => lane.cells).filter((cell) => cell.slotId !== undefined)
@@ -41,7 +43,7 @@ export function MoveObject({
   }
 
   return (
-    <section className="panel p-4" aria-label={binding.label}>
+    <section className="panel p-4" aria-label={binding.label || 'MoveObject'}>
       {/* The host blanks `binding.label` when the instruction is already on
           screen, so this heading disappears with it rather than repeating an
           imperative the learner has just read at 2rem. */}
@@ -89,7 +91,7 @@ export function MoveObject({
                   size="sm"
                   variant={occupied ? 'ghost' : marked ? 'accent' : 'default'}
                   disabled={disabled || !source || occupied || isSelf}
-                  onClick={() => source && cell.slotId && move(source, cell.slotId)}
+                  onClick={() => cell.slotId && setDestination(cell.slotId)}
                   aria-label={
                     occupied
                       ? `${cell.label} is taken by ${cell.object ? objectName(model, cell.object.id) : 'something'}`
@@ -102,6 +104,7 @@ export function MoveObject({
               )
             })}
           </div>
+          {destination && <div className="mt-3 flex flex-wrap gap-2 items-center"><p>Move {objectName(model,source!)} → {slotCells.find(c=>c.slotId===destination)?.label}</p><Button disabled={disabled||!source||!!slotCells.find(c=>c.slotId===destination)?.object} onClick={()=>{if(source)move(source,destination);setDestination('')}}>Move here</Button><Button variant="ghost" onClick={()=>setDestination('')}>Clear destination</Button></div>}
         </>
       ) : null}
     </section>

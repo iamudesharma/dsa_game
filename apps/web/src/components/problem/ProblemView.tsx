@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { CatalogueResponse, DecideResponse, Difficulty, GenerateResponse } from '@dsa/game-schema'
@@ -13,6 +13,7 @@ import { Chip } from '@/components/ui/Chip'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Panel } from '@/components/ui/Panel'
 import { GeneratingSkeleton } from '@/components/ui/Skeleton'
+import { chatLink } from '@/lib/learning-api'
 import { DsaApiError, getCatalogue, postDecide, postGenerate } from '@/lib/api'
 import { DIFFICULTIES, PROVIDER_TIER_LABELS } from '@/lib/contract'
 import { cn } from '@/lib/format'
@@ -39,6 +40,8 @@ export function ProblemView({
   initialDifficulty?: Difficulty
 }) {
   const router = useRouter()
+  const generationController = useRef<AbortController | null>(null)
+  useEffect(() => () => generationController.current?.abort(), [])
   const [problem, setProblem] = useState<CatalogueResponse['topics'][number]['problems'][number] | null>(null)
   const [notFound, setNotFound] = useState(false)
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null)
@@ -134,7 +137,10 @@ export function ProblemView({
     }
   }
 
-  const generate = async (): Promise<void> => {
+  const generate = async (instant = forceTemplate): Promise<void> => {
+    generationController.current?.abort()
+    const controller = new AbortController()
+    generationController.current = controller
     setGenerating(true)
     setGenStartedAt(Date.now())
     setGenElapsedSec(0)
@@ -144,8 +150,9 @@ export function ProblemView({
         problemId,
         ...(difficulty ? { difficulty } : {}),
         ...(freeText.trim() ? { freeText: freeText.trim() } : {}),
-        ...(forceTemplate ? { forceTemplate: true } : {}),
-      })
+        ...(instant ? { forceTemplate: true } : {}),
+      }, controller.signal)
+      if (controller.signal.aborted) return
       setResult(res)
       hydrate({
         gameId: res.gameId,
@@ -159,6 +166,7 @@ export function ProblemView({
       })
       router.push(`/play/${res.gameId}`)
     } catch (cause) {
+      if (controller.signal.aborted) return
       setError(
         cause instanceof DsaApiError
           ? cause
@@ -231,6 +239,7 @@ export function ProblemView({
                   
                 </div>
                 <h1 className="mt-2 text-2xl font-bold text-[var(--dsa-ink)] sm:text-3xl">{problem.title}</h1>
+                <Link className="btn mt-3" href={chatLink(`Explain ${problem.title} with an example.`,{type:'problem',problemId})}>Ask about this problem</Link>
                 <p className="mt-2 max-w-2xl text-sm text-[var(--dsa-muted)]">{problem.learningObjective}</p>
               </div>
               <div className="flex shrink-0 flex-wrap gap-1.5">
@@ -244,6 +253,7 @@ export function ProblemView({
             </div>
           </Panel>
 
+          <section className="panel p-4"><h2 className="font-bold">How practice changes</h2><p className="text-sm">Low uses a smaller instance; medium increases the work; high uses a larger instance to test the same rule. Hints remain available.</p></section>
           <details className="adventure-drawer"><summary>Peek inside the algorithm</summary><div className="p-4">
             <pre className="mono prose-block text-sm">{problem.canonicalAlgorithm}</pre></div></details>
 
@@ -252,7 +262,7 @@ export function ProblemView({
               <ul className="space-y-3">
                 {resources.patterns.map((pattern) => (
                   <li key={pattern.id} className="text-sm">
-                    <Link href="/patterns" className="font-semibold text-[var(--dsa-accent)] underline-offset-4 hover:underline">
+                    <Link href={`/patterns#${pattern.id}`} className="font-semibold text-[var(--dsa-accent)] underline-offset-4 hover:underline">
                       {pattern.name}
                     </Link>
                     <span className="text-[var(--dsa-muted)]"> — the reusable approach this game trains. </span>
@@ -342,7 +352,7 @@ export function ProblemView({
                   </span>
                 </p>
                 <p className="mono mt-1 text-[0.6rem] text-[var(--dsa-ink-faint)]">
-                  {decision.source === 'laya' ? 'Laya' : 'heuristic'} · confidence{' '}
+                  {decision.source} · {decision.scoreKind === 'cosine-similarity' ? 'similarity' : 'score'}{' '}
                   {Math.round(decision.confidence * 100)}%
                 </p>
               </div>
@@ -383,7 +393,7 @@ export function ProblemView({
           </Panel>
 
           {generating ? (
-            <Panel title="Building your little adventure"><div className="scene-loading"><WorldScene world={worldForProblem(problemId)} compact/></div>
+            <Panel title="Building your little adventure"><div className="flex flex-wrap gap-2"><Button onClick={() => { generationController.current?.abort(); setGenerating(false) }}>Cancel</Button><Button onClick={() => void generate(true)}>Use instant template instead</Button></div><div className="scene-loading"><WorldScene world={worldForProblem(problemId)} compact/></div>
               <GeneratingSkeleton
                 label={
                   forceTemplate

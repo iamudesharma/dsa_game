@@ -1,4 +1,5 @@
 export * from './schema.js'
+export * from './learning.js'
 export * from './companies.js'
 export * from './resume.js'
 export * from './practice.js'

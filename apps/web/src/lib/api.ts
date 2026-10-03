@@ -22,6 +22,8 @@ import type {
   DecideRequest,
   DecideResponse,
   GenerateRequest,
+  Difficulty,
+  TurnPrompt,
   GenerateResponse,
   GameSpec,
   GameState,
@@ -390,7 +392,7 @@ export async function postAction(
 export async function getGame(
   gameId: string,
   signal?: AbortSignal,
-): Promise<{ gameId: string; problemId: string; seed: number; spec: GameSpec; state: GameState; usedTier: ProviderTier } | null> {
+): Promise<{ gameId: string; problemId: string; seed: number; spec: GameSpec; state: GameState; usedTier: ProviderTier; difficulty?:Difficulty; turnPrompt?:TurnPrompt|null } | null> {
   try {
     const res = assertObject(
       await request<unknown>(`/api/game/${encodeURIComponent(gameId)}`, { signal, label: 'game' }),
@@ -627,6 +629,11 @@ export async function putResume(resume: Resume, signal?: AbortSignal): Promise<R
 export interface ParseResumeResult {
   resume: Resume
   unparsed: string[]
+  /** Which extraction path won: the model, or the deterministic fallback. */
+  source: 'model' | 'deterministic'
+  notes: string[]
+  /** Fields the model produced that were not in the source, and were dropped. */
+  rejected: string[]
   saved: boolean
 }
 

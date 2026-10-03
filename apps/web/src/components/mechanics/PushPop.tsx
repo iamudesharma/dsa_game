@@ -37,12 +37,12 @@ export function PushPop({ spec, model, binding, disabled, picked, setPicked, dis
       ...(op === 'push' && objectId ? { objectId } : {}),
     }
     dispatch(action)
-    setPicked([])
+    // Preserve selection if the request is rejected.
   }
 
   if (model.containers.length === 0) {
     return (
-      <section className="panel p-4" aria-label={binding.label}>
+      <section className="panel p-4" aria-label={binding.label || 'PushPop'}>
         {/* The host blanks `binding.label` when the instruction is already on
           screen, so this heading disappears with it rather than repeating an
           imperative the learner has just read at 2rem. */}
@@ -64,7 +64,7 @@ export function PushPop({ spec, model, binding, disabled, picked, setPicked, dis
   const empty = (active?.order.length ?? 0) === 0
 
   return (
-    <section className="panel p-4" aria-label={binding.label}>
+    <section className="panel p-4" aria-label={binding.label || 'PushPop'}>
       {/* The host blanks `binding.label` when the instruction is already on
           screen, so this heading disappears with it rather than repeating an
           imperative the learner has just read at 2rem. */}
@@ -92,6 +92,7 @@ export function PushPop({ spec, model, binding, disabled, picked, setPicked, dis
         </div>
       ) : null}
 
+      <p className="mt-2 text-sm">Stacks remove the top item; queues remove the front item and add at the back.</p>
       {active ? (
         <div className="mt-3 rounded-xl border border-[var(--dsa-border)] bg-[color-mix(in_oklab,var(--dsa-surface-2)_55%,transparent)] p-3">
           <p className="text-[0.7rem] font-semibold tracking-[0.14em] text-[var(--dsa-faint)] uppercase">

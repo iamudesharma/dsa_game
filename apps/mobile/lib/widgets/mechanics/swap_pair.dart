@@ -101,7 +101,14 @@ class _SwapPairMechanicState extends MechanicViewState<SwapPairMechanic> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Center(child: PairReadout(state: widget.state, selection: selection, bracket: '⇄')),
+        operandControls(),
+        Center(
+          child: PairReadout(
+            state: widget.state,
+            selection: selection,
+            bracket: '⇄',
+          ),
+        ),
         const SizedBox(height: 8),
         ActionButton(
           label: 'Swap them',
@@ -147,7 +154,11 @@ class _SwapGhost extends StatelessWidget {
           '⇄ $label',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: colors.onSurface),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+            color: colors.onSurface,
+          ),
         ),
       ),
     );

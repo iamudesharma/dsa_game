@@ -1,9 +1,8 @@
 /// The 20-pattern library: when to use it, the reusable template, LeetCode
 /// practice references, and a straight line into every playable game.
 ///
-/// Content mirrors `apps/web/src/lib/patterns.ts`. Play buttons generate
-/// through the [GameController] and push the [PlayScreen], exactly like the
-/// field notebook's question cards.
+/// Content mirrors `apps/web/src/lib/patterns.ts`. Practice links open the problem briefing so difficulty and generation remain
+/// under the learner's control.
 library;
 
 import 'package:flutter/material.dart';
@@ -11,9 +10,9 @@ import 'package:provider/provider.dart';
 
 import '../learn/patterns.dart';
 import '../state/catalogue_controller.dart';
-import '../state/game_controller.dart';
 import '../theme/palette.dart';
-import 'play_screen.dart';
+import 'problem_screen.dart';
+import 'chat_screen.dart';
 
 class PatternsScreen extends StatefulWidget {
   const PatternsScreen({super.key});
@@ -36,7 +35,9 @@ class _PatternsScreenState extends State<PatternsScreen> {
                 (p) =>
                     p.name.toLowerCase().contains(query) ||
                     p.whenToUse.toLowerCase().contains(query) ||
-                    p.leetcode.any((ref) => ref.name.toLowerCase().contains(query)),
+                    p.leetcode.any(
+                      (ref) => ref.name.toLowerCase().contains(query),
+                    ),
               )
               .toList(growable: false);
     final playableCount = dsaPatterns.where((p) => p.playIds.isNotEmpty).length;
@@ -50,7 +51,11 @@ class _PatternsScreenState extends State<PatternsScreen> {
           children: [
             Text(
               '20 patterns that cover LeetCode',
-              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: colors.onSurface),
+              style: TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w900,
+                color: colors.onSurface,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -59,7 +64,9 @@ class _PatternsScreenState extends State<PatternsScreen> {
             ),
             const SizedBox(height: 10),
             TextField(
-              decoration: const InputDecoration(hintText: 'Filter: e.g. window, tree, heap…'),
+              decoration: const InputDecoration(
+                hintText: 'Filter: e.g. window, tree, heap…',
+              ),
               onChanged: (text) => setState(() => _filter = text),
             ),
             const SizedBox(height: 6),
@@ -103,7 +110,11 @@ class _PatternCard extends StatelessWidget {
             Expanded(
               child: Text(
                 pattern.name,
-                style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900, color: colors.onSurface),
+                style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w900,
+                  color: colors.onSurface,
+                ),
               ),
             ),
             _CountChip(count: pattern.playIds.length),
@@ -115,7 +126,14 @@ class _PatternCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(pattern.whenToUse, style: TextStyle(fontSize: 12.5, height: 1.4, color: colors.onSurface)),
+                Text(
+                  pattern.whenToUse,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.4,
+                    color: colors.onSurface,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Container(
                   width: double.infinity,
@@ -126,15 +144,31 @@ class _PatternCard extends StatelessWidget {
                   ),
                   child: SelectableText(
                     pattern.template,
-                    style: const TextStyle(fontSize: 11.5, fontFamily: 'monospace', height: 1.45),
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontFamily: 'monospace',
+                      height: 1.45,
+                    ),
                   ),
+                ),
+                TextButton.icon(
+                  onPressed: () => ChatScreen.open(
+                    context,
+                    prompt:
+                        'Explain ${pattern.name}, work through an example, and give me practice.',
+                  ),
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  label: const Text('Discuss in Chat'),
                 ),
                 if (pattern.playIds.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
-                    children: [for (final id in pattern.playIds) _PlayButton(problemId: id)],
+                    children: [
+                      for (final id in pattern.playIds)
+                        _PlayButton(problemId: id),
+                    ],
                   ),
                 ],
                 const SizedBox(height: 8),
@@ -167,7 +201,11 @@ class _CountChip extends StatelessWidget {
       ),
       child: Text(
         count > 0 ? '$count playable' : 'study only',
-        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: colors.success),
+        style: TextStyle(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
+          color: colors.success,
+        ),
       ),
     );
   }
@@ -188,18 +226,29 @@ class _PlayButton extends StatelessWidget {
   }
 
   String _titleOf(BuildContext context) {
-    final title = context.read<CatalogueController>().catalogue?.problemById(problemId)?.title;
+    final title = context
+        .read<CatalogueController>()
+        .catalogue
+        ?.problemById(problemId)
+        ?.title;
     return 'Play: ${title ?? problemId}';
   }
 
   Future<void> _play(BuildContext context) async {
-    final problem = context.read<CatalogueController>().catalogue?.problemById(problemId);
+    final problem = context.read<CatalogueController>().catalogue?.problemById(
+      problemId,
+    );
     if (problem == null) return;
-    final game = context.read<GameController>();
-    await game.generate(problem, routeWish: false);
-    if (!context.mounted || !game.hasGame) return;
+    final catalogue = context.read<CatalogueController>().catalogue;
+    final topic = catalogue?.topics
+        .where((t) => t.problems.any((p) => p.id == problemId))
+        .firstOrNull;
+    if (topic == null) return;
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const PlayScreen()),
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            ProblemScreen(topic: topic, initialProblemId: problemId),
+      ),
     );
   }
 }

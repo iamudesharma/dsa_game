@@ -214,8 +214,7 @@ class _NodeCell extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
+          child: InkWell(
             onTap: onTap,
             child: ObjectTile(
               object: node,
@@ -298,8 +297,7 @@ class ObjectPool extends StatelessWidget {
               );
               if (dragBuilder != null) tile = dragBuilder!(tile, object);
               if (onTap != null || onLongPress != null) {
-                tile = GestureDetector(
-                  behavior: HitTestBehavior.opaque,
+                tile = InkWell(
                   onTap: onTap == null ? null : () => onTap!(object),
                   onLongPress: onLongPress == null ? null : () => onLongPress!(object),
                   child: tile,

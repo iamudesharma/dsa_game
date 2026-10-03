@@ -83,6 +83,7 @@ export async function chainGenerateSpec(
   }
 
   for (const provider of tiers) {
+    input.signal?.throwIfAborted()
     // ---- availability gate -------------------------------------------------
     let available = false
     const probeStart = Date.now()
@@ -108,13 +109,20 @@ export async function chainGenerateSpec(
       continue
     }
 
+    input.signal?.throwIfAborted()
     // ---- generate ----------------------------------------------------------
     const start = Date.now()
     let spec: GameSpec | null = null
     try {
       spec = await withTimeout(provider.generate(input), timeoutMs, `${provider.tier}.generate`)
     } catch (e) {
-      const attempt: ProviderAttempt = { tier: provider.tier, ok: false, ms: Date.now() - start, error: errorText(e) }
+      input.signal?.throwIfAborted()
+      const attempt: ProviderAttempt = {
+        tier: provider.tier,
+        ok: false,
+        ms: Date.now() - start,
+        error: errorText(e),
+      }
       report(attempt)
       notes.push(`${provider.tier} failed: ${attempt.error ?? 'unknown error'}`)
 
@@ -138,7 +146,12 @@ export async function chainGenerateSpec(
             ms: Date.now() - repairStart,
             error: 'repaired after schema violation',
           })
-          return { spec: stamped(fixed, provider.tier), tier: provider.tier, attempts, notes: [...notes, `spec repaired by ${provider.tier}`] }
+          return {
+            spec: stamped(fixed, provider.tier),
+            tier: provider.tier,
+            attempts,
+            notes: [...notes, `spec repaired by ${provider.tier}`],
+          }
         } catch (re) {
           const rAttempt: ProviderAttempt = {
             tier: provider.tier,
@@ -157,9 +170,7 @@ export async function chainGenerateSpec(
     return { spec: stamped(spec, provider.tier), tier: provider.tier, attempts, notes }
   }
 
-  const detail = attempts
-    .map((a) => `${a.tier}${a.error ? `: ${a.error}` : ''}`)
-    .join('; ')
+  const detail = attempts.map((a) => `${a.tier}${a.error ? `: ${a.error}` : ''}`).join('; ')
   throw new Error(`generation failed across all tiers [${tiers.map((t) => t.tier).join(', ')}] -> ${detail}`)
 }
 

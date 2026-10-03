@@ -199,9 +199,14 @@ export interface DecideRequest {
 export interface DecideResponse {
   kind: DecisionKind
   choice: string
-  /** 0..1 probability of the chosen option. */
+  /** Compatibility score in [0,1]; see scoreKind before interpreting it. */
   confidence: number
-  source: 'laya' | 'heuristic'
+  source: 'laya' | 'heuristic' | 'semantic' | 'zero-shot'
+  model?: string
+  scoreKind?: 'cosine-similarity' | 'uncalibrated-probability' | 'heuristic'
+  score?: number
+  margin?: number
+  fallbackReason?: string
   /** Full calibrated distribution when Laya answered. */
   distribution?: Record<string, number>
 }
@@ -213,6 +218,7 @@ export interface HealthResponse {
   version: string
   tiers: { tier: ProviderTier; available: boolean; detail?: string }[]
   laya: { enabled: boolean; available: boolean; detail?: string }
+  decision?: { backend: string; model?: string; available: boolean; detail?: string }
   uptimeSec: number
 }
 

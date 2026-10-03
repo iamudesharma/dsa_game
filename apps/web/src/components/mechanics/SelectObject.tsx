@@ -38,7 +38,7 @@ export function SelectObject({ spec, model, binding, disabled, dispatch, markers
   }
 
   return (
-    <section className="panel p-4" aria-label={binding.label}>
+    <section className="panel p-4" aria-label={binding.label || 'SelectObject'}>
       {/* The host blanks `binding.label` when the instruction is already on
           screen, so this heading disappears with it rather than repeating an
           imperative the learner has just read at 2rem. */}

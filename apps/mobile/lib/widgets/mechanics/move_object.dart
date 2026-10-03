@@ -33,6 +33,7 @@ class MoveObjectMechanic extends MechanicView {
 class _MoveObjectMechanicState extends MechanicViewState<MoveObjectMechanic> {
   /// Slot the object is hovering over, so the drop target can light up.
   String? _hoverSlotId;
+  Slot? _preview;
 
   /// Slots the player may legally drop into, offered as chips.
   List<Slot> get _targets {
@@ -137,13 +138,14 @@ class _MoveObjectMechanicState extends MechanicViewState<MoveObjectMechanic> {
             child: SingleChildScrollView(
               child: ChoiceChipRow<Slot>(
                 options: targets,
-                selected: null,
+                selected: _preview,
                 enabled: canAct,
                 labelOf: (slot) => '${slot.index}',
-                onSelected: (slot) => _moveSelectedTo(slot),
+                onSelected: (slot) => setState(()=>_preview=slot),
               ),
             ),
           ),
+          if(_preview!=null)Wrap(spacing:8,children:[Text('Destination: slot ${_preview!.index}'),TextButton(onPressed:()=>setState(()=>_preview=null),child:const Text('Clear preview')),FilledButton(onPressed:canAct?()async{final slot=_preview!;setState(()=>_preview=null);await _moveSelectedTo(slot);}:null,child:const Text('Move here'))]),
         ],
       ],
     );

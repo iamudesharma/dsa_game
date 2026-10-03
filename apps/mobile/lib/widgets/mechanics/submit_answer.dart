@@ -31,7 +31,8 @@ class SubmitAnswerMechanic extends MechanicView {
   State<SubmitAnswerMechanic> createState() => _SubmitAnswerMechanicState();
 }
 
-class _SubmitAnswerMechanicState extends MechanicViewState<SubmitAnswerMechanic> {
+class _SubmitAnswerMechanicState
+    extends MechanicViewState<SubmitAnswerMechanic> {
   final _controller = TextEditingController();
   String? _pickedTargetId;
 
@@ -45,6 +46,9 @@ class _SubmitAnswerMechanicState extends MechanicViewState<SubmitAnswerMechanic>
   /// or `mid` slot; otherwise the first slot; otherwise a bare "answer" id,
   /// which is what a free-form oracle looks for.
   String get _targetId {
+    final oracleTarget = widget.controller.turnPrompt?.answerTargetId;
+    if (oracleTarget != null) return oracleTarget;
+    if (widget.expectedIds.length == 1) return widget.expectedIds.first;
     final picked = _pickedTargetId;
     if (picked != null) return picked;
     final state = widget.state;
@@ -65,7 +69,9 @@ class _SubmitAnswerMechanicState extends MechanicViewState<SubmitAnswerMechanic>
     final state = widget.state;
     final out = <String>[];
     for (final object in state.orderedObjects) {
-      if (object.kind == GameObjectKind.target) out.add(object.label);
+      if (object.kind == GameObjectKind.target && object.value != null) {
+        out.add('${object.value}');
+      }
     }
     for (final slot in state.orderedSlots.take(4)) {
       out.add('${slot.index}');
@@ -86,9 +92,7 @@ class _SubmitAnswerMechanicState extends MechanicViewState<SubmitAnswerMechanic>
   }
 
   @override
-  Widget buildBoard() => buildBoardFrom(
-    poolTitle: 'candidates',
-  );
+  Widget buildBoard() => buildBoardFrom(poolTitle: 'candidates');
 
   @override
   Widget buildControls(BuildContext context) {
@@ -109,14 +113,33 @@ class _SubmitAnswerMechanicState extends MechanicViewState<SubmitAnswerMechanic>
                 keyboardType: TextInputType.text,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _submit(),
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: colors.onSurface),
+                onChanged: (_) => setState(() {}),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: colors.onSurface,
+                ),
                 decoration: InputDecoration(
                   isDense: true,
-                  hintText: 'your answer',
+                  hintText:
+                      widget.controller.problem?.answerFormat.placeholder ??
+                      'Your result',
+                  helperText: widget.controller.problem?.answerFormat.label,
+                  helperMaxLines: 3,
                   hintStyle: TextStyle(color: colors.muted, fontSize: 15),
-                  prefixIcon: Icon(Icons.flag_rounded, size: 18, color: colors.muted),
-                  prefixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  prefixIcon: Icon(
+                    Icons.flag_rounded,
+                    size: 18,
+                    color: colors.muted,
+                  ),
+                  prefixIconConstraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 14,
+                  ),
                 ),
               ),
             ),
@@ -124,7 +147,9 @@ class _SubmitAnswerMechanicState extends MechanicViewState<SubmitAnswerMechanic>
             SizedBox(
               height: 50,
               child: FilledButton(
-                onPressed: canAct && _controller.text.trim().isNotEmpty ? _submit : null,
+                onPressed: canAct && _controller.text.trim().isNotEmpty
+                    ? _submit
+                    : null,
                 style: FilledButton.styleFrom(
                   backgroundColor: colors.accent,
                   foregroundColor: colors.accent.computeLuminance() > 0.6
@@ -133,9 +158,14 @@ class _SubmitAnswerMechanicState extends MechanicViewState<SubmitAnswerMechanic>
                   disabledBackgroundColor: colors.surface,
                   disabledForegroundColor: colors.muted.withValues(alpha: 0.5),
                   padding: const EdgeInsets.symmetric(horizontal: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
-                child: const Text('Submit', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+                child: const Text(
+                  'Submit',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                ),
               ),
             ),
           ],
@@ -150,7 +180,9 @@ class _SubmitAnswerMechanicState extends MechanicViewState<SubmitAnswerMechanic>
               for (final suggestion in suggestions)
                 ActionChip(
                   label: Text(suggestion),
-                  onPressed: canAct ? () => setState(() => _controller.text = suggestion) : null,
+                  onPressed: canAct
+                      ? () => setState(() => _controller.text = suggestion)
+                      : null,
                 ),
             ],
           ),
@@ -162,7 +194,10 @@ class _SubmitAnswerMechanicState extends MechanicViewState<SubmitAnswerMechanic>
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 10.5, color: colors.muted.withValues(alpha: 0.85)),
+          style: TextStyle(
+            fontSize: 10.5,
+            color: colors.muted.withValues(alpha: 0.85),
+          ),
         ),
       ],
     );

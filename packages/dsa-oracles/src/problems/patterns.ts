@@ -745,7 +745,7 @@ function legalActions(id: PatternId, state: GameState): LegalActionDescriptor[] 
   }
   if (next.type === 'pushPop')
     return [{ type: next.type, label: next.op === 'push' ? 'Push the current item onto the stack' : 'Pop every smaller item — the current value is their answer', options: { objectIds: next.objectId ? [next.objectId] : [], containerIds: [next.containerId] } }]
-  if (next.type === 'assignValue') return [{ type: next.type, label: 'Record the value', expects: 'value' }]
+  if (next.type === 'assignValue') return [{ type: next.type, label: 'Record the value', expects: 'value', options: { objectIds: [], targetIds: [next.targetId] } }]
   if (next.type === 'choosePath') return [{ type: next.type, label: 'Keep the half that can still hold the target', options: { objectIds: [next.fromId] } }]
   if (next.type === 'traverseNode') return [{ type: next.type, label: 'Advance the pointer one link', options: { objectIds: [next.fromNodeId, next.toNodeId] } }]
   if (next.type === 'submitAnswer') {

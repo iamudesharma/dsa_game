@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { DsaApiError, deleteCoachThread, getCoachThreads, isCoachUnavailable, postCoachAsk } from '@/lib/api'
 import type { CoachThreadSummary } from '@/lib/api'
 import { cn } from '@/lib/format'
+import { API_BASE_URL, getAuthToken } from '@/lib/api'
 
 type Availability = 'checking' | 'ready' | 'unavailable' | 'broken'
 
@@ -46,6 +47,7 @@ export interface CoachPanelProps {
  * them the wrong thing about the system.
  */
 export function CoachPanel({ gameId, progress, onClose }: CoachPanelProps) {
+  const [probe, setProbe] = useState(0)
   const [availability, setAvailability] = useState<Availability>('checking')
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
@@ -75,7 +77,17 @@ export function CoachPanel({ gameId, progress, onClose }: CoachPanelProps) {
         }
       })
     return () => controller.abort()
-  }, [gameId])
+  }, [gameId, probe])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    setTurns([])
+    if (threadId) fetch(`${API_BASE_URL}/api/coach/threads/${threadId}`, { credentials: 'include', signal: controller.signal, headers: getAuthToken() ? { authorization: `Bearer ${getAuthToken()}` } : {} })
+      .then(async res => { if (!res.ok) throw new Error('Could not load this conversation.'); return res.json() })
+      .then(data => setTurns(data.thread.turns))
+      .catch(error => { if (!controller.signal.aborted) setProblem(error.message) })
+    return () => controller.abort()
+  }, [threadId])
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'nearest' })
@@ -124,6 +136,7 @@ export function CoachPanel({ gameId, progress, onClose }: CoachPanelProps) {
         if (!isCoachUnavailable(cause)) {
           setProblem(cause instanceof DsaApiError ? cause.message : 'Could not clear that conversation.')
         }
+        return
       }
       setThreads((prev) => prev.filter((t) => t.id !== id))
       setTurns([])
@@ -162,7 +175,7 @@ export function CoachPanel({ gameId, progress, onClose }: CoachPanelProps) {
       {availability === 'broken' ? (
         <div className="rounded-xl border border-[color:color-mix(in_oklab,var(--dsa-warn)_45%,var(--dsa-border))] bg-[color-mix(in_oklab,var(--dsa-warn)_10%,transparent)] p-3">
           <p className="text-[0.92rem] text-[var(--dsa-ink)]">{problem ?? 'The coach did not answer.'}</p>
-          <Button size="sm" className="mt-2.5" onClick={() => setAvailability('checking')}>
+          <Button size="sm" className="mt-2.5" onClick={() => { setAvailability('checking'); setProbe(n => n + 1) }}>
             Try again
           </Button>
         </div>
@@ -170,7 +183,7 @@ export function CoachPanel({ gameId, progress, onClose }: CoachPanelProps) {
 
       {availability === 'ready' ? (
         <div className="space-y-3">
-          {threads.length > 1 ? (
+          {threads.length > 0 ? (
             <label className="block text-[0.75rem] text-[var(--dsa-muted)]">
               <span className="mb-1 block">Conversation</span>
               <select
@@ -234,6 +247,7 @@ export function CoachPanel({ gameId, progress, onClose }: CoachPanelProps) {
             <p className="text-[0.85rem] text-[var(--dsa-warn)]">{problem}</p>
           ) : null}
 
+          <Button size="sm" onClick={() => { setThreadId(null); setTurns([]); setLast(null) }} disabled={sending}>New conversation</Button>
           <div>
             <label className="sr-only" htmlFor="coach-composer">
               Your question

@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { useAuth } from '@/components/auth/AuthProvider'
+import { learningRequest } from '@/lib/learning-api'
 import { Panel } from '@/components/ui/Panel'
 import {
   emptyReflections,
@@ -34,6 +36,8 @@ export function SelfExplanation({
   initial: ReflectionAnswers | null
   onReveal: (answers: ReflectionAnswers) => void
 }) {
+  const { user } = useAuth()
+  const [saveStatus, setSaveStatus] = useState('')
   const prompts = selfExplanationPrompts(problemId)
   const [draft, setDraft] = useState<ReflectionAnswers>(initial ?? emptyReflections())
 
@@ -47,7 +51,7 @@ export function SelfExplanation({
       title="Before the explanation — in your own words"
       subtitle="Retrieval beats rereading. Write what you think first; the explanation comes after."
     >
-      <div className="space-y-4">
+      <div className="space-y-4">{user && <div><button className="btn" onClick={() => { setSaveStatus('Saving…'); void learningRequest(`/history/${gameId}/reflection`, { method: 'POST', body: JSON.stringify(draft) }).then(() => setSaveStatus('Saved to account history; Chat can use this reflection.')).catch(e => setSaveStatus(e.message)) }}>Save reflection to history</button><p role="status" className="text-sm">{saveStatus}</p><p className="text-xs">Only this action makes your reflection available to Chat.</p></div>}
         <div>
           <label htmlFor="reflect-retention" className="text-sm font-semibold text-[var(--dsa-ink)]">
             {prompts.retention}

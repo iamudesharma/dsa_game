@@ -154,7 +154,48 @@ describe('resume + target + progress', () => {
     expect(r.status).toBe(200)
     expect(r.json.resume.experience[0].company).toContain('Acme')
     expect(r.json.saved).toBe(true)
+    // The route reports which extraction path won, so the UI can be honest
+    // about whether a model or the deterministic parser produced the draft.
+    expect(['model', 'deterministic']).toContain(r.json.source)
+    expect(Array.isArray(r.json.rejected)).toBe(true)
     expect((await get(a, '/api/me/resume', token)).json.resume.experience).toHaveLength(1)
+  })
+
+  it('parses a real-world resume: contact, role, dates, education, skills', async () => {
+    const { a, token } = await signedIn('messy@example.com')
+    const text = [
+      'Jane Doe',
+      'jane@example.com · Berlin',
+      'Summary',
+      'Backend engineer focused on payments infrastructure.',
+      'Experience',
+      'Senior Engineer, Northwind Labs 2019 - Present',
+      '- Led the migration of the ledger service to Postgres',
+      'Education',
+      'BSc Computer Science, TU Berlin, 2015 - 2019',
+      'Skills',
+      'Go, Postgres, Kubernetes, gRPC',
+    ].join('\n')
+    const r = await post(a, '/api/me/parse-resume', { text, save: true }, token)
+    expect(r.status).toBe(200)
+    const resume = r.json.resume
+    expect(resume.experience).toHaveLength(1)
+    expect(resume.experience[0].company).toBe('Northwind Labs')
+    expect(resume.experience[0].title).toBe('Senior Engineer')
+    expect(resume.experience[0].start).toBe('2019')
+    expect(resume.experience[0].end).toBe('Present')
+    expect(resume.experience[0].bullets).toHaveLength(1)
+    expect(resume.skills.map((s: { name: string }) => s.name)).toEqual(
+      expect.arrayContaining(['Go', 'Postgres', 'Kubernetes', 'gRPC']),
+    )
+    expect(resume.education).toHaveLength(1)
+  })
+
+  it('handles colon headings (SKILLS: …) without losing the line', async () => {
+    const { a, token } = await signedIn('colon@example.com')
+    const r = await post(a, '/api/me/parse-resume', { text: 'Summary: Backend engineer\nSKILLS: Go, Rust' }, token)
+    expect(r.json.resume.summary).toContain('Backend engineer')
+    expect(r.json.resume.skills.map((s: { name: string }) => s.name)).toEqual(['Go', 'Rust'])
   })
 
   it('target CRUD round-trips and companies list', async () => {

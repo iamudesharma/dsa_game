@@ -23,6 +23,7 @@ dependencies:
   # On-device progression (mission stamps, world badges, map frames, notebook
   # drafts). The only persistence in the app; games themselves stay server-side.
   shared_preferences: ^2.5.3
+  flutter_markdown_plus: ^1.0.12
 
 dev_dependencies:
   flutter_test:

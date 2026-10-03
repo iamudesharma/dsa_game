@@ -251,6 +251,8 @@ export function ObjectToken({
         </span>
       </span>
 
+      {picked && <span className="text-[0.6rem] font-semibold">Selected</span>}
+      {disabled && onActivate && !inert && <span className="sr-only">Unavailable while the move is processing</span>}
       {showValue && <span className="mono text-[0.65rem] text-[var(--dsa-faint)]">{object.value}</span>}
 
       {isSecondary && (

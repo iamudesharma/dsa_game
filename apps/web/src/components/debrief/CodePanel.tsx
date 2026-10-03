@@ -18,6 +18,7 @@ import { cn } from '@/lib/format'
 export function CodePanel({ debrief }: { debrief: DebriefResponse }) {
   const languages = Object.keys(debrief.code)
   const [language, setLanguage] = useState<string>(languages[0] ?? 'javascript')
+  const [copyStatus, setCopyStatus] = useState('Copy code')
   const touched = linesTouchedBy(debrief.playedTrace)
 
   const languageTouched = (trace: TraceFrame[]): Set<number> => linesTouchedBy(trace)
@@ -30,7 +31,7 @@ export function CodePanel({ debrief }: { debrief: DebriefResponse }) {
         lines={debrief.pseudocode}
         touched={touched}
       />
-      <Panel
+      <div><button className="btn mb-2" onClick={() => void navigator.clipboard.writeText((debrief.code[language] ?? []).join("\n")).then(() => setCopyStatus("Copied")).catch(() => setCopyStatus("Could not copy"))}>{copyStatus}</button><Panel
         title="Real code"
         subtitle="The same algorithm, written out."
         action={
@@ -41,6 +42,7 @@ export function CodePanel({ debrief }: { debrief: DebriefResponse }) {
                   key={lang}
                   type="button"
                   role="tab"
+                  onKeyDown={event => { const keys = ['ArrowLeft','ArrowRight','Home','End']; if (!keys.includes(event.key)) return; event.preventDefault(); const tabs = Array.from(event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? []); const i = tabs.indexOf(event.currentTarget); const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length-1 : (i + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length; tabs[next]?.focus(); tabs[next]?.click() }}
                   aria-selected={lang === language}
                   onClick={() => setLanguage(lang)}
                   className={cn('btn !px-2.5 !py-1 text-xs', lang === language && 'btn-accent')}
@@ -58,7 +60,7 @@ export function CodePanel({ debrief }: { debrief: DebriefResponse }) {
             Your run never reached a line of this listing, which is worth noticing.
           </p>
         )}
-      </Panel>
+      </Panel></div>
     </div>
   )
 }

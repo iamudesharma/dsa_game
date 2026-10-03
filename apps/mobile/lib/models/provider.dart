@@ -27,12 +27,16 @@ enum ProviderTier {
     for (final v in values) v.wire: v,
   };
 
-  static ProviderTier parse(Object? raw, {ProviderTier fallback = ProviderTier.template}) =>
-      raw is String ? (_byWire[raw] ?? fallback) : fallback;
+  static ProviderTier parse(
+    Object? raw, {
+    ProviderTier fallback = ProviderTier.template,
+  }) => raw is String ? (_byWire[raw] ?? fallback) : fallback;
 }
 
 enum CoachSource {
   laya('laya', 'Laya'),
+  semantic('semantic', 'semantic router'),
+  zeroShot('zero-shot', 'local classifier'),
   heuristic('heuristic', 'built-in');
 
   const CoachSource(this.wire, this.label);
@@ -40,18 +44,24 @@ enum CoachSource {
   final String wire;
   final String label;
 
-  bool get isLlm => this == CoachSource.laya;
+  bool get isLlm => this != CoachSource.heuristic;
 
   static final Map<String, CoachSource> _byWire = {
     for (final v in values) v.wire: v,
   };
 
-  static CoachSource parse(Object? raw, {CoachSource fallback = CoachSource.heuristic}) =>
-      raw is String ? (_byWire[raw] ?? fallback) : fallback;
+  static CoachSource parse(
+    Object? raw, {
+    CoachSource fallback = CoachSource.heuristic,
+  }) => raw is String ? (_byWire[raw] ?? fallback) : fallback;
 }
 
 class TierAvailability {
-  const TierAvailability({required this.tier, required this.available, this.detail});
+  const TierAvailability({
+    required this.tier,
+    required this.available,
+    this.detail,
+  });
 
   factory TierAvailability.from(Object? raw) {
     final map = Json.map(raw);
@@ -69,7 +79,12 @@ class TierAvailability {
 
 /// Which tiers were tried, and why the earlier ones were skipped or failed.
 class ProviderAttempt {
-  const ProviderAttempt({required this.tier, required this.ok, required this.ms, this.error});
+  const ProviderAttempt({
+    required this.tier,
+    required this.ok,
+    required this.ms,
+    this.error,
+  });
 
   factory ProviderAttempt.from(Object? raw) {
     final map = Json.map(raw);
@@ -88,7 +103,11 @@ class ProviderAttempt {
 }
 
 class LayaAvailability {
-  const LayaAvailability({required this.enabled, required this.available, this.detail});
+  const LayaAvailability({
+    required this.enabled,
+    required this.available,
+    this.detail,
+  });
 
   factory LayaAvailability.from(Object? raw) {
     final map = Json.map(raw);
@@ -99,11 +118,36 @@ class LayaAvailability {
     );
   }
 
-  static final LayaAvailability unknown = LayaAvailability(enabled: false, available: false);
+  static final LayaAvailability unknown = LayaAvailability(
+    enabled: false,
+    available: false,
+  );
 
   final bool enabled;
   final bool available;
   final String? detail;
 
   bool get isLive => enabled && available;
+}
+
+class DecisionAvailability {
+  const DecisionAvailability({
+    required this.backend,
+    required this.available,
+    this.model,
+    this.detail,
+  });
+  factory DecisionAvailability.from(Object? raw) {
+    final map = Json.map(raw);
+    return DecisionAvailability(
+      backend: Json.str(map['backend']),
+      available: Json.boolOr(map['available']),
+      model: Json.strOrNull(map['model']),
+      detail: Json.strOrNull(map['detail']),
+    );
+  }
+  final String backend;
+  final bool available;
+  final String? model;
+  final String? detail;
 }

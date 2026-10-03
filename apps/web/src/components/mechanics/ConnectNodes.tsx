@@ -31,7 +31,7 @@ export function ConnectNodes({ spec, model, binding, disabled, picked, setPicked
   }
 
   return (
-    <section className="panel p-4" aria-label={binding.label}>
+    <section className="panel p-4" aria-label={binding.label || 'ConnectNodes'}>
       {/* The host blanks `binding.label` when the instruction is already on
           screen, so this heading disappears with it rather than repeating an
           imperative the learner has just read at 2rem. */}
@@ -42,6 +42,7 @@ export function ConnectNodes({ spec, model, binding, disabled, picked, setPicked
         {binding.hint ?? `Wire a pointer from one to the next in the ${spec.vocabulary.place}.`}
       </p>
 
+      <p className="mt-2 text-sm">First selection is the source; second is the destination. The preview below shows the {linkKind} link you will save.</p>
       <div className="mt-3 flex flex-wrap items-center gap-2" aria-live="polite">
         <span
           className={cn(
@@ -86,7 +87,8 @@ export function ConnectNodes({ spec, model, binding, disabled, picked, setPicked
         <Button variant="primary" disabled={disabled || !ready} onClick={connect} aria-label="Make this pointer">
           Connect them
         </Button>
-        {picked.length > 0 && (
+        {picked.length === 2 && <div className="flex gap-2 mt-2"><Button size="sm" disabled={disabled} onClick={()=>setPicked([picked[1]!])}>Change first selection</Button><Button size="sm" disabled={disabled} onClick={()=>setPicked([picked[0]!])}>Change second selection</Button></div>}
+      {picked.length > 0 && (
           <Button size="sm" variant="ghost" disabled={disabled} onClick={() => setPicked([])}>
             Clear
           </Button>

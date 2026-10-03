@@ -29,6 +29,7 @@ import '../widgets/replay/code_viewer.dart';
 import '../widgets/replay/replay_board.dart';
 import '../widgets/trace_rail.dart';
 import 'play_screen.dart';
+import 'chat_screen.dart';
 
 class DebriefScreen extends StatefulWidget {
   const DebriefScreen({required this.debrief, super.key});
@@ -56,7 +57,10 @@ class _DebriefScreenState extends State<DebriefScreen> {
   @override
   void initState() {
     super.initState();
-    _frame = (_debrief.playedTrace.length - 1).clamp(0, _debrief.playedTrace.length);
+    _frame = (_debrief.playedTrace.length - 1).clamp(
+      0,
+      _debrief.playedTrace.length,
+    );
     final languages = _debrief.codeLanguages;
     _language = languages.isEmpty ? null : languages.first;
   }
@@ -123,127 +127,182 @@ class _DebriefScreenState extends State<DebriefScreen> {
         builder: (context) => DefaultTabController(
           length: 3,
           child: Scaffold(
-          backgroundColor: colors.background,
-          appBar: AppBar(
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _debrief.isWin ? 'Solved' : 'Run over',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: colors.onSurface),
+            backgroundColor: colors.background,
+            appBar: AppBar(
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _debrief.isWin ? 'Solved' : 'Run over',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: colors.onSurface,
+                    ),
+                  ),
+                  Text(
+                    spec?.theme.title ?? _debrief.problemId,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 10.5, color: colors.muted),
+                  ),
+                ],
+              ),
+              actions: [
+                IconButton(
+                  tooltip: 'Discuss replay step',
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  onPressed: () => ChatScreen.open(
+                    context,
+                    prompt: 'Explain this replay step and the rule behind it.',
+                    reference: {
+                      'type': 'run',
+                      'gameId': controller.gameId ?? '',
+                      if (_debrief.playedTrace.isNotEmpty)
+                        'step': _debrief.playedTrace[_frame].index,
+                    },
+                  ),
                 ),
-                Text(
-                  spec?.theme.title ?? _debrief.problemId,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 10.5, color: colors.muted),
+                IconButton(
+                  tooltip: 'Jump to mistake',
+                  icon: const Icon(Icons.error_outline),
+                  onPressed: _debrief.playedTrace.any((f) => !f.correct)
+                      ? () => setState(() {
+                          final next = _debrief.playedTrace.indexWhere(
+                            (f) =>
+                                !f.correct &&
+                                f.index > _debrief.playedTrace[_frame].index,
+                          );
+                          _frame = next < 0
+                              ? _debrief.playedTrace.indexWhere(
+                                  (f) => !f.correct,
+                                )
+                              : next;
+                          _playing = false;
+                          _playback?.cancel();
+                        })
+                      : null,
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close_rounded, size: 20),
+                  tooltip: 'Back to the board',
                 ),
               ],
             ),
-            actions: [
-              IconButton(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close_rounded, size: 20),
-                tooltip: 'Back to the board',
-              ),
-            ],
-          ),
-          body: SafeArea(
-            top: false,
-            child: Column(
-              children: [
-                _ResultsScene(debrief: _debrief, spec: spec),
-                const TabBar(
-                  tabs: [
-                    Tab(text: 'Replay', icon: Icon(Icons.replay_rounded, size: 17)),
-                    Tab(text: 'Explain', icon: Icon(Icons.lightbulb_outline_rounded, size: 17)),
-                    Tab(text: 'Code', icon: Icon(Icons.code_rounded, size: 17)),
-                  ],
-                ),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      _tabList([
-                        if (_debrief.playedTrace.isEmpty)
-                          EmptyHint(
-                            text: 'No moves were recorded for this run.',
-                            icon: Icons.replay_rounded,
-                          )
-                        else ...[
+            body: SafeArea(
+              top: false,
+              child: Column(
+                children: [
+                  _ResultsScene(debrief: _debrief, spec: spec),
+                  const TabBar(
+                    tabs: [
+                      Tab(
+                        text: 'Replay',
+                        icon: Icon(Icons.replay_rounded, size: 17),
+                      ),
+                      Tab(
+                        text: 'Explain',
+                        icon: Icon(Icons.lightbulb_outline_rounded, size: 17),
+                      ),
+                      Tab(
+                        text: 'Code',
+                        icon: Icon(Icons.code_rounded, size: 17),
+                      ),
+                    ],
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        _tabList([
+                          if (_debrief.playedTrace.isEmpty)
+                            EmptyHint(
+                              text: 'No moves were recorded for this run.',
+                              icon: Icons.replay_rounded,
+                            )
+                          else ...[
+                            _Section(
+                              number: '1',
+                              title: 'Your run, step by step',
+                              subtitle: 'Exactly the moves you made, on the board you saw.',
+                              child: _ReplaySection(
+                                debrief: _debrief,
+                                spec: spec,
+                                frame: _frame,
+                                onScrub: _scrub,
+                                playing: _playing,
+                                onTogglePlay: _togglePlay,
+                                onStep: _step,
+                                resolveSnapshot: _snapshotFor,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                          ],
+                          if (_debrief.canonicalTrace.isNotEmpty) ...[
+                            _Section(
+                              number: '2',
+                              title: 'The canonical run',
+                              subtitle: 'What the algorithm does when nobody gets it wrong.',
+                              child: _CanonicalSection(
+                                debrief: _debrief,
+                                spec: spec,
+                                frame: _canonicalFrame,
+                                onScrub: (value) => setState(
+                                  () => _canonicalFrame = value.clamp(
+                                    0,
+                                    _debrief.canonicalTrace.length - 1,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ]),
+                        _tabList([
                           _Section(
-                            number: '1',
-                            title: 'Your run, step by step',
-                            subtitle: 'Exactly the moves you made, on the board you saw.',
-                            child: _ReplaySection(
+                            number: '3',
+                            title: 'What you were really doing',
+                            subtitle: 'The metaphor, and the algorithm underneath it.',
+                            child: _MeaningSection(
                               debrief: _debrief,
                               spec: spec,
-                              frame: _frame,
-                              onScrub: _scrub,
-                              playing: _playing,
-                              onTogglePlay: _togglePlay,
-                              onStep: _step,
-                              resolveSnapshot: _snapshotFor,
                             ),
                           ),
                           const SizedBox(height: 18),
-                        ],
-                        if (_debrief.canonicalTrace.isNotEmpty) ...[
                           _Section(
-                            number: '2',
-                            title: 'The canonical run',
-                            subtitle: 'What the algorithm does when nobody gets it wrong.',
-                            child: _CanonicalSection(
+                            number: '4',
+                            title: 'What it cost',
+                            subtitle: 'Complexity, your stats, and any misconception spotted.',
+                            child: _CostSection(debrief: _debrief),
+                          ),
+                        ]),
+                        _tabList([
+                          _Section(
+                            number: '5',
+                            title: 'The algorithm itself',
+                            subtitle: 'Your lines are highlighted. Tap one to see what you did there.',
+                            child: _CodeSection(
                               debrief: _debrief,
-                              spec: spec,
-                              frame: _canonicalFrame,
-                              onScrub: (value) => setState(
-                                () => _canonicalFrame = value.clamp(0, _debrief.canonicalTrace.length - 1),
+                              language: _language,
+                              selectedLine: _selectedCodeLine,
+                              onSelectLine: (line) => setState(
+                                () => _selectedCodeLine =
+                                    _selectedCodeLine == line ? null : line,
                               ),
+                              onLanguage: (lang) =>
+                                  setState(() => _language = lang),
                             ),
                           ),
-                        ],
-                      ]),
-                      _tabList([
-                        _Section(
-                          number: '3',
-                          title: 'What you were really doing',
-                          subtitle: 'The metaphor, and the algorithm underneath it.',
-                          child: _MeaningSection(debrief: _debrief, spec: spec),
-                        ),
-                        const SizedBox(height: 18),
-                        _Section(
-                          number: '4',
-                          title: 'What it cost',
-                          subtitle: 'Complexity, your stats, and any misconception spotted.',
-                          child: _CostSection(debrief: _debrief),
-                        ),
-                      ]),
-                      _tabList([
-                        _Section(
-                          number: '5',
-                          title: 'The algorithm itself',
-                          subtitle: 'Your lines are highlighted. Tap one to see what you did there.',
-                          child: _CodeSection(
-                            debrief: _debrief,
-                            language: _language,
-                            selectedLine: _selectedCodeLine,
-                            onSelectLine: (line) => setState(
-                              () => _selectedCodeLine = _selectedCodeLine == line ? null : line,
-                            ),
-                            onLanguage: (lang) => setState(() => _language = lang),
-                          ),
-                        ),
-                      ]),
-                    ],
+                        ]),
+                      ],
+                    ),
                   ),
-                ),
-                _NewVersionBar(onPlayAgain: _playNewVersion),
-              ],
+                  _NewVersionBar(onPlayAgain: _playNewVersion),
+                ],
+              ),
             ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -315,7 +374,10 @@ class _ResultsScene extends StatelessWidget {
               Container(
                 width: 10,
                 height: 10,
-                decoration: BoxDecoration(color: world.color, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: world.color,
+                  shape: BoxShape.circle,
+                ),
               ),
               const SizedBox(width: 7),
               Expanded(
@@ -323,7 +385,11 @@ class _ResultsScene extends StatelessWidget {
                   '${world.name} · $algorithm',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: colors.muted),
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                    color: colors.muted,
+                  ),
                 ),
               ),
             ],
@@ -336,7 +402,12 @@ class _ResultsScene extends StatelessWidget {
 }
 
 class _Section extends StatelessWidget {
-  const _Section({required this.number, required this.title, required this.subtitle, required this.child});
+  const _Section({
+    required this.number,
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
 
   final String number;
   final String title;
@@ -362,7 +433,11 @@ class _Section extends StatelessWidget {
               ),
               child: Text(
                 number,
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: colors.primary),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  color: colors.primary,
+                ),
               ),
             ),
             const SizedBox(width: 9),
@@ -372,12 +447,20 @@ class _Section extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900, color: colors.onSurface),
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w900,
+                      color: colors.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 1),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 11, height: 1.3, color: colors.muted),
+                    style: TextStyle(
+                      fontSize: 11,
+                      height: 1.3,
+                      color: colors.muted,
+                    ),
                   ),
                 ],
               ),
@@ -426,7 +509,11 @@ class _ResultCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   win ? 'You solved it' : 'The run ended',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: colors.onSurface),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: colors.onSurface,
+                  ),
                 ),
               ),
             ],
@@ -435,13 +522,21 @@ class _ResultCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               spec!.narration.win,
-              style: TextStyle(fontSize: 12.5, height: 1.35, color: colors.onSurface),
+              style: TextStyle(
+                fontSize: 12.5,
+                height: 1.35,
+                color: colors.onSurface,
+              ),
             ),
           ] else if (!win && spec != null) ...[
             const SizedBox(height: 6),
             Text(
               spec!.narration.lose,
-              style: TextStyle(fontSize: 12.5, height: 1.35, color: colors.onSurface),
+              style: TextStyle(
+                fontSize: 12.5,
+                height: 1.35,
+                color: colors.onSurface,
+              ),
             ),
           ],
           const SizedBox(height: 11),
@@ -468,7 +563,11 @@ class _ResultCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 SelectableText(
                   answer.text,
-                  style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900, color: colors.onSurface),
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w900,
+                    color: colors.onSurface,
+                  ),
                 ),
                 if (answer.details.isNotEmpty) ...[
                   const SizedBox(height: 8),
@@ -502,7 +601,11 @@ class _ResultCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             debrief.summary,
-            style: TextStyle(fontSize: 12.5, height: 1.45, color: colors.onSurface.withValues(alpha: 0.9)),
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.45,
+              color: colors.onSurface.withValues(alpha: 0.9),
+            ),
           ),
         ],
       ),
@@ -554,7 +657,11 @@ class _ReplaySection extends StatelessWidget {
               Expanded(
                 child: Text(
                   'step ${frame + 1} / ${trace.length}',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: colors.muted),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    color: colors.muted,
+                  ),
                 ),
               ),
               _ReplayButton(
@@ -637,7 +744,11 @@ class _CanonicalSection extends StatelessWidget {
               Expanded(
                 child: Text(
                   'REFERENCE · step ${frame + 1} / ${trace.length}',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: colors.accent),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    color: colors.accent,
+                  ),
                 ),
               ),
             ],
@@ -668,11 +779,16 @@ class _FrameNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.gameColors;
-    final label = state == null ? 'op ${frame.dsaOp.wire}' : describeAction(frame.action, state!);
+    final label = state == null
+        ? 'op ${frame.dsaOp.wire}'
+        : describeAction(frame.action, state!);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(frame.dsaOp.glyph, style: TextStyle(fontSize: 13, color: colors.accent)),
+        Text(
+          frame.dsaOp.glyph,
+          style: TextStyle(fontSize: 13, color: colors.accent),
+        ),
         const SizedBox(width: 7),
         Expanded(
           child: Column(
@@ -680,12 +796,20 @@ class _FrameNote extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: colors.onSurface),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: colors.onSurface,
+                ),
               ),
               if (frame.note.isNotEmpty)
                 Text(
                   frame.note,
-                  style: TextStyle(fontSize: 11, height: 1.3, color: colors.muted),
+                  style: TextStyle(
+                    fontSize: 11,
+                    height: 1.3,
+                    color: colors.muted,
+                  ),
                 ),
             ],
           ),
@@ -766,7 +890,9 @@ class _ReplayButton extends StatelessWidget {
               icon,
               size: 17,
               color: filled
-                  ? (tint.computeLuminance() > 0.6 ? const Color(0xFF0B0E12) : Colors.white)
+                  ? (tint.computeLuminance() > 0.6
+                        ? const Color(0xFF0B0E12)
+                        : Colors.white)
                   : enabled
                   ? colors.onSurface
                   : colors.muted.withValues(alpha: 0.35),
@@ -802,7 +928,8 @@ class _MeaningSection extends StatelessWidget {
         ? const <(String, String)>[]
         : <(String, String)>[
             for (final entry in spec!.debrief.actionMeaning.entries)
-              if (!used.contains(entry.key) && used.isNotEmpty) (entry.key, entry.value),
+              if (!used.contains(entry.key) && used.isNotEmpty)
+                (entry.key, entry.value),
           ];
 
     return Column(
@@ -818,7 +945,9 @@ class _MeaningSection extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: colors.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: colors.muted.withValues(alpha: 0.2)),
+                  border: Border.all(
+                    color: colors.muted.withValues(alpha: 0.2),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -830,7 +959,10 @@ class _MeaningSection extends StatelessWidget {
                           const SizedBox(width: 6),
                           Text(
                             'not used in your run',
-                            style: TextStyle(fontSize: 9.5, color: colors.muted),
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              color: colors.muted,
+                            ),
                           ),
                         ],
                       ],
@@ -838,7 +970,11 @@ class _MeaningSection extends StatelessWidget {
                     const SizedBox(height: 5),
                     SelectableText(
                       text,
-                      style: TextStyle(fontSize: 12, height: 1.4, color: colors.onSurface),
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.4,
+                        color: colors.onSurface,
+                      ),
                     ),
                   ],
                 ),
@@ -846,7 +982,10 @@ class _MeaningSection extends StatelessWidget {
             ),
         if (debrief.mapping.isNotEmpty) ...[
           const SizedBox(height: 4),
-          const SectionHeading(title: 'metaphor → algorithm', icon: Icons.swap_horiz_rounded),
+          const SectionHeading(
+            title: 'metaphor → algorithm',
+            icon: Icons.swap_horiz_rounded,
+          ),
           const SizedBox(height: 7),
           Container(
             decoration: BoxDecoration(
@@ -873,7 +1012,11 @@ class _MeaningSection extends StatelessWidget {
 }
 
 class _MappingRow extends StatelessWidget {
-  const _MappingRow({required this.row, required this.isFirst, required this.isLast});
+  const _MappingRow({
+    required this.row,
+    required this.isFirst,
+    required this.isLast,
+  });
 
   final MappingRow row;
   final bool isFirst;
@@ -887,7 +1030,9 @@ class _MappingRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: isLast
             ? null
-            : Border(bottom: BorderSide(color: colors.muted.withValues(alpha: 0.15))),
+            : Border(
+                bottom: BorderSide(color: colors.muted.withValues(alpha: 0.15)),
+              ),
       ),
       child: Row(
         children: [
@@ -895,12 +1040,20 @@ class _MappingRow extends StatelessWidget {
             flex: 4,
             child: Text(
               row.gameTerm,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: colors.muted),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: colors.muted,
+              ),
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Icon(Icons.arrow_forward_rounded, size: 13, color: colors.accent),
+            child: Icon(
+              Icons.arrow_forward_rounded,
+              size: 13,
+              color: colors.accent,
+            ),
           ),
           Expanded(
             flex: 5,
@@ -939,7 +1092,9 @@ class _CodeSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.gameColors;
     final languages = debrief.codeLanguages;
-    final active = language != null && debrief.code.containsKey(language) ? language : languages.firstOrNull;
+    final active = language != null && debrief.code.containsKey(language)
+        ? language
+        : languages.firstOrNull;
     final lines = active == null ? const <String>[] : debrief.code[active]!;
 
     return Column(
@@ -1018,7 +1173,11 @@ class _CostSection extends StatelessWidget {
           const SizedBox(height: 7),
           Text(
             complexity.note!,
-            style: TextStyle(fontSize: 12, height: 1.4, color: colors.onSurface),
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.4,
+              color: colors.onSurface,
+            ),
           ),
         ],
         const SizedBox(height: 12),
@@ -1035,7 +1194,9 @@ class _CostSection extends StatelessWidget {
                   'mistakes' => Icons.close_rounded,
                   _ => Icons.lightbulb_rounded,
                 },
-                color: label == 'mistakes' && stats.mistakes > 0 ? colors.danger : colors.muted,
+                color: label == 'mistakes' && stats.mistakes > 0
+                    ? colors.danger
+                    : colors.muted,
               ),
             if (stats.confidence != null)
               StatChip(
@@ -1066,7 +1227,9 @@ class _CostSection extends StatelessWidget {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(3),
                       child: LinearProgressIndicator(
-                        value: (count / (stats.mistakes == 0 ? 1 : stats.mistakes)).clamp(0.0, 1.0),
+                        value:
+                            (count / (stats.mistakes == 0 ? 1 : stats.mistakes))
+                                .clamp(0.0, 1.0),
                         minHeight: 5,
                         backgroundColor: colors.muted.withValues(alpha: 0.15),
                         valueColor: AlwaysStoppedAnimation(colors.danger),
@@ -1076,7 +1239,11 @@ class _CostSection extends StatelessWidget {
                   const SizedBox(width: 7),
                   Text(
                     '$count',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: colors.muted),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: colors.muted,
+                    ),
                   ),
                 ],
               ),
@@ -1097,7 +1264,11 @@ class _CostSection extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.psychology_rounded, size: 14, color: colors.accent),
+                    Icon(
+                      Icons.psychology_rounded,
+                      size: 14,
+                      color: colors.accent,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       'MISCONCEPTION SPOTTED',
@@ -1113,7 +1284,11 @@ class _CostSection extends StatelessWidget {
                 const SizedBox(height: 5),
                 SelectableText(
                   stats.misconception!,
-                  style: TextStyle(fontSize: 12.5, height: 1.4, color: colors.onSurface),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.4,
+                    color: colors.onSurface,
+                  ),
                 ),
               ],
             ),
@@ -1137,7 +1312,9 @@ class _NewVersionBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       decoration: BoxDecoration(
         color: Color.lerp(colors.surface, Colors.black, 0.30)!,
-        border: Border(top: BorderSide(color: colors.muted.withValues(alpha: 0.2))),
+        border: Border(
+          top: BorderSide(color: colors.muted.withValues(alpha: 0.2)),
+        ),
       ),
       child: SafeArea(
         top: false,
@@ -1157,7 +1334,9 @@ class _NewVersionBar extends StatelessWidget {
                 ? const Color(0xFF0B0E12)
                 : Colors.white,
             minimumSize: const Size(double.infinity, 52),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
           ),
         ),
       ),

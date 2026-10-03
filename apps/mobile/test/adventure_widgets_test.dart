@@ -109,7 +109,7 @@ void main() {
     await tester.tap(find.text('Got it'));
     await tester.pumpAndSettle();
     expect(find.text('Three things, then go explore'), findsNothing);
-    expect(await backend.readKey('play-the-algorithms:onboarding:v1'), 'seen');
+    expect(await backend.readKey('play-the-algorithms:onboarding:v1:guest'), 'seen');
 
     // The dismissed card leaves a re-show affordance, mirroring the web map.
     expect(find.text('Show the how-to-play tips'), findsOneWidget);
@@ -153,7 +153,9 @@ void main() {
     final backend = MemoryBackend();
     await _bootMap(tester, backend: backend);
 
-    await tester.tap(find.byTooltip('Field notebook'));
+    await tester.tap(find.text('Learn'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Linked-list lab'));
     await tester.pumpAndSettle();
     expect(find.text('Field notebook'), findsOneWidget);
     expect(find.text('Singly linked lists in JavaScript'), findsOneWidget);
@@ -172,7 +174,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'my count draft');
     await tester.pumpAndSettle();
     expect(
-      await backend.readKey('play-the-algorithms:draft:count-nodes:javascript'),
+      await backend.readKey('play-the-algorithms:draft:count-nodes:javascript:guest'),
       'my count draft',
     );
     expect(tester.takeException(), isNull);

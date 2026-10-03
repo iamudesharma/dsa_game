@@ -40,6 +40,7 @@ class _ConnectNodesMechanicState extends MechanicViewState<ConnectNodesMechanic>
 
   /// Tapped source, for the tap-tap path.
   String? _pickedFrom;
+  String? _pickedTo;
 
   LinkKind _kind = LinkKind.next;
 
@@ -81,11 +82,11 @@ class _ConnectNodesMechanicState extends MechanicViewState<ConnectNodesMechanic>
       select(node.id);
       return;
     }
-    _connect(from, node.id);
+    setState(()=>_pickedTo=node.id);
   }
 
   Future<void> _connect(String from, String to) async {
-    setState(() => _pickedFrom = null);
+    setState(() { _pickedFrom=null;_pickedTo=null; });
     await act(ConnectNodesAction(fromNodeId: from, toNodeId: to, linkKind: _kind));
   }
 
@@ -93,7 +94,7 @@ class _ConnectNodesMechanicState extends MechanicViewState<ConnectNodesMechanic>
   Widget buildControls(BuildContext context) {
     final colors = context.gameColors;
     final from = _fromId;
-    final to = secondSelected;
+    final to = _pickedTo ?? secondSelected;
     final ready = from != null && to != null && from != to;
 
     return Column(
@@ -131,6 +132,7 @@ class _ConnectNodesMechanicState extends MechanicViewState<ConnectNodesMechanic>
             bracket: _kind.arrow,
           ),
         ),
+        if(from!=null)TextButton(onPressed:()=>setState((){_pickedFrom=null;_pickedTo=null;}),child:const Text('Clear pointer preview')),
         const SizedBox(height: 8),
         ActionButton(
           label: 'Wire ${_kind.wire} pointer',

@@ -15,11 +15,7 @@
  * the engine; this file only chooses words and highlights.
  */
 
-import {
-  MECHANICS,
-  isActionType,
-  isDsaOp,
-} from '@dsa/game-schema'
+import { MECHANICS, isActionType, isDsaOp } from '@dsa/game-schema'
 import type {
   ActionOutcome,
   DsaOp,
@@ -104,9 +100,9 @@ export function deriveTurnPrompt(input: GuidanceInput): TurnPrompt {
   // to 'read', which made every turn advertise the wrong operation. The two
   // vocabularies are different sets even though mechanic ids and action types
   // happen to share names.
-  const dsaOp: DsaOp = expected && isActionType(expected.type)
-    ? opForActionType(expected.type)
-    : fallbackOp(state, spec)
+  const dsaOp: DsaOp =
+    expected?.dsaOp ??
+    (expected && isActionType(expected.type) ? opForActionType(expected.type) : fallbackOp(state, spec))
 
   const mechanic: MechanicId = expected
     ? (mechanicForType(expected.type) ?? 'selectObject')
@@ -125,6 +121,8 @@ export function deriveTurnPrompt(input: GuidanceInput): TurnPrompt {
     mechanic,
     dsaOp,
     targets,
+    ...(mechanic === 'assignValue' && expected?.options?.targetIds ? { assignmentTargetIds: expected.options.targetIds } : {}),
+    ...(mechanic === 'submitAnswer' ? { answerTargetId: expected?.options?.objectIds?.[0] ?? 'answer' } : {}),
     reason: OPERATION_REASON[dsaOp] ?? 'This is one of the steps the program takes.',
     progress: indicator.progress,
     indicator,
@@ -226,7 +224,7 @@ function buildTargets(
   // own pointer is the recommendation and it wins over the legal set.
   if (mechanic === 'selectObject') {
     const pointed = objectAtCursor(state)
-    if (pointed) {
+    if (pointed && (legal.length === 0 || legal.includes(pointed))) {
       const target = toTarget(state, spec, pointed, 'current')
       return target ? [target] : []
     }
@@ -384,7 +382,8 @@ function buildIndicator(state: GameState, spec: GameSpec): AlgorithmIndicator {
   if (all.length === 0) {
     return { label: spec.vocabulary.place, progress: 1, detail: 'nothing left' }
   }
-  const live = all.filter((o) => o.state !== 'eliminated' && o.state !== 'matched')
+  const lo = state.variables['lo'], hi = state.variables['hi']
+  const live = all.filter(o => o.state !== 'eliminated' && o.state !== 'matched' && (state.problemId !== 'rotated-search' || typeof lo !== 'number' || typeof hi !== 'number' || (o.slotId && (state.slots[o.slotId]?.index ?? -1) >= lo && (state.slots[o.slotId]?.index ?? -1) <= hi)))
   const progress = all.length === 0 ? 0 : live.length / all.length
   return {
     label: `still in play in the ${spec.vocabulary.place}`,
@@ -466,7 +465,10 @@ export function deriveFeedback(input: FeedbackInput): PlayerFeedback {
     return {
       verdict: 'wrong',
       headline: headlineForWrong(dsaOp, spec),
-      teach: deJargon(outcome.feedback, spec) || OPERATION_REASON[dsaOp] || 'That was not the move the program wanted.',
+      teach:
+        deJargon(outcome.feedback, spec) ||
+        OPERATION_REASON[dsaOp] ||
+        'That was not the move the program wanted.',
       // The engine already knows the right move; showing it teaches, hiding it
       // just makes the learner guess again.
       nextStep: outcome.expected ? nextStepForExpected(outcome.expected, state, spec) : undefined,
@@ -515,8 +517,14 @@ export function deJargon(text: string, spec?: GameSpec): string {
     }
     // Only quoted or standalone codes, so "target" is not mangled.
     out = out.replace(/"(lt|eq|gt)"/g, (_m, code: string) => `"${words[code] ?? code}"`)
-    out = out.replace(/\bthe relation is (lt|eq|gt)\b/gi, (_m, code: string) => `it is ${words[code.toLowerCase()] ?? code}`)
-    out = out.replace(/\b(lt|eq|gt) declared\b/gi, (_m, code: string) => `${words[code.toLowerCase()] ?? code} declared`)
+    out = out.replace(
+      /\bthe relation is (lt|eq|gt)\b/gi,
+      (_m, code: string) => `it is ${words[code.toLowerCase()] ?? code}`,
+    )
+    out = out.replace(
+      /\b(lt|eq|gt) declared\b/gi,
+      (_m, code: string) => `${words[code.toLowerCase()] ?? code} declared`,
+    )
   }
   return out
     .replace(/\bwindow\s*\[[^\]]*\]/gi, 'the rest of the board')

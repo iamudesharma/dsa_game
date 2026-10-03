@@ -3,84 +3,140 @@ import { createContext, useContext, useEffect, useState, useCallback, useRef, ty
 import { useGameStore } from '@/store/game'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { getServerProgress, postServerProgress } from '@/lib/api'
-import { completedWorlds, freshProgress, readProgress, recordCompletion, saveProgress, PROGRESS_KEY, type AdventureProgress, type PlayerPreferences } from '@/lib/adventure'
-
-const Context = createContext({ progress: freshProgress(), ready: false, warning: false, selectFrame: (_: PlayerPreferences['mapFrame']) => {} })
+import { learningRequest, type LearningDashboard } from '@/lib/learning-api'
+import {
+  completedWorlds,
+  freshProgress,
+  readProgress,
+  recordCompletion,
+  PROGRESS_KEY,
+  type AdventureProgress,
+  type PlayerPreferences,
+} from '@/lib/adventure'
+const Context = createContext({
+  progress: freshProgress(),
+  ready: false,
+  warning: false,
+  guestImportAvailable: false,
+  importGuest: async () => {},
+  selectFrame: (_: PlayerPreferences['mapFrame']) => {},
+})
 export const useAdventure = () => useContext(Context)
 export function AdventureProvider({ children }: { children: ReactNode }) {
-  const [progress, setProgress] = useState<AdventureProgress>(freshProgress)
-  const current = useRef(progress)
-  const [ready, setReady] = useState(false)
-  const [warning, setWarning] = useState(false)
-  const state = useGameStore(s => s.state)
   const { user, ready: authReady } = useAuth()
-  const syncedUser = useRef<string | null>(null)
+  const owner = user?.id ?? 'guest'
+  const key = user ? `${PROGRESS_KEY}:account:${user.id}` : PROGRESS_KEY
+  const [progress, setProgress] = useState<AdventureProgress>(freshProgress),
+    [loadedOwner, setLoadedOwner] = useState(''),
+    [warning, setWarning] = useState(false),
+    [guestImportAvailable, setGuestImport] = useState(false)
+  const current = useRef(progress),
+    activeKey = useRef(key)
+  activeKey.current = key
+  const state = useGameStore((s) => s.state)
   const commit = useCallback((next: AdventureProgress) => {
     current.current = next
     setProgress(next)
-    try { if (!saveProgress(window.localStorage, next)) setWarning(true) } catch { setWarning(true) }
+    try {
+      localStorage.setItem(activeKey.current, JSON.stringify(next))
+    } catch {
+      setWarning(true)
+    }
   }, [])
   useEffect(() => {
-    try {
-      const result = readProgress(window.localStorage)
-      setWarning(result.warning)
-      commit(result.progress)
-    } catch { setWarning(true) }
-    setReady(true)
-    const sync = (event: StorageEvent) => {
-      if (event.key !== PROGRESS_KEY) return
+    if (!authReady) return
+    let alive = true
+    setLoadedOwner('')
+    setWarning(false)
+    setGuestImport(false)
+    // Clear transient game data when changing accounts, without deleting browser drafts.
+    useGameStore.getState().reset()
+    const local = () => {
       try {
-        const result = readProgress(window.localStorage)
-        const merged = { ...result.progress, completed: { ...result.progress.completed, ...current.current.completed } }
-        current.current = merged
-        setProgress(merged)
-        setWarning(result.warning)
-      } catch { setWarning(true) }
+        const storage = {
+          getItem: (k: string) =>
+            k === PROGRESS_KEY ? localStorage.getItem(key) : user ? null : localStorage.getItem(k),
+        }
+        return readProgress(storage).progress
+      } catch {
+        setWarning(true)
+        return freshProgress()
+      }
+    }
+    const initial = local()
+    current.current = initial
+    setProgress(initial)
+    if (user) {
+      try {
+        setGuestImport(
+          Object.keys(readProgress(localStorage).progress.completed).length > 0 &&
+            localStorage.getItem(`dsa-guest-import:${user.id}`) !== 'done',
+        )
+      } catch {}
+      Promise.all([getServerProgress(), learningRequest<LearningDashboard>('/dashboard')])
+        .then(([completed, d]) => {
+          if (alive) {
+            commit({ ...initial, completed: { ...completed, ...d.completed } })
+            setLoadedOwner(owner)
+          }
+        })
+        .catch(() => {
+          if (alive) {
+            setWarning(true)
+            setLoadedOwner(owner)
+          }
+        })
+    } else setLoadedOwner(owner)
+    const sync = (event: StorageEvent) => {
+      if (event.key === key && alive) {
+        const value = local()
+        current.current = value
+        setProgress(value)
+      }
     }
     window.addEventListener('storage', sync)
-    return () => window.removeEventListener('storage', sync)
-  }, [commit])
-  useEffect(() => {
-    if (!ready || !state || state.phase !== 'won') return
-    let base = current.current
-    try {
-      const disk = readProgress(window.localStorage).progress
-      base = { ...base, completed: { ...disk.completed, ...base.completed } }
-    } catch { setWarning(true) }
-    const next = recordCompletion(base, state)
-    if (next !== base) {
-      commit(next)
-      // Best-effort server mirror for signed-in learners; local is the truth.
-      if (syncedUser.current) {
-        void postServerProgress(next.completed).catch(() => {})
-      }
+    return () => {
+      alive = false
+      window.removeEventListener('storage', sync)
     }
-  }, [ready, state, commit])
-  // First-login merge: push the device-local map up, adopt the union. Runs
-  // once per sign-in; sign-out leaves local play untouched.
+  }, [authReady, owner, key, commit])
   useEffect(() => {
-    if (!authReady || !ready || !user || syncedUser.current === user.id) return
-    syncedUser.current = user.id
-    const local = current.current.completed
-    void (async () => {
-      try {
-        const merged = await postServerProgress(local)
-        const server = await getServerProgress().catch(() => merged)
-        const union = { ...merged, ...server }
-        const next = { ...current.current, completed: union }
-        commit(next)
-      } catch {
-        // Offline or expired: local play continues; merge retries next sign-in.
-        syncedUser.current = null
-      }
-    })()
-  }, [authReady, ready, user, commit])
-  useEffect(() => {
-    if (!user) syncedUser.current = null
-  }, [user])
+    if (loadedOwner !== owner || !state || state.phase !== 'won') return
+    const next = recordCompletion(current.current, state)
+    if (next !== current.current) {
+      commit(next)
+      if (user) void postServerProgress(next.completed).catch(() => setWarning(true))
+    }
+  }, [state, loadedOwner, owner, user, commit])
+  const importGuest = async () => {
+    if (!user) return
+    try {
+      const guest = readProgress(localStorage).progress.completed
+      const completed = await postServerProgress(guest)
+      commit({ ...current.current, completed: { ...current.current.completed, ...completed } })
+      localStorage.setItem(`dsa-guest-import:${user.id}`, 'done')
+      setGuestImport(false)
+    } catch {
+      setWarning(true)
+    }
+  }
   const selectFrame = (mapFrame: PlayerPreferences['mapFrame']) => {
-    if (mapFrame !== 'default' && !completedWorlds(current.current).some(w => w.id === mapFrame)) return
+    if (mapFrame !== 'default' && !completedWorlds(current.current).some((w) => w.id === mapFrame)) return
     commit({ ...current.current, preferences: { mapFrame } })
   }
-  return <Context.Provider value={{ progress, ready, warning, selectFrame }}>{children}</Context.Provider>
+  const visible = loadedOwner === owner ? progress : freshProgress()
+  return (
+    <Context.Provider
+      value={{
+        progress: visible,
+        ready: authReady && loadedOwner === owner,
+        warning,
+        guestImportAvailable,
+        importGuest,
+        selectFrame,
+      }}
+    >
+      {children}
+    </Context.Provider>
+  )
 }

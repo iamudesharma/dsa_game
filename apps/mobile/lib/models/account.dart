@@ -25,10 +25,7 @@ class AuthUser {
 
   factory AuthUser.from(Object? raw) {
     final map = Json.map(raw);
-    return AuthUser(
-      id: Json.str(map['id']),
-      email: Json.str(map['email']),
-    );
+    return AuthUser(id: Json.str(map['id']), email: Json.str(map['email']));
   }
 
   final String id;
@@ -36,7 +33,11 @@ class AuthUser {
 }
 
 class AuthResult {
-  const AuthResult({required this.user, required this.token, required this.expiresAt});
+  const AuthResult({
+    required this.user,
+    required this.token,
+    required this.expiresAt,
+  });
 
   factory AuthResult.from(Object? raw) {
     final map = Json.map(raw);
@@ -237,7 +238,11 @@ class ResumeContact {
   final String email;
   final String location;
 
-  Map<String, Object?> toJson() => {'name': name, 'email': email, 'location': location};
+  Map<String, Object?> toJson() => {
+    'name': name,
+    'email': email,
+    'location': location,
+  };
 }
 
 class Resume {
@@ -258,10 +263,22 @@ class Resume {
       version: Json.intOr(map['version'], fallback: 1),
       summary: Json.str(map['summary']),
       contact: ResumeContact.from(map['contact']),
-      experience: Json.listOf(map['experience'], Experience.from).whereType<Experience>().toList(growable: false),
-      education: Json.listOf(map['education'], Education.from).whereType<Education>().toList(growable: false),
-      projects: Json.listOf(map['projects'], Project.from).whereType<Project>().toList(growable: false),
-      skills: Json.listOf(map['skills'], Skill.from).whereType<Skill>().toList(growable: false),
+      experience: Json.listOf(
+        map['experience'],
+        Experience.from,
+      ).whereType<Experience>().toList(growable: false),
+      education: Json.listOf(
+        map['education'],
+        Education.from,
+      ).whereType<Education>().toList(growable: false),
+      projects: Json.listOf(
+        map['projects'],
+        Project.from,
+      ).whereType<Project>().toList(growable: false),
+      skills: Json.listOf(
+        map['skills'],
+        Skill.from,
+      ).whereType<Skill>().toList(growable: false),
       links: Json.stringList(map['links']),
     );
   }
@@ -332,7 +349,9 @@ enum Seniority {
   final String wire;
   final String label;
 
-  static final Map<String, Seniority> _byWire = {for (final v in values) v.wire: v};
+  static final Map<String, Seniority> _byWire = {
+    for (final v in values) v.wire: v,
+  };
 
   static Seniority parse(Object? raw, {Seniority fallback = Seniority.mid}) =>
       raw is String ? (_byWire[raw] ?? fallback) : fallback;
@@ -376,7 +395,12 @@ class Target {
 // ---------------------------------------------------------------- companies
 
 class HiringAxis {
-  const HiringAxis({required this.id, required this.label, required this.weight, required this.categories});
+  const HiringAxis({
+    required this.id,
+    required this.label,
+    required this.weight,
+    required this.categories,
+  });
 
   factory HiringAxis.from(Object? raw) {
     final map = Json.map(raw);
@@ -399,7 +423,10 @@ class CompanyRound {
 
   factory CompanyRound.from(Object? raw) {
     final map = Json.map(raw);
-    return CompanyRound(name: Json.line(map['name']), focus: Json.line(map['focus']));
+    return CompanyRound(
+      name: Json.line(map['name']),
+      focus: Json.line(map['focus']),
+    );
   }
 
   final String name;
@@ -424,8 +451,14 @@ class CompanyProfile {
       label: Json.line(map['label'], fallback: 'Company'),
       aliases: Json.stringList(map['aliases']),
       values: Json.stringList(map['values']),
-      hiringAxes: Json.listOf(map['hiringAxes'], HiringAxis.from).whereType<HiringAxis>().toList(growable: false),
-      rounds: Json.listOf(map['rounds'], CompanyRound.from).whereType<CompanyRound>().toList(growable: false),
+      hiringAxes: Json.listOf(
+        map['hiringAxes'],
+        HiringAxis.from,
+      ).whereType<HiringAxis>().toList(growable: false),
+      rounds: Json.listOf(
+        map['rounds'],
+        CompanyRound.from,
+      ).whereType<CompanyRound>().toList(growable: false),
       techSignals: Json.stringList(map['techSignals']),
     );
   }
@@ -454,10 +487,14 @@ enum QuestionType {
   final String wire;
   final String label;
 
-  static final Map<String, QuestionType> _byWire = {for (final v in values) v.wire: v};
+  static final Map<String, QuestionType> _byWire = {
+    for (final v in values) v.wire: v,
+  };
 
-  static QuestionType parse(Object? raw, {QuestionType fallback = QuestionType.concepts}) =>
-      raw is String ? (_byWire[raw] ?? fallback) : fallback;
+  static QuestionType parse(
+    Object? raw, {
+    QuestionType fallback = QuestionType.concepts,
+  }) => raw is String ? (_byWire[raw] ?? fallback) : fallback;
 }
 
 class InterviewQuestion {
@@ -479,7 +516,10 @@ class InterviewQuestion {
     return InterviewQuestion(
       id: Json.str(map['id']),
       type: QuestionType.parse(map['type']),
-      prompt: Json.line(map['prompt'], fallback: 'Talk through a problem you solved recently.'),
+      prompt: Json.line(
+        map['prompt'],
+        fallback: 'Talk through a problem you solved recently.',
+      ),
       whyItFits: Json.line(map['whyItFits']),
       sourceRef: Json.str(map['sourceRef'], fallback: 'general'),
       difficulty: Json.str(map['difficulty'], fallback: 'medium'),
@@ -515,7 +555,10 @@ class InterviewKit {
     return InterviewKit(
       kitId: Json.str(map['kitId']),
       target: Target.from(map['target']),
-      questions: Json.listOf(map['questions'], InterviewQuestion.from).whereType<InterviewQuestion>().toList(growable: false),
+      questions: Json.listOf(
+        map['questions'],
+        InterviewQuestion.from,
+      ).whereType<InterviewQuestion>().toList(growable: false),
       usedTier: Json.str(map['usedTier'], fallback: 'template'),
       notes: Json.stringList(map['notes']),
       createdAt: Json.intOr(map['createdAt']),
@@ -558,7 +601,14 @@ class InterviewKitSummary {
 }
 
 class ParseResumeResult {
-  const ParseResumeResult({required this.resume, required this.unparsed, required this.saved});
+  const ParseResumeResult({
+    required this.resume,
+    required this.unparsed,
+    required this.saved,
+    this.source = 'deterministic',
+    this.notes = const <String>[],
+    this.rejected = const <String>[],
+  });
 
   factory ParseResumeResult.from(Object? raw) {
     final map = Json.map(raw);
@@ -566,10 +616,20 @@ class ParseResumeResult {
       resume: Resume.from(map['resume']),
       unparsed: Json.stringList(map['unparsed']),
       saved: Json.boolOr(map['saved']),
+      source: Json.str(map['source'], fallback: 'deterministic'),
+      notes: Json.stringList(map['notes']),
+      rejected: Json.stringList(map['rejected']),
     );
   }
 
   final Resume resume;
   final List<String> unparsed;
   final bool saved;
+
+  /// Which extraction path won: the language model, or the deterministic parser.
+  final String source;
+  final List<String> notes;
+
+  /// Fields the model produced that were not in the source text, and were dropped.
+  final List<String> rejected;
 }

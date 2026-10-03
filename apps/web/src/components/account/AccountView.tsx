@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import type { Resume, Target } from '@dsa/account'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -20,10 +20,13 @@ type Tab = 'resume' | 'target' | 'interview'
  * Gated on auth (redirects to `/login` when signed out). Data loads once from
  * `/api/auth/me`; each tab owns its own save back to the server.
  */
-export function AccountView() {
+function AccountContent() {
   const router = useRouter()
+  const params = useSearchParams()
   const { user, ready, logout, busy } = useAuth()
   const [tab, setTab] = useState<Tab>('resume')
+  const [savedResume, setSavedResume] = useState('')
+  useEffect(() => { const t = params.get('tab'); if (t === 'resume' || t === 'target' || t === 'interview') setTab(t) }, [params])
   const [resume, setResume] = useState<Resume | null>(null)
   const [target, setTarget] = useState<Target | null>(null)
   const [companies, setCompanies] = useState<CompanyProfileDto[]>([])
@@ -35,7 +38,10 @@ export function AccountView() {
     setError(null)
     try {
       const me = await getMe()
-      setResume(me.resume)
+      setSavedResume(JSON.stringify(me.resume))
+      let stored: string | null = null
+      try { stored = localStorage.getItem(`dsa-resume-draft:${me.user.id}`) } catch { /* Account remains usable without browser storage. */ }
+      try { setResume(stored ? JSON.parse(stored) : me.resume) } catch { setResume(me.resume) }
       setTarget(me.target)
       try {
         setCompanies(await getCompanies())
@@ -52,7 +58,7 @@ export function AccountView() {
   useEffect(() => {
     if (!ready) return
     if (!user) {
-      router.replace('/login')
+      router.replace(`/login?next=${encodeURIComponent('/account'+window.location.search)}`)
       return
     }
     void load()
@@ -84,8 +90,9 @@ export function AccountView() {
           <button
             key={t}
             role="tab"
+                  onKeyDown={event => { const keys = ['ArrowLeft','ArrowRight','Home','End']; if (!keys.includes(event.key)) return; event.preventDefault(); const tabs = Array.from(event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? []); const i = tabs.indexOf(event.currentTarget); const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length-1 : (i + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length; tabs[next]?.focus(); tabs[next]?.click() }}
             aria-selected={tab === t}
-            onClick={() => setTab(t)}
+            onClick={() => {setTab(t);window.history.replaceState(null,'',`/account?tab=${t}`)}}
             className={tab === t ? 'btn btn-primary' : 'btn'}
           >
             {t === 'resume' ? 'Resume' : t === 'target' ? 'Target' : 'Interview'}
@@ -96,9 +103,10 @@ export function AccountView() {
       {error && <div className="mt-4"><ErrorState error={error} onRetry={() => void load()} /></div>}
       {loading && <p role="status" className="mt-6 text-sm text-[var(--dsa-muted)]">Loading your profile…</p>}
 
+      {!loading && resume && JSON.stringify(resume) !== savedResume && <p role="status" className="mt-3 text-sm">Resume has unsaved changes. Review extracted fields before saving.</p>}
       {!loading && !error && resume && (
         <div className="mt-5" role="tabpanel">
-          {tab === 'resume' && <ResumeTab resume={resume} onChange={setResume} />}
+          {tab === 'resume' && <ResumeTab resume={resume} onChange={r => { setResume(r); try { localStorage.setItem(`dsa-resume-draft:${user.id}`, JSON.stringify(r)) } catch {} }} onSaved={r => { setSavedResume(JSON.stringify(r)); try { localStorage.removeItem(`dsa-resume-draft:${user.id}`) } catch {} }} />}
           {tab === 'target' && <TargetTab target={target} companies={companies} onChange={setTarget} />}
           {tab === 'interview' && <InterviewTab resume={resume} target={target} onTargetChange={setTarget} />}
         </div>
@@ -106,3 +114,5 @@ export function AccountView() {
     </main>
   )
 }
+
+export function AccountView() { const { user } = useAuth(); return <AccountContent key={user?.id ?? "guest"} /> }

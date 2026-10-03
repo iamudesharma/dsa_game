@@ -34,6 +34,7 @@ import '../widgets/hint_button.dart';
 import '../widgets/mechanics/mechanic_registry.dart';
 import '../widgets/trace_rail.dart';
 import 'debrief_screen.dart';
+import 'chat_screen.dart';
 
 class PlayScreen extends StatefulWidget {
   const PlayScreen({super.key});
@@ -120,6 +121,7 @@ class _PlayScreenState extends State<PlayScreen> {
         ],
       ),
       actions: [
+        IconButton(tooltip:'Full explanations in Chat',onPressed:()=>ChatScreen.open(context,prompt:'Explain this run and help me understand the current step.',reference:{'type':'run','gameId':controller.gameId}),icon:const Icon(Icons.chat_bubble_outline)),
         _CounterChip(
           value: progress?.mistakes ?? 0,
           icon: Icons.close_rounded,
@@ -150,12 +152,13 @@ class _PlayScreenState extends State<PlayScreen> {
         ? (outcome.expected?.objectIds ?? const <String>{})
         : const <String>{};
 
+    final focusIds=controller.turnPrompt?.objectIds ?? expectedIds;
     final board = MechanicRegistry.build(
       activeMechanic,
       controller: controller,
       spec: spec,
       state: state,
-      expectedIds: expectedIds,
+      expectedIds: focusIds,
     );
 
     // A finished game gets a scrolling results layout: the victory card plus
@@ -197,6 +200,8 @@ class _PlayScreenState extends State<PlayScreen> {
       children: [
         if (controller.isRewound) _RewindBanner(controller: controller),
         _ArenaCaption(controller: controller, spec: spec),
+        if(controller.turnPrompt!=null&&!controller.isRewound) Padding(padding:const EdgeInsets.symmetric(horizontal:12,vertical:6),child:Semantics(liveRegion:true,child:Text('Your turn: ${controller.turnPrompt!.instruction}',style:TextStyle(fontSize:15,fontWeight:FontWeight.w800,color:colors.onSurface)))),
+        if(!controller.isRewound) Align(alignment:Alignment.centerRight,child:Padding(padding:const EdgeInsets.only(right:12),child:HintButton(hint:controller.hint,source:controller.hintSource,used:controller.hintsUsed,busy:controller.hintInFlight,onPressed:()=>controller.requestHint()))),
         if (controller.error != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
@@ -226,9 +231,7 @@ class _PlayScreenState extends State<PlayScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AlgorithmStrip(state: state, dense: true),
-              const SizedBox(height: 6),
-              _InfoRow(controller: controller, spec: spec, state: state),
+              ExpansionTile(title:const Text('Memory and move history'),children:[SizedBox(height:120,child:SingleChildScrollView(child:Column(children:[AlgorithmStrip(state:state,dense:true),_InfoRow(controller:controller,spec:spec,state:state)])))])
             ],
           ),
         ),
@@ -266,7 +269,7 @@ class _PlayScreenState extends State<PlayScreen> {
     if (controller.isRewound) return _activeMechanic ?? _defaultMechanic(spec);
     final ids = spec.mechanics.map((m) => m.id).toSet();
     if (_activeMechanic != null && ids.contains(_activeMechanic)) return _activeMechanic!;
-    return _defaultMechanic(spec);
+    return controller.turnPrompt?.mechanic ?? _defaultMechanic(spec);
   }
 
   MechanicId _defaultMechanic(GameSpec spec) =>

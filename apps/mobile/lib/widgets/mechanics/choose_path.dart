@@ -35,11 +35,13 @@ class _ChoosePathMechanicState extends MechanicViewState<ChoosePathMechanic> {
   List<GameObject> get _branches {
     final state = widget.state;
     final branches = state.orderedObjects
-        .where((o) => const {
-          GameObjectKind.path,
-          GameObjectKind.door,
-          GameObjectKind.room,
-        }.contains(o.kind))
+        .where(
+          (o) => const {
+            GameObjectKind.path,
+            GameObjectKind.door,
+            GameObjectKind.room,
+          }.contains(o.kind),
+        )
         .toList();
     if (branches.isNotEmpty) return branches;
     // A spec that binds choosePath without branch objects still has to be
@@ -51,7 +53,21 @@ class _ChoosePathMechanicState extends MechanicViewState<ChoosePathMechanic> {
   String? get _fromId {
     final state = widget.state;
     final mid = state.cursor.midSlotId;
-    if (mid != null) return mid;
+    if (mid != null) {
+      return state.slot(mid)?.occupantId ??
+          state.orderedObjects.where((o) => o.slotId == mid).firstOrNull?.id;
+    }
+    if (state.variables.number('mid') != null) {
+      final i = state.variables.number('mid')!.toInt();
+      final slot = state.orderedSlots.where((s) => s.index == i).firstOrNull;
+      if (slot != null) {
+        return slot.occupantId ??
+            state.orderedObjects
+                .where((o) => o.slotId == slot.id)
+                .firstOrNull
+                ?.id;
+      }
+    }
     final selected = firstSelected;
     if (selected != null) return selected;
     final slots = state.orderedSlots;
@@ -71,7 +87,9 @@ class _ChoosePathMechanicState extends MechanicViewState<ChoosePathMechanic> {
     // Branch objects are the tap targets; everything else is inert here so a
     // stray tap cannot emit an action the mechanic cannot express.
     onObjectTap: canAct
-        ? (object) => _branches.any((b) => b.id == object.id) ? _choose(object.id) : null
+        ? (object) => _branches.any((b) => b.id == object.id)
+              ? _choose(object.id)
+              : null
         : null,
   );
 
@@ -81,6 +99,44 @@ class _ChoosePathMechanicState extends MechanicViewState<ChoosePathMechanic> {
     final from = _fromId;
     final vocabulary = widget.spec.vocabulary;
     final branches = _branches;
+    final lo = widget.state.variables.number('lo'),
+        hi = widget.state.variables.number('hi'),
+        mid = widget.state.variables.number('mid');
+    if (lo != null && hi != null && mid != null && from != null) {
+      final lower = lo.toInt(), upper = hi.toInt(), middle = mid.toInt();
+      final found =
+          widget.state.object(from)?.value == widget.state.instance.target;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'From ${_labelFor(from)} — keep the range containing the target.',
+          ),
+          if (found)
+            FilledButton(
+              onPressed: canAct ? () => _choose('found') : null,
+              child: const Text('Report the match'),
+            ),
+          Wrap(
+            spacing: 8,
+            children: [
+              OutlinedButton(
+                onPressed: canAct && lower < middle
+                    ? () => _choose('left')
+                    : null,
+                child: Text('Keep left: $lower–${middle - 1}'),
+              ),
+              OutlinedButton(
+                onPressed: canAct && middle < upper
+                    ? () => _choose('right')
+                    : null,
+                child: Text('Keep right: ${middle + 1}–$upper'),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -93,7 +149,11 @@ class _ChoosePathMechanicState extends MechanicViewState<ChoosePathMechanic> {
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: colors.muted),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: colors.muted,
+          ),
         ),
         const SizedBox(height: 8),
         if (branches.isEmpty)
@@ -122,7 +182,10 @@ class _ChoosePathMechanicState extends MechanicViewState<ChoosePathMechanic> {
         Text(
           'Narrowing means discarding everything on the other side of the branch.',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 10.5, color: colors.muted.withValues(alpha: 0.8)),
+          style: TextStyle(
+            fontSize: 10.5,
+            color: colors.muted.withValues(alpha: 0.8),
+          ),
         ),
         // The themed words make the mapping from branch to comparison obvious.
         Padding(
@@ -132,7 +195,10 @@ class _ChoosePathMechanicState extends MechanicViewState<ChoosePathMechanic> {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 10, color: colors.muted.withValues(alpha: 0.6)),
+            style: TextStyle(
+              fontSize: 10,
+              color: colors.muted.withValues(alpha: 0.6),
+            ),
           ),
         ),
       ],
@@ -168,11 +234,18 @@ class _BranchButton extends StatelessWidget {
         onPressed: enabled ? onTap : null,
         icon: Text(
           object.visual == null ? '➤' : '◆',
-          style: TextStyle(fontSize: 12, color: enabled ? color : context.gameColors.muted),
+          style: TextStyle(
+            fontSize: 12,
+            color: enabled ? color : context.gameColors.muted,
+          ),
         ),
         label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
         style: OutlinedButton.styleFrom(
-          side: BorderSide(color: enabled ? color : context.gameColors.muted.withValues(alpha: 0.3)),
+          side: BorderSide(
+            color: enabled
+                ? color
+                : context.gameColors.muted.withValues(alpha: 0.3),
+          ),
           foregroundColor: context.gameColors.onSurface,
         ),
       ),

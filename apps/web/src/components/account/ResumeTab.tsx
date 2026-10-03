@@ -19,7 +19,7 @@ const labelCls = 'mb-1 block text-xs font-medium text-[var(--dsa-ink)]'
  * truth), paste + deterministic parse (the fast path), and PDF/DOCX upload
  * (extracted in the browser; the server only ever receives text).
  */
-export function ResumeTab({ resume, onChange }: { resume: Resume; onChange: (r: Resume) => void }) {
+export function ResumeTab({ resume, onChange, onSaved }: { resume: Resume; onChange: (r: Resume) => void; onSaved?: (r: Resume) => void }) {
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -27,6 +27,7 @@ export function ResumeTab({ resume, onChange }: { resume: Resume; onChange: (r: 
   const [parsing, setParsing] = useState(false)
   const [unparsed, setUnparsed] = useState<string[]>([])
   const [extracting, setExtracting] = useState(false)
+  const [extraction, setExtraction] = useState<{ source: string; notes: string[]; rejected: string[] } | null>(null)
 
   const set = (patch: Partial<Resume>) => onChange({ ...resume, ...patch })
 
@@ -34,7 +35,9 @@ export function ResumeTab({ resume, onChange }: { resume: Resume; onChange: (r: 
     setSaving(true)
     setError(null)
     try {
-      onChange(await putResume(resume))
+      const saved = await putResume(resume)
+      onChange(saved)
+      onSaved?.(saved)
       setSavedAt(new Date().toLocaleTimeString())
     } catch (cause) {
       setError(cause instanceof DsaApiError ? cause.message : 'Could not save.')
@@ -51,7 +54,8 @@ export function ResumeTab({ resume, onChange }: { resume: Resume; onChange: (r: 
       const res = await postParseResume(text, saveIt)
       onChange(res.resume)
       setUnparsed(res.unparsed)
-      if (saveIt) setSavedAt(new Date().toLocaleTimeString())
+      setExtraction({ source: res.source ?? 'deterministic', notes: res.notes ?? [], rejected: res.rejected ?? [] })
+      if (saveIt) { onSaved?.(res.resume); setSavedAt(new Date().toLocaleTimeString()) }
     } catch (cause) {
       setError(cause instanceof DsaApiError ? cause.message : 'Could not parse.')
     } finally {
@@ -76,7 +80,7 @@ export function ResumeTab({ resume, onChange }: { resume: Resume; onChange: (r: 
 
   return (
     <div className="space-y-4">
-      <Panel title="Import" subtitle="Paste your resume or upload a PDF/DOCX — text is extracted in your browser and parsed deterministically. Anything unclear comes back as lines to fix by hand.">
+      <Panel title="Import" subtitle="Paste or upload your resume. Review the extracted fields and fix anything unclear before clicking Save resume.">
         <textarea
           value={paste}
           onChange={(e) => setPaste(e.target.value)}
@@ -89,9 +93,6 @@ export function ResumeTab({ resume, onChange }: { resume: Resume; onChange: (r: 
           <Button size="sm" disabled={parsing || !paste.trim()} onClick={() => void parse(paste, false)}>
             {parsing ? 'Parsing…' : 'Parse into the form'}
           </Button>
-          <Button size="sm" variant="primary" disabled={parsing || !paste.trim()} onClick={() => void parse(paste, true)}>
-            Parse & save
-          </Button>
           <label className="btn cursor-pointer">
             {extracting ? 'Reading…' : 'Upload PDF / DOCX'}
             <input
@@ -103,6 +104,13 @@ export function ResumeTab({ resume, onChange }: { resume: Resume; onChange: (r: 
             />
           </label>
         </div>
+        {extraction && (
+          <p className="mt-2 text-xs text-[var(--dsa-muted)]">
+            Extracted by <strong className="text-[var(--dsa-ink)]">{extraction.source === 'model' ? 'the language model' : 'the built-in parser'}</strong>
+            {extraction.rejected.length > 0 && ` · ${extraction.rejected.length} invented field${extraction.rejected.length === 1 ? '' : 's'} dropped`}
+            {extraction.notes.filter((n) => n !== extraction.source).map((n) => ` · ${n}`).join('')}
+          </p>
+        )}
         {unparsed.length > 0 && (
           <div className="mt-3 rounded-xl border border-[var(--dsa-border)] p-3">
             <p className="text-xs font-semibold text-[var(--dsa-ink)]">Couldn&apos;t place {unparsed.length} line{unparsed.length === 1 ? '' : 's'} — copy them into the form below:</p>
@@ -127,7 +135,10 @@ export function ResumeTab({ resume, onChange }: { resume: Resume; onChange: (r: 
           <div key={e.id} className="mb-3 rounded-xl border border-[var(--dsa-border)] p-3">
             <div className="grid gap-2 sm:grid-cols-2">
               <label className="block text-sm"><span className={labelCls}>Title</span><input value={e.title} onChange={(ev) => set({ experience: resume.experience.map((x, j) => j === i ? { ...x, title: ev.target.value } : x) })} className={inputCls} /></label>
-              <label className="block text-sm"><span className={labelCls}>Company</span><input value={e.company} onChange={(ev) => set({ experience: resume.experience.map((x, j) => j === i ? { ...x, company: ev.target.value } : x) })} className={inputCls} /></label>
+              {/* An empty company is a real state, not a bug: the parser and the
+                  grounding validator both refuse to guess one, so the field is
+                  left blank and the placeholder says why. */}
+              <label className="block text-sm"><span className={labelCls}>Company</span><input value={e.company} placeholder="Not stated in the resume" onChange={(ev) => set({ experience: resume.experience.map((x, j) => j === i ? { ...x, company: ev.target.value } : x) })} className={inputCls} /></label>
               <label className="block text-sm"><span className={labelCls}>Start</span><input value={e.start} placeholder="2021" onChange={(ev) => set({ experience: resume.experience.map((x, j) => j === i ? { ...x, start: ev.target.value } : x) })} className={inputCls} /></label>
               <label className="block text-sm"><span className={labelCls}>End</span><input value={e.end} placeholder="Present" onChange={(ev) => set({ experience: resume.experience.map((x, j) => j === i ? { ...x, end: ev.target.value } : x) })} className={inputCls} /></label>
             </div>

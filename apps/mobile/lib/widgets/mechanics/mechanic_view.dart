@@ -45,18 +45,24 @@ abstract class MechanicView extends StatefulWidget {
 abstract class MechanicViewState<T extends MechanicView> extends State<T> {
   /// Ids tapped since the last engine acknowledgement.
   final List<String> _pending = <String>[];
+  List<String?>? _operands;
+  int? _replacement;
 
   /// How many objects this mechanic can hold at once. `comparePair` and
   /// `swapPair` are two-party; everything else is one.
   int get selectionCapacity => 1;
 
-  bool get canAct => widget.state.isPlaying && !widget.controller.isActionInFlight;
+  bool get canAct =>
+      widget.state.isPlaying && !widget.controller.isActionInFlight;
 
   /// The engine's selection merged with in-flight taps, in tap order.
   List<String> get selection {
-    final merged = <String>[...widget.state.selection];
+    if (_operands != null) return _operands!.whereType<String>().toList();
+    final merged = <String>[...widget.state.selection.take(selectionCapacity)];
     for (final id in _pending) {
-      if (!merged.contains(id) && merged.length < selectionCapacity) merged.add(id);
+      if (!merged.contains(id) && merged.length < selectionCapacity) {
+        merged.add(id);
+      }
     }
     return merged;
   }
@@ -65,9 +71,17 @@ abstract class MechanicViewState<T extends MechanicView> extends State<T> {
 
   Set<String> get highlightIds => widget.expectedIds;
 
-  String? get firstSelected => selection.isEmpty ? null : selection.first;
+  String? get firstSelected => _operands != null
+      ? _operands![0]
+      : selection.isEmpty
+      ? null
+      : selection.first;
 
-  String? get secondSelected => selection.length < 2 ? null : selection[1];
+  String? get secondSelected => _operands != null
+      ? _operands![1]
+      : selection.length < 2
+      ? null
+      : selection[1];
 
   /// The themed label for this mechanic, falling back to the verb.
   String get bindingLabel =>
@@ -78,6 +92,16 @@ abstract class MechanicViewState<T extends MechanicView> extends State<T> {
 
   Future<void> select(String objectId) async {
     if (!canAct) return;
+    if (selectionCapacity == 2) {
+      setState(() {
+        _operands ??= [firstSelected, secondSelected];
+        final index = _replacement ?? (_operands![0] == null ? 0 : 1);
+        if (_operands![1 - index] == objectId) _operands![1 - index] = null;
+        _operands![index] = objectId;
+        _replacement = null;
+      });
+      return;
+    }
     setState(() {
       if (_pending.length >= selectionCapacity) _pending.removeAt(0);
       _pending.add(objectId);
@@ -133,17 +157,27 @@ abstract class MechanicViewState<T extends MechanicView> extends State<T> {
           ),
           child: SafeArea(
             top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _BindingHeader(
-                  label: bindingLabel,
-                  hint: bindingHint,
-                  opGlyph: widget.spec.bindingFor(widget.mechanicId)?.boundDsaOp.glyph ?? '●',
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 180),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _BindingHeader(
+                      label: bindingLabel,
+                      hint: bindingHint,
+                      opGlyph:
+                          widget.spec
+                              .bindingFor(widget.mechanicId)
+                              ?.boundDsaOp
+                              .glyph ??
+                          '●',
+                    ),
+                    const SizedBox(height: 8),
+                    buildControls(context),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                buildControls(context),
-              ],
+              ),
             ),
           ),
         ),
@@ -194,10 +228,39 @@ abstract class MechanicViewState<T extends MechanicView> extends State<T> {
     dragPoint: dragPoint,
     poolTitle: poolTitle,
     poolFilter: poolFilter,
-    poolOnTap: poolOnTap,
+    poolOnTap:
+        poolOnTap ??
+        onObjectTap ??
+        (canAct ? (object) => select(object.id) : null),
     poolOnLongPress: poolOnLongPress,
     poolDragBuilder: poolDragBuilder,
     showPool: showPool,
+  );
+
+  Widget operandControls() => Wrap(
+    spacing: 8,
+    children: [
+      for (final index in [0, 1])
+        TextButton(
+          onPressed: canAct
+              ? () => setState(() {
+                  _operands ??= [firstSelected, secondSelected];
+                  _operands![index] = null;
+                  _replacement = index;
+                })
+              : null,
+          child: Text(index == 0 ? 'Change first' : 'Change second'),
+        ),
+      TextButton(
+        onPressed: canAct
+            ? () => setState(() {
+                _operands = [null, null];
+                _replacement = null;
+              })
+            : null,
+        child: const Text('Clear selection'),
+      ),
+    ],
   );
 
   /// The thumb-reachable control strip at the bottom of the screen.
@@ -205,7 +268,11 @@ abstract class MechanicViewState<T extends MechanicView> extends State<T> {
 }
 
 class _BindingHeader extends StatelessWidget {
-  const _BindingHeader({required this.label, required this.hint, required this.opGlyph});
+  const _BindingHeader({
+    required this.label,
+    required this.hint,
+    required this.opGlyph,
+  });
 
   final String label;
   final String? hint;
@@ -230,7 +297,11 @@ class _BindingHeader extends StatelessWidget {
               ),
               child: Text(
                 opGlyph,
-                style: TextStyle(fontSize: 12, color: colors.primary, fontWeight: FontWeight.w800),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colors.primary,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -254,7 +325,11 @@ class _BindingHeader extends StatelessWidget {
             padding: const EdgeInsets.only(top: 3, left: 30),
             child: Text(
               hint!,
-              style: TextStyle(fontSize: 11.5, height: 1.25, color: colors.muted),
+              style: TextStyle(
+                fontSize: 11.5,
+                height: 1.25,
+                color: colors.muted,
+              ),
             ),
           ),
       ],
@@ -264,7 +339,12 @@ class _BindingHeader extends StatelessWidget {
 
 /// A compact "you picked A and B" readout used by the two-party mechanics.
 class PairReadout extends StatelessWidget {
-  const PairReadout({required this.state, required this.selection, required this.bracket, super.key});
+  const PairReadout({
+    required this.state,
+    required this.selection,
+    required this.bracket,
+    super.key,
+  });
 
   final GameState state;
   final List<String> selection;
@@ -289,14 +369,29 @@ class PairReadout extends StatelessWidget {
       children: [
         for (var i = 0; i < selection.length; i++) ...[
           if (i > 0)
-            Text(bracket, style: TextStyle(color: colors.accent, fontWeight: FontWeight.w800, fontSize: 12)),
+            Text(
+              bracket,
+              style: TextStyle(
+                color: colors.accent,
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+              ),
+            ),
           _Token(
-            text: state.object(selection[i])?.label ?? selection[i],
+            text:
+                '${i == 0 ? 'First' : 'Second'}: ${state.object(selection[i])?.label ?? selection[i]}',
             color: i == 0 ? colors.primary : colors.accent,
           ),
         ],
         if (selection.length == 1)
-          Text('…', style: TextStyle(color: colors.muted, fontWeight: FontWeight.w800, fontSize: 12)),
+          Text(
+            '…',
+            style: TextStyle(
+              color: colors.muted,
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+            ),
+          ),
       ],
     );
   }
@@ -319,7 +414,11 @@ class _Token extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: color),
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          color: color,
+        ),
       ),
     );
   }
@@ -356,7 +455,9 @@ class ActionButton extends StatelessWidget {
       width: expand ? double.infinity : null,
       child: FilledButton.icon(
         onPressed: active ? onPressed : null,
-        icon: icon == null ? const SizedBox.shrink() : Icon(icon, size: dense ? 15 : 18),
+        icon: icon == null
+            ? const SizedBox.shrink()
+            : Icon(icon, size: dense ? 15 : 18),
         label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
         style: FilledButton.styleFrom(
           backgroundColor: tint,
@@ -371,8 +472,9 @@ class ActionButton extends StatelessWidget {
   }
 }
 
-Color _on(Color background) =>
-    background.computeLuminance() > 0.6 ? const Color(0xFF0B0E12) : Colors.white;
+Color _on(Color background) => background.computeLuminance() > 0.6
+    ? const Color(0xFF0B0E12)
+    : Colors.white;
 
 /// A labelled chip used to choose a target (slot, container, variable, node).
 class ChoiceChipRow<T> extends StatelessWidget {
@@ -408,7 +510,11 @@ class ChoiceChipRow<T> extends StatelessWidget {
             selected: option == selected,
             onSelected: enabled ? (_) => onSelected(option) : null,
             avatar: builder == null ? null : builder(option),
-            label: Text(labelOf(option), maxLines: 1, overflow: TextOverflow.ellipsis),
+            label: Text(
+              labelOf(option),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
       ],
     );

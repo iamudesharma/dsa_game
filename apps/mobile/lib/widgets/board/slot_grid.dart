@@ -129,8 +129,7 @@ class SlotCell extends StatelessWidget {
 
     if (dragTargetBuilder != null) body = dragTargetBuilder!(body);
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    return InkWell(
       onTap: onTap,
       onLongPress: onLongPress,
       child: Column(
@@ -312,8 +311,7 @@ class SlotGrid extends StatelessWidget {
     var child = tile;
     if (dragObjectBuilder != null) child = dragObjectBuilder!(child, object);
     if (onObjectTap != null || onObjectLongPress != null) {
-      child = GestureDetector(
-        behavior: HitTestBehavior.opaque,
+      child = InkWell(
         onTap: onObjectTap == null ? null : () => onObjectTap!(object),
         onLongPress: onObjectLongPress == null ? null : () => onObjectLongPress!(object),
         child: child,

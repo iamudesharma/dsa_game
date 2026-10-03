@@ -342,7 +342,7 @@ export class OpencodeProvider implements SpecProvider {
 
     if (routes.sessionPrompt) {
       try {
-        const text = await this.viaSessionApi(prompt, routes.agentAvailable)
+        const text = await this.viaSessionApi(prompt, routes.agentAvailable, input.signal)
         return this.finish(text, input)
       } catch (e) {
         errors.push(`session-api: ${e instanceof Error ? e.message : String(e)}`)
@@ -350,14 +350,14 @@ export class OpencodeProvider implements SpecProvider {
     }
     if (routes.generate) {
       try {
-        const text = await this.viaStatelessApi(prompt)
+        const text = await this.viaStatelessApi(prompt, input.signal)
         return this.finish(text, input)
       } catch (e) {
         errors.push(`api-generate: ${e instanceof Error ? e.message : String(e)}`)
       }
     }
     try {
-      const text = await this.viaSubprocess(prompt)
+      const text = await this.viaSubprocess(prompt, input.signal)
       return this.finish(text, input)
     } catch (e) {
       errors.push(`subprocess: ${e instanceof Error ? e.message : String(e)}`)
@@ -370,9 +370,10 @@ export class OpencodeProvider implements SpecProvider {
     const prompt = `${system}\n\n---\n\n${user}\n\n---\n\n${repairPrompt(issues)}`
     const routes = await this.discoverRoutes()
     const attempts: (() => Promise<string>)[] = []
-    if (routes.sessionPrompt) attempts.push(() => this.viaSessionApi(prompt, routes.agentAvailable))
-    if (routes.generate) attempts.push(() => this.viaStatelessApi(prompt))
-    attempts.push(() => this.viaSubprocess(prompt))
+    if (routes.sessionPrompt)
+      attempts.push(() => this.viaSessionApi(prompt, routes.agentAvailable, input.signal))
+    if (routes.generate) attempts.push(() => this.viaStatelessApi(prompt, input.signal))
+    attempts.push(() => this.viaSubprocess(prompt, input.signal))
 
     const errors: string[] = []
     for (const attempt of attempts) {
@@ -418,10 +419,16 @@ export class OpencodeProvider implements SpecProvider {
 
   // ------------------------------------------------------------ transports
 
-  private async viaSessionApi(prompt: string, agentAvailable: boolean): Promise<string> {
+  private async viaSessionApi(
+    prompt: string,
+    agentAvailable: boolean,
+    signal?: AbortSignal,
+  ): Promise<string> {
     const cfg = this.cfg
     const headers = { ...authHeaders(cfg), 'content-type': 'application/json' }
-    const timeout = AbortSignal.timeout(cfg.timeoutMs)
+    const timeout = signal
+      ? AbortSignal.any([signal, AbortSignal.timeout(cfg.timeoutMs)])
+      : AbortSignal.timeout(cfg.timeoutMs)
 
     // Omit `agent` entirely when it is not registered: passing an unknown id
     // makes the loop silently never start.
@@ -434,7 +441,8 @@ export class OpencodeProvider implements SpecProvider {
       signal: timeout,
       body: JSON.stringify(createBody),
     })
-    if (!createRes.ok) throw new Error(`POST /api/session -> ${createRes.status} ${await readBody(createRes)}`)
+    if (!createRes.ok)
+      throw new Error(`POST /api/session -> ${createRes.status} ${await readBody(createRes)}`)
     const created = asJson(await readBody(createRes, BODY_LIMIT))
     const sessionId = (created?.['data'] as Json | undefined)?.['id']
     if (typeof sessionId !== 'string') throw new Error('POST /api/session returned no data.id')
@@ -482,7 +490,9 @@ export class OpencodeProvider implements SpecProvider {
     const reason = explainTranscript(list)
     throw new Error(
       `no assistant text in transcript (${list.length} messages)` +
-        (reason ? `: ${reason}` : '; the agent loop produced nothing — check OPENCODE_MODEL and OPENCODE_AGENT'),
+        (reason
+          ? `: ${reason}`
+          : '; the agent loop produced nothing — check OPENCODE_MODEL and OPENCODE_AGENT'),
     )
   }
 
@@ -500,12 +510,14 @@ export class OpencodeProvider implements SpecProvider {
     })
   }
 
-  private async viaStatelessApi(prompt: string): Promise<string> {
+  private async viaStatelessApi(prompt: string, signal?: AbortSignal): Promise<string> {
     const cfg = this.cfg
     const res = await fetch(`${cfg.baseUrl}/api/generate`, {
       method: 'POST',
       headers: { ...authHeaders(cfg), 'content-type': 'application/json' },
-      signal: AbortSignal.timeout(cfg.timeoutMs),
+      signal: signal
+        ? AbortSignal.any([signal, AbortSignal.timeout(cfg.timeoutMs)])
+        : AbortSignal.timeout(cfg.timeoutMs),
       body: JSON.stringify({ prompt, model: modelRef(cfg.model) }),
     })
     if (!res.ok) throw new Error(`POST /api/generate -> ${res.status} ${await readBody(res)}`)
@@ -515,13 +527,13 @@ export class OpencodeProvider implements SpecProvider {
     return text
   }
 
-  private viaSubprocess(prompt: string): Promise<string> {
+  private viaSubprocess(prompt: string, signal?: AbortSignal): Promise<string> {
     const cfg = this.cfg
     const args = ['run']
     if (cfg.standalone) args.push('--standalone')
     args.push('--format', 'json', '--model', cfg.model, '--agent', cfg.agent, prompt)
     return new Promise<string>((resolve, reject) => {
-      const child = spawn('opencode', args, { stdio: ['ignore', 'pipe', 'pipe'] })
+      const child = spawn('opencode', args, { stdio: ['ignore', 'pipe', 'pipe'], signal })
       let stdout = ''
       let stderr = ''
       let settled = false
@@ -549,7 +561,11 @@ export class OpencodeProvider implements SpecProvider {
       child.on('close', (code) => {
         const text = textFromOpencodeOutput(stdout)
         if (text.length === 0) {
-          done(() => reject(new Error(`opencode run produced no text (exit ${code ?? 'null'}) ${stderr.slice(0, 300)}`)))
+          done(() =>
+            reject(
+              new Error(`opencode run produced no text (exit ${code ?? 'null'}) ${stderr.slice(0, 300)}`),
+            ),
+          )
           return
         }
         done(() => resolve(text))
@@ -583,7 +599,8 @@ function explainTranscript(list: readonly unknown[]): string {
     if (!isObj(m)) continue
     for (const key of ['error', 'rawFinish', 'finish', 'type']) {
       const v = m[key]
-      if (typeof v === 'string' && key !== 'finish' && key !== 'type') parts.push(`${key}: ${v.slice(0, 200)}`)
+      if (typeof v === 'string' && key !== 'finish' && key !== 'type')
+        parts.push(`${key}: ${v.slice(0, 200)}`)
     }
     const message = m['message']
     if (isObj(message) && typeof message['error'] === 'string') parts.push(message['error'].slice(0, 200))

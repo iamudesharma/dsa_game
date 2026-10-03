@@ -13,10 +13,10 @@ import 'package:provider/provider.dart';
 import '../adventure/progress_store.dart';
 import '../learn/tracks.dart';
 import '../state/catalogue_controller.dart';
-import '../state/game_controller.dart';
 import '../theme/palette.dart';
 import '../widgets/common.dart';
-import 'play_screen.dart';
+import 'problem_screen.dart';
+import 'chat_screen.dart';
 
 class TracksScreen extends StatefulWidget {
   const TracksScreen({super.key});
@@ -47,7 +47,9 @@ class _TracksScreenState extends State<TracksScreen> {
       id: 'full-tour',
       title: 'Full Tour',
       subtitle: 'Every game in this app, grouped by world. Built from the live catalogue, so it never drifts.',
-      categories: catalogue == null ? const <TrackCategory>[] : buildFullTour(catalogue),
+      categories: catalogue == null
+          ? const <TrackCategory>[]
+          : buildFullTour(catalogue),
     );
     const classics = Track(
       id: 'interview-classics',
@@ -70,7 +72,11 @@ class _TracksScreenState extends State<TracksScreen> {
           children: [
             Text(
               'Interview tracks',
-              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: colors.onSurface),
+              style: TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w900,
+                color: colors.onSurface,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -94,15 +100,31 @@ class _TracksScreenState extends State<TracksScreen> {
               ],
             ),
             const SizedBox(height: 6),
-            Text(track.subtitle, style: TextStyle(fontSize: 11.5, color: colors.muted)),
+            Text(
+              track.subtitle,
+              style: TextStyle(fontSize: 11.5, color: colors.muted),
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
               runSpacing: 6,
               children: [
-                StatChip(label: 'stamped', value: '${stats.done}', icon: Icons.check_circle_rounded, color: colors.success),
-                StatChip(label: 'playable', value: '${stats.playable}', icon: Icons.play_arrow_rounded),
-                StatChip(label: 'total', value: '${stats.total}', icon: Icons.list_rounded),
+                StatChip(
+                  label: 'stamped',
+                  value: '${stats.done}',
+                  icon: Icons.check_circle_rounded,
+                  color: colors.success,
+                ),
+                StatChip(
+                  label: 'playable',
+                  value: '${stats.playable}',
+                  icon: Icons.play_arrow_rounded,
+                ),
+                StatChip(
+                  label: 'total',
+                  value: '${stats.total}',
+                  icon: Icons.list_rounded,
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -127,7 +149,9 @@ class _CategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.gameColors;
     final playable = category.items.where((i) => i.playIds.isNotEmpty).length;
-    final done = category.items.where((i) => trackItemDone(i.playIds, completed)).length;
+    final done = category.items
+        .where((i) => trackItemDone(i.playIds, completed))
+        .length;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -142,10 +166,19 @@ class _CategoryCard extends StatelessWidget {
             Expanded(
               child: Text(
                 category.title,
-                style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900, color: colors.onSurface),
+                style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w900,
+                  color: colors.onSurface,
+                ),
               ),
             ),
-            MiniLabel(text: '$done/$playable playable', color: done == playable && playable > 0 ? colors.success : colors.muted),
+            MiniLabel(
+              text: '$done/$playable playable',
+              color: done == playable && playable > 0
+                  ? colors.success
+                  : colors.muted,
+            ),
           ],
         ),
         children: [
@@ -169,7 +202,9 @@ class _TrackRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 9, 16, 9),
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: colors.muted.withValues(alpha: 0.15))),
+        border: Border(
+          top: BorderSide(color: colors.muted.withValues(alpha: 0.15)),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,7 +212,9 @@ class _TrackRow extends StatelessWidget {
           Row(
             children: [
               Icon(
-                done ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                done
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
                 size: 16,
                 color: done ? colors.success : colors.muted,
               ),
@@ -189,11 +226,19 @@ class _TrackRow extends StatelessWidget {
                       if (item.n > 0)
                         TextSpan(
                           text: '#${item.n} ',
-                          style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: colors.muted),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontFamily: 'monospace',
+                            color: colors.muted,
+                          ),
                         ),
                       TextSpan(
                         text: item.name,
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: colors.onSurface),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: colors.onSurface,
+                        ),
                       ),
                     ],
                   ),
@@ -201,17 +246,32 @@ class _TrackRow extends StatelessWidget {
               ),
             ],
           ),
+          TextButton.icon(
+            onPressed: () => ChatScreen.open(
+              context,
+              prompt:
+                  'Help me practise ${item.name}. Ask one question at a time and give feedback.',
+            ),
+            icon: const Icon(Icons.chat_bubble_outline, size: 16),
+            label: const Text('Practise in Chat'),
+          ),
+          if (done)
+            const Text(
+              'Practice milestone completed. Solve the interview problem independently to check transfer.',
+            ),
           if (item.playIds.isNotEmpty) ...[
             const SizedBox(height: 4),
             Wrap(
               spacing: 2,
               runSpacing: 2,
-              children: [for (final id in item.playIds) _TrackPlayLink(problemId: id)],
+              children: [
+                for (final id in item.playIds) _TrackPlayLink(problemId: id),
+              ],
             ),
           ] else ...[
             const SizedBox(height: 2),
             Text(
-              'Study on LeetCode — no game yet',
+              'Written practice available in Chat',
               style: TextStyle(fontSize: 10.5, color: colors.muted),
             ),
           ],
@@ -228,7 +288,13 @@ class _TrackPlayLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = context.read<CatalogueController>().catalogue?.problemById(problemId)?.title ?? problemId;
+    final title =
+        context
+            .read<CatalogueController>()
+            .catalogue
+            ?.problemById(problemId)
+            ?.title ??
+        problemId;
     return TextButton.icon(
       onPressed: () => _play(context),
       icon: const Icon(Icons.play_arrow_rounded, size: 14),
@@ -242,13 +308,20 @@ class _TrackPlayLink extends StatelessWidget {
   }
 
   Future<void> _play(BuildContext context) async {
-    final problem = context.read<CatalogueController>().catalogue?.problemById(problemId);
+    final problem = context.read<CatalogueController>().catalogue?.problemById(
+      problemId,
+    );
     if (problem == null) return;
-    final game = context.read<GameController>();
-    await game.generate(problem, routeWish: false);
-    if (!context.mounted || !game.hasGame) return;
+    final catalogue = context.read<CatalogueController>().catalogue;
+    final topic = catalogue?.topics
+        .where((t) => t.problems.any((p) => p.id == problemId))
+        .firstOrNull;
+    if (topic == null) return;
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const PlayScreen()),
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            ProblemScreen(topic: topic, initialProblemId: problemId),
+      ),
     );
   }
 }

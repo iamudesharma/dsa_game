@@ -36,10 +36,14 @@ export type Skill = z.infer<typeof SkillSchema>
 export const ExperienceSchema = z
   .object({
     id: z.string().min(1).max(60),
-    title: Short,
-    company: Short,
-    start: z.string().min(1).max(30),
-    end: z.string().min(1).max(30),
+    // Same reasoning as `EducationSchema.school`: the grounding validator
+    // EMPTIES a date range it could not find in the source text, and a
+    // `min(1)` here turned "we dropped the invented date" into a schema
+    // violation that rejected the whole resume.
+    title: z.string().max(200).default(''),
+    company: z.string().max(200).default(''),
+    start: z.string().max(30).default(''),
+    end: z.string().max(30).default(''),
     bullets: z.array(Line).max(12).default([]),
   })
   .strict()
@@ -48,8 +52,13 @@ export type Experience = z.infer<typeof ExperienceSchema>
 export const EducationSchema = z
   .object({
     id: z.string().min(1).max(60),
-    school: Short,
-    degree: Short,
+    // `school` and `degree` are `.max()` rather than `Short`: a parser that
+    // cannot split a real line (e.g. "BSc Computer Science, TU Berlin" with no
+    // explicit school/degree boundary) yields one of them EMPTY, and a
+    // `min(1)` there rejected the ENTIRE resume — a hard failure for what is a
+    // cosmetic gap. The UI already renders blanks as "School" / "Degree".
+    school: z.string().max(200).default(''),
+    degree: z.string().max(200).default(''),
     field: z.string().max(120).default(''),
     start: z.string().max(30).default(''),
     end: z.string().max(30).default(''),

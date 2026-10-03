@@ -53,97 +53,113 @@ class ObjectTile extends StatelessWidget {
     final colors = context.gameColors;
     final visual = _style(context, colors);
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
-      width: width,
-      height: height,
-      // A dimmed tile is not actionable right now (wrong kind / locked by the
-      // oracle), so it recedes instead of competing for attention.
-      foregroundDecoration: dimmed
-          ? BoxDecoration(color: Colors.black.withValues(alpha: 0.35))
-          : null,
-      decoration: BoxDecoration(
-        color: visual.fill,
-        borderRadius: BorderRadius.circular(13),
-        border: Border.all(color: visual.border, width: visual.borderWidth),
-        boxShadow: visual.selected
-            ? [
-                BoxShadow(
-                  color: colors.primary.withValues(alpha: 0.35),
-                  blurRadius: 12,
-                  spreadRadius: -2,
-                ),
-              ]
+    return Semantics(
+      excludeSemantics: true,
+      label:
+          '${object.label}, value ${object.value}, ${object.state.name}${highlighted ? ', recommended' : ''}',
+      selected: selected,
+      child: AnimatedContainer(
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        width: width,
+        height: height,
+        // A dimmed tile is not actionable right now (wrong kind / locked by the
+        // oracle), so it recedes instead of competing for attention.
+        foregroundDecoration: dimmed
+            ? BoxDecoration(color: Colors.black.withValues(alpha: 0.35))
             : null,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(11),
-        child: Stack(
-          // A loose stack sized by its content, not `StackFit.expand`: the pool
-          // puts tiles inside a horizontal ListView, where an expanding child
-          // would ask for infinite width. The badges below are `Positioned`, so
-          // they overlay whatever size the content settles on.
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: showLabel ? 4 : 2),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: _Glyph(
-                      visual: object.visual,
-                      glyph: spec.visual.glyphFor(object.kind),
-                      color: visual.foreground,
-                      fontSize: dense ? 13 : 16,
-                    ),
+        decoration: BoxDecoration(
+          color: visual.fill,
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: visual.border, width: visual.borderWidth),
+          boxShadow: visual.selected
+              ? [
+                  BoxShadow(
+                    color: colors.primary.withValues(alpha: 0.35),
+                    blurRadius: 12,
+                    spreadRadius: -2,
                   ),
-                  if (showLabel) ...[
-                    const SizedBox(height: 1),
-                    // Cap the label so an unconstrained parent (the pool's
-                    // ListView) cannot stretch a tile to its full text width.
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 88),
-                      child: Text(
-                        object.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: visual.foreground,
-                          fontSize: dense ? 9.5 : 11,
-                          fontWeight: FontWeight.w700,
-                          height: 1.15,
-                          decoration: visual.struck ? TextDecoration.lineThrough : null,
-                          decorationColor: visual.foreground,
-                          decorationThickness: 1.6,
+                ]
+              : null,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(11),
+          child: Stack(
+            // A loose stack sized by its content, not `StackFit.expand`: the pool
+            // puts tiles inside a horizontal ListView, where an expanding child
+            // would ask for infinite width. The badges below are `Positioned`, so
+            // they overlay whatever size the content settles on.
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: showLabel ? 4 : 2),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: _Glyph(
+                        visual: object.visual,
+                        glyph: spec.visual.glyphFor(object.kind),
+                        color: visual.foreground,
+                        fontSize: dense ? 13 : 16,
+                      ),
+                    ),
+                    if (showLabel &&
+                        !(object.visual is TextVisual &&
+                            (object.visual as TextVisual).text ==
+                                object.label)) ...[
+                      const SizedBox(height: 1),
+                      // Cap the label so an unconstrained parent (the pool's
+                      // ListView) cannot stretch a tile to its full text width.
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 88),
+                        child: Text(
+                          object.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: visual.foreground,
+                            fontSize: dense ? 9.5 : 11,
+                            fontWeight: FontWeight.w700,
+                            height: 1.15,
+                            decoration: visual.struck
+                                ? TextDecoration.lineThrough
+                                : null,
+                            decorationColor: visual.foreground,
+                            decorationThickness: 1.6,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              // The strike-through is drawn over whatever the content sized to.
+              if (visual.struck)
+                const Positioned.fill(
+                  child: CustomPaint(painter: _StrikePainter()),
+                ),
+              if (visual.badge != null)
+                Positioned(top: 1, right: 1, child: visual.badge!),
+              if (highlighted)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(11),
+                        border: Border.all(
+                          color: colors.accent.withValues(alpha: 0.9),
+                          width: 2,
                         ),
                       ),
                     ),
-                  ],
-                ],
-              ),
-            ),
-            // The strike-through is drawn over whatever the content sized to.
-            if (visual.struck) const Positioned.fill(child: CustomPaint(painter: _StrikePainter())),
-            if (visual.badge != null)
-              Positioned(top: 1, right: 1, child: visual.badge!),
-            if (highlighted)
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(11),
-                      border: Border.all(
-                        color: colors.accent.withValues(alpha: 0.9),
-                        width: 2,
-                      ),
-                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -236,7 +252,12 @@ class _ObjectStyle {
 }
 
 class _Glyph extends StatelessWidget {
-  const _Glyph({required this.visual, required this.glyph, required this.color, required this.fontSize});
+  const _Glyph({
+    required this.visual,
+    required this.glyph,
+    required this.color,
+    required this.fontSize,
+  });
 
   final ObjectVisual? visual;
   final String glyph;
@@ -254,24 +275,38 @@ class _Glyph extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.75),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(3),
+                ),
               ),
             ),
           ),
         ),
       ),
-      EmojiVisual(:final glyph) => Text(glyph, style: TextStyle(fontSize: fontSize), maxLines: 1),
+      EmojiVisual(:final glyph) => Text(
+        glyph,
+        style: TextStyle(fontSize: fontSize),
+        maxLines: 1,
+      ),
       TextVisual(:final text) => Text(
         text,
         maxLines: 1,
         overflow: TextOverflow.clip,
-        style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w800, color: color),
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.w800,
+          color: color,
+        ),
       ),
       ShapeVisual(:final shape) => CustomPaint(
         size: Size.square(fontSize * 1.5),
         painter: _ShapePainter(shape: shape, color: color),
       ),
-      null => Text(glyph, style: TextStyle(fontSize: fontSize, color: color), maxLines: 1),
+      null => Text(
+        glyph,
+        style: TextStyle(fontSize: fontSize, color: color),
+        maxLines: 1,
+      ),
     };
   }
 }
@@ -293,7 +328,10 @@ class _ShapePainter extends CustomPainter {
     final rect = Rect.fromLTWH(w * 0.15, h * 0.15, w * 0.7, h * 0.7);
     switch (shape) {
       case 'square':
-        canvas.drawRRect(RRect.fromRectAndRadius(rect, const Radius.circular(3)), paint);
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(rect, const Radius.circular(3)),
+          paint,
+        );
       case 'hex':
         final path = Path();
         for (var i = 0; i < 6; i++) {
@@ -366,7 +404,9 @@ class _MiniBadge extends StatelessWidget {
           fontSize: 8,
           height: 1.1,
           fontWeight: FontWeight.w900,
-          color: color.computeLuminance() > 0.6 ? const Color(0xFF0B0E12) : Colors.white,
+          color: color.computeLuminance() > 0.6
+              ? const Color(0xFF0B0E12)
+              : Colors.white,
         ),
       ),
     );

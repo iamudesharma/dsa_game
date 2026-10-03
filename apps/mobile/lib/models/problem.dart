@@ -20,8 +20,10 @@ enum Difficulty {
     for (final v in values) v.wire: v,
   };
 
-  static Difficulty parse(Object? raw, {Difficulty fallback = Difficulty.easy}) =>
-      raw is String ? (_byWire[raw] ?? fallback) : fallback;
+  static Difficulty parse(
+    Object? raw, {
+    Difficulty fallback = Difficulty.easy,
+  }) => raw is String ? (_byWire[raw] ?? fallback) : fallback;
 }
 
 /// Constraints for `buildInstance`, mirrored so the problem screen can show the
@@ -42,18 +44,30 @@ class InstanceHints {
     final range = Json.list(map['valueRange']);
     return InstanceHints(
       minLength: Json.intOr(map['minLength']),
-      maxLength: Json.intOr(map['maxLength'], fallback: Json.intOr(map['minLength'])),
+      maxLength: Json.intOr(
+        map['maxLength'],
+        fallback: Json.intOr(map['minLength']),
+      ),
       unique: Json.boolOr(map['unique']),
       sorted: Json.boolOr(map['sorted']),
       targetGuaranteed: Json.boolOr(map['targetGuaranteed']),
       valueRange: range.length >= 2
-          ? (Json.doubleOr(range[0], fallback: 0), Json.doubleOr(range[1], fallback: 99))
+          ? (
+              Json.doubleOr(range[0], fallback: 0),
+              Json.doubleOr(range[1], fallback: 99),
+            )
           : null,
-      tokenAlphabet: Json.listOf(map['tokenAlphabet'], Json.str).whereType<String>().toList(growable: false),
+      tokenAlphabet: Json.listOf(
+        map['tokenAlphabet'],
+        Json.str,
+      ).whereType<String>().toList(growable: false),
     );
   }
 
-  static const InstanceHints unknown = InstanceHints(minLength: 0, maxLength: 0);
+  static const InstanceHints unknown = InstanceHints(
+    minLength: 0,
+    maxLength: 0,
+  );
 
   final int minLength;
   final int maxLength;
@@ -78,6 +92,26 @@ class InstanceHints {
   }
 }
 
+class AnswerFormat {
+  const AnswerFormat({
+    this.kind = 'text',
+    this.label = 'Enter the result requested by the task.',
+    this.placeholder = 'Your result',
+  });
+  factory AnswerFormat.from(Object? raw) {
+    final m = Json.map(raw);
+    return AnswerFormat(
+      kind: Json.str(m['kind'], fallback: 'text'),
+      label: Json.str(
+        m['label'],
+        fallback: 'Enter the result requested by the task.',
+      ),
+      placeholder: Json.str(m['placeholder'], fallback: 'Your result'),
+    );
+  }
+  final String kind, label, placeholder;
+}
+
 class ProblemMeta {
   const ProblemMeta({
     required this.id,
@@ -90,6 +124,7 @@ class ProblemMeta {
     required this.complexityTime,
     required this.complexitySpace,
     required this.defaultDifficulty,
+    this.answerFormat = const AnswerFormat(),
   });
 
   factory ProblemMeta.from(Object? raw) {
@@ -98,17 +133,27 @@ class ProblemMeta {
     return ProblemMeta(
       id: Json.str(map['id']),
       topic: DsaTopic.tryParse(map['topic']) ?? DsaTopic.arrays,
-      title: Json.line(map['title'], fallback: Json.str(map['id'], fallback: 'Problem')),
+      title: Json.line(
+        map['title'],
+        fallback: Json.str(map['id'], fallback: 'Problem'),
+      ),
       learningObjective: Json.line(
         map['learningObjective'],
         fallback: 'Understand what this algorithm does and why.',
       ),
-      canonicalAlgorithm: Json.line(map['canonicalAlgorithm'], fallback: 'Work the problem step by step.'),
-      allowedMechanics: Json.listOf(map['allowedMechanics'], MechanicId.parse).whereType<MechanicId>().toList(growable: false),
+      canonicalAlgorithm: Json.line(
+        map['canonicalAlgorithm'],
+        fallback: 'Work the problem step by step.',
+      ),
+      allowedMechanics: Json.listOf(
+        map['allowedMechanics'],
+        MechanicId.parse,
+      ).whereType<MechanicId>().toList(growable: false),
       instanceHints: InstanceHints.from(map['instanceHints']),
       complexityTime: Json.str(complexity['time'], fallback: '—'),
       complexitySpace: Json.str(complexity['space'], fallback: '—'),
       defaultDifficulty: Difficulty.parse(map['defaultDifficulty']),
+      answerFormat: AnswerFormat.from(map['answerFormat']),
     );
   }
 
@@ -129,6 +174,7 @@ class ProblemMeta {
   final String complexityTime;
   final String complexitySpace;
   final Difficulty defaultDifficulty;
+  final AnswerFormat answerFormat;
 
   List<(String, String)> get complexityChips => [
     ('time', complexityTime),
@@ -137,14 +183,24 @@ class ProblemMeta {
 }
 
 class TopicDto {
-  const TopicDto({required this.id, required this.label, required this.problems});
+  const TopicDto({
+    required this.id,
+    required this.label,
+    required this.problems,
+  });
 
   factory TopicDto.from(Object? raw) {
     final map = Json.map(raw);
     return TopicDto(
       id: Json.str(map['id']),
-      label: Json.line(map['label'], fallback: Json.str(map['id'], fallback: 'Topic')),
-      problems: Json.listOf(map['problems'], ProblemMeta.from).whereType<ProblemMeta>().toList(growable: false),
+      label: Json.line(
+        map['label'],
+        fallback: Json.str(map['id'], fallback: 'Topic'),
+      ),
+      problems: Json.listOf(
+        map['problems'],
+        ProblemMeta.from,
+      ).whereType<ProblemMeta>().toList(growable: false),
     );
   }
 
@@ -157,14 +213,26 @@ class TopicDto {
 }
 
 class CatalogueResponse {
-  const CatalogueResponse({required this.topics, required this.tiers, required this.laya});
+  const CatalogueResponse({
+    required this.topics,
+    required this.tiers,
+    required this.laya,
+  });
 
   factory CatalogueResponse.from(Object? raw) {
     final map = Json.map(raw);
     return CatalogueResponse(
-      topics: Json.listOf(map['topics'], TopicDto.from).whereType<TopicDto>().toList(growable: false),
-      tiers: Json.listOf(map['tiers'], TierAvailability.from).whereType<TierAvailability>().toList(growable: false),
-      laya: map['laya'] == null ? LayaAvailability.unknown : LayaAvailability.from(map['laya']),
+      topics: Json.listOf(
+        map['topics'],
+        TopicDto.from,
+      ).whereType<TopicDto>().toList(growable: false),
+      tiers: Json.listOf(
+        map['tiers'],
+        TierAvailability.from,
+      ).whereType<TierAvailability>().toList(growable: false),
+      laya: map['laya'] == null
+          ? LayaAvailability.unknown
+          : LayaAvailability.from(map['laya']),
     );
   }
 

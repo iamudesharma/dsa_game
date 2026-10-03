@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Action } from '@dsa/game-schema'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
@@ -47,11 +47,12 @@ import type { MechanicProps } from './types'
  */
 export function ChoosePath({ spec, state, model, binding, disabled, dispatch, markers, prompt }: MechanicProps) {
   const [chosen, setChosen] = useState<string | null>(null)
+  useEffect(() => setChosen(null), [state.trace.length, state.phase])
   const branches: BranchChoices | null = deriveBranchChoices(state)
   const fromId = branches?.fromId ?? ''
   const slotOptions = model.pathOptions
   // The only safe gate on the irreversible "report the hit" move.
-  const isHitTurn = prompt?.dsaOp === 'terminate'
+  const isHitTurn = prompt?.dsaOp === 'terminate' || (state.problemId === 'rotated-search' && branches!==null && state.objects[branches.fromId]?.value === state.instance.target)
 
   const choose = (pathId: string, from: string): void => {
     if (!from) return
@@ -61,7 +62,7 @@ export function ChoosePath({ spec, state, model, binding, disabled, dispatch, ma
   }
 
   return (
-    <section className="panel p-4" aria-label={binding.label}>
+    <section className="panel p-4" aria-label={binding.label || 'ChoosePath'}>
       {/* The host blanks `binding.label` when the instruction is already on
           screen, so this heading disappears with it rather than repeating an
           imperative the learner has just read at 2rem. */}
@@ -77,7 +78,7 @@ export function ChoosePath({ spec, state, model, binding, disabled, dispatch, ma
           {isHitTurn ? (
             <>
               <p className="mt-2.5 text-[0.95rem] text-[var(--dsa-ink)]">
-                That is the one. Report it and the run ends here.
+                That is the one. Report the match, then follow the next instruction to finish.
               </p>
               <div className="mt-3">
                 <motion.button

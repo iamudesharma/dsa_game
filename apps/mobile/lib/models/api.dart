@@ -5,6 +5,7 @@ library;
 
 import '../services/api_exception.dart';
 import 'action.dart';
+import 'guidance.dart';
 import 'enums.dart';
 import 'json.dart';
 import 'problem.dart';
@@ -39,7 +40,8 @@ class GenerateRequest {
     'problemId': problemId,
     if (seed != null) 'seed': seed,
     if (difficulty != null) 'difficulty': difficulty!.wire,
-    if (freeText != null && freeText!.trim().isNotEmpty) 'freeText': freeText!.trim(),
+    if (freeText != null && freeText!.trim().isNotEmpty)
+      'freeText': freeText!.trim(),
     if (forceTemplate) 'forceTemplate': true,
   };
 }
@@ -54,6 +56,7 @@ class GenerateResponse {
     required this.usedTier,
     required this.attempts,
     required this.notes,
+    this.turnPrompt,
   });
 
   factory GenerateResponse.from(Object? raw) {
@@ -63,15 +66,19 @@ class GenerateResponse {
       throw const MalformedResponse('generate response is missing gameId');
     }
     return GenerateResponse(
+      turnPrompt: map['turnPrompt'] == null
+          ? null
+          : TurnPrompt.from(map['turnPrompt']),
       gameId: gameId,
       problemId: Json.str(map['problemId']),
       seed: Json.intOr(map['seed']),
       spec: GameSpec.from(map['spec']),
       state: GameState.from(map['state']),
       usedTier: ProviderTier.parse(map['usedTier']),
-      attempts: Json.listOf(map['attempts'], ProviderAttempt.from)
-          .whereType<ProviderAttempt>()
-          .toList(growable: false),
+      attempts: Json.listOf(
+        map['attempts'],
+        ProviderAttempt.from,
+      ).whereType<ProviderAttempt>().toList(growable: false),
       notes: Json.stringList(map['notes']),
     );
   }
@@ -89,6 +96,7 @@ class GenerateResponse {
 
   /// Non-fatal notes, e.g. "spec repaired on attempt 2".
   final List<String> notes;
+  final TurnPrompt? turnPrompt;
 }
 
 // -------------------------------------------------------------------- action
@@ -99,7 +107,10 @@ class ActionRequest {
   final String gameId;
   final Action action;
 
-  Map<String, Object?> toJson() => {'gameId': gameId, 'action': action.toJson()};
+  Map<String, Object?> toJson() => {
+    'gameId': gameId,
+    'action': action.toJson(),
+  };
 }
 
 class ActionOutcome {
@@ -161,6 +172,7 @@ class ActionResponse {
     required this.outcome,
     required this.usedTier,
     this.debrief,
+    this.turnPrompt,
   });
 
   factory ActionResponse.from(Object? raw) {
@@ -170,6 +182,9 @@ class ActionResponse {
       throw const MalformedResponse('action response is missing gameId');
     }
     return ActionResponse(
+      turnPrompt: map['turnPrompt'] == null
+          ? null
+          : TurnPrompt.from(map['turnPrompt']),
       gameId: gameId,
       state: GameState.from(map['state']),
       outcome: ActionOutcome.from(map['outcome']),
@@ -185,19 +200,27 @@ class ActionResponse {
 
   /// Present once phase !== 'playing'.
   final Debrief? debrief;
+  final TurnPrompt? turnPrompt;
 }
 
 // ------------------------------------------------------------------- debrief
 
 class AnswerSummary {
-  const AnswerSummary({required this.text, this.value, this.details = const <AnswerDetail>[]});
+  const AnswerSummary({
+    required this.text,
+    this.value,
+    this.details = const <AnswerDetail>[],
+  });
 
   factory AnswerSummary.from(Object? raw) {
     final map = Json.map(raw);
     return AnswerSummary(
       text: Json.line(map['text'], fallback: '—'),
       value: _scalarOrNull(map['value']),
-      details: Json.listOf(map['details'], AnswerDetail.from).whereType<AnswerDetail>().toList(growable: false),
+      details: Json.listOf(
+        map['details'],
+        AnswerDetail.from,
+      ).whereType<AnswerDetail>().toList(growable: false),
     );
   }
 
@@ -284,9 +307,12 @@ class DebriefStats {
   ];
 
   List<(String, int)> get mechanicTallies {
-    final entries = mistakesByMechanic.entries.where((e) => e.value > 0).toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    return entries.map((e) => (MechanicId.parse(e.key).wire, e.value)).toList(growable: false);
+    final entries =
+        mistakesByMechanic.entries.where((e) => e.value > 0).toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+    return entries
+        .map((e) => (MechanicId.parse(e.key).wire, e.value))
+        .toList(growable: false);
   }
 }
 
@@ -311,21 +337,36 @@ class Debrief {
     final map = Json.map(raw);
     final code = <String, List<String>>{};
     Json.map(map['code']).forEach((lang, lines) {
-      final parsed = Json.listOf(lines, Json.line).whereType<String>().toList(growable: false);
+      final parsed = Json.listOf(
+        lines,
+        Json.line,
+      ).whereType<String>().toList(growable: false);
       if (parsed.isNotEmpty) code[lang] = parsed;
     });
     return Debrief(
       problemId: Json.str(map['problemId']),
       phase: GamePhase.parse(map['phase'], fallback: GamePhase.won),
-      playedTrace: Json.listOf(map['playedTrace'], TraceFrame.from).whereType<TraceFrame>().toList(growable: false),
-      canonicalTrace: Json.listOf(map['canonicalTrace'], TraceFrame.from).whereType<TraceFrame>().toList(growable: false),
+      playedTrace: Json.listOf(
+        map['playedTrace'],
+        TraceFrame.from,
+      ).whereType<TraceFrame>().toList(growable: false),
+      canonicalTrace: Json.listOf(
+        map['canonicalTrace'],
+        TraceFrame.from,
+      ).whereType<TraceFrame>().toList(growable: false),
       answer: AnswerSummary.from(map['answer']),
-      pseudocode: Json.listOf(map['pseudocode'], Json.line).whereType<String>().toList(growable: false),
+      pseudocode: Json.listOf(
+        map['pseudocode'],
+        Json.line,
+      ).whereType<String>().toList(growable: false),
       code: Map.unmodifiable(code),
       complexity: Complexity.from(map['complexity']),
       summary: Json.line(map['summary'], fallback: 'Here is what happened.'),
       actionMeaning: Json.stringMap(map['actionMeaning']),
-      mapping: Json.listOf(map['mapping'], _rowFrom).whereType<MappingRow>().toList(growable: false),
+      mapping: Json.listOf(
+        map['mapping'],
+        _rowFrom,
+      ).whereType<MappingRow>().toList(growable: false),
       stats: DebriefStats.from(map['stats']),
       hintPool: Json.stringList(map['hintPool']),
     );
@@ -373,7 +414,8 @@ class Debrief {
     const preferred = ['javascript', 'typescript', 'python'];
     final present = code.keys.toSet();
     final ordered = preferred.where(present.contains).toList();
-    final rest = present.where((key) => !ordered.contains(key)).toList()..sort();
+    final rest = present.where((key) => !ordered.contains(key)).toList()
+      ..sort();
     return [...ordered, ...rest];
   }
 
@@ -411,12 +453,19 @@ class HintRequest {
 }
 
 class HintResponse {
-  const HintResponse({required this.hint, required this.source, this.confidence});
+  const HintResponse({
+    required this.hint,
+    required this.source,
+    this.confidence,
+  });
 
   factory HintResponse.from(Object? raw) {
     final map = Json.map(raw);
     return HintResponse(
-      hint: Json.line(map['hint'], fallback: 'Re-read the objective and take the next legal step.'),
+      hint: Json.line(
+        map['hint'],
+        fallback: 'Re-read the objective and take the next legal step.',
+      ),
       source: CoachSource.parse(map['source']),
       confidence: Json.doubleOrNull(map['confidence']),
     );
@@ -447,8 +496,10 @@ enum DecisionKind {
     for (final v in values) v.wire: v,
   };
 
-  static DecisionKind parse(Object? raw, {DecisionKind fallback = DecisionKind.pickTheme}) =>
-      raw is String ? (_byWire[raw] ?? fallback) : fallback;
+  static DecisionKind parse(
+    Object? raw, {
+    DecisionKind fallback = DecisionKind.pickTheme,
+  }) => raw is String ? (_byWire[raw] ?? fallback) : fallback;
 }
 
 class DecideRequest {
@@ -484,6 +535,11 @@ class DecideResponse {
     required this.confidence,
     required this.source,
     this.distribution,
+    this.model,
+    this.scoreKind,
+    this.score,
+    this.margin,
+    this.fallbackReason,
   });
 
   factory DecideResponse.from(Object? raw) {
@@ -498,14 +554,26 @@ class DecideResponse {
       choice: Json.str(map['choice']),
       confidence: Json.doubleOr(map['confidence'], fallback: 0),
       source: CoachSource.parse(map['source']),
-      distribution: distribution.isEmpty ? null : Map.unmodifiable(distribution),
+      model: Json.strOrNull(map['model']),
+      scoreKind: Json.strOrNull(map['scoreKind']),
+      score: Json.numberOrNull(map['score'])?.toDouble(),
+      margin: Json.numberOrNull(map['margin'])?.toDouble(),
+      fallbackReason: Json.strOrNull(map['fallbackReason']),
+      distribution: distribution.isEmpty
+          ? null
+          : Map.unmodifiable(distribution),
     );
   }
 
+  final String? model;
+  final String? scoreKind;
+  final double? score;
+  final double? margin;
+  final String? fallbackReason;
   final DecisionKind kind;
   final String choice;
 
-  /// 0..1 probability of the chosen option.
+  /// Compatibility score; scoreKind identifies similarity versus probability.
   final double confidence;
 
   final CoachSource source;
@@ -523,6 +591,7 @@ class HealthResponse {
     required this.tiers,
     required this.laya,
     required this.uptimeSec,
+    this.decision,
   });
 
   factory HealthResponse.from(Object? raw) {
@@ -530,12 +599,21 @@ class HealthResponse {
     return HealthResponse(
       ok: Json.boolOr(map['ok']),
       version: Json.str(map['version'], fallback: '0.0.0'),
-      tiers: Json.listOf(map['tiers'], TierAvailability.from).whereType<TierAvailability>().toList(growable: false),
-      laya: map['laya'] == null ? LayaAvailability.unknown : LayaAvailability.from(map['laya']),
+      tiers: Json.listOf(
+        map['tiers'],
+        TierAvailability.from,
+      ).whereType<TierAvailability>().toList(growable: false),
+      laya: map['laya'] == null
+          ? LayaAvailability.unknown
+          : LayaAvailability.from(map['laya']),
       uptimeSec: Json.doubleOr(map['uptimeSec']),
+      decision: map['decision'] == null
+          ? null
+          : DecisionAvailability.from(map['decision']),
     );
   }
 
+  final DecisionAvailability? decision;
   final bool ok;
   final String version;
   final List<TierAvailability> tiers;

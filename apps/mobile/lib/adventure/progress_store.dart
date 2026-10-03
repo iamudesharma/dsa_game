@@ -58,10 +58,15 @@ abstract class ProgressBackend {
 }
 
 /// Adapts a [KeyValueStore] to the single adventure-progress key.
-class AdventureKeyBackend implements ProgressBackend {
+class AdventureKeyBackend implements ProgressBackend, KeyValueStore {
   const AdventureKeyBackend(this._store);
 
   final KeyValueStore _store;
+
+  @override
+  Future<String?> readKey(String key) => _store.readKey(key);
+  @override
+  Future<bool> writeKey(String key, String raw) => _store.writeKey(key, raw);
 
   @override
   Future<String?> read() => _store.readKey(adventureStorageKey);
@@ -107,10 +112,15 @@ class MemoryBackend implements KeyValueStore, ProgressBackend {
 
 class AdventureController extends ChangeNotifier {
   AdventureController(this._backend, {this._clock}) {
-    _load();
+    _initialLoad = _load();
   }
 
   final ProgressBackend _backend;
+  late final Future<void> _initialLoad;
+  String? _accountId;
+  String get scope => _accountId ?? 'guest';
+  int _scopeEpoch = 0;
+  final Map<String, String> _volatile = {};
   final DateTime Function()? _clock;
 
   AdventureProgress _progress = AdventureProgress.fresh();
@@ -135,7 +145,43 @@ class AdventureController extends ChangeNotifier {
 
   /// Raw key access for sibling features (notebook drafts) that share the
   /// underlying store but must never flow through progress logic.
-  KeyValueStore? get keyValueStore => _backend is KeyValueStore ? _backend as KeyValueStore : null;
+  KeyValueStore get keyValueStore => _ScopedKeys(this, scope);
+  KeyValueStore? get _rawKeys =>
+      _backend is KeyValueStore ? _backend as KeyValueStore : null;
+  Future<void> switchAccount(String? id) async {
+    await _initialLoad;
+    final epoch = ++_scopeEpoch;
+    _accountId = id;
+    _progress = AdventureProgress.fresh();
+    _ready = false;
+    _notify();
+    try {
+      final raw = id == null
+          ? await _backend.read()
+          : await _rawKeys?.readKey('$adventureStorageKey:account:$id') ??
+                _volatile[id];
+      if (epoch != _scopeEpoch) return;
+      _progress = raw == null
+          ? AdventureProgress.fresh()
+          : AdventureProgress.fromJson(jsonDecode(raw)).progress;
+    } catch (_) {
+      _warning = true;
+    }
+    if (epoch != _scopeEpoch) return;
+    _ready = true;
+    _notify();
+  }
+
+  Future<Map<String, String>> guestStamps() async {
+    try {
+      final raw = await _backend.read();
+      return raw == null
+          ? {}
+          : AdventureProgress.fromJson(jsonDecode(raw)).progress.completed;
+    } catch (_) {
+      return {};
+    }
+  }
 
   Future<void> _load() async {
     try {
@@ -158,7 +204,16 @@ class AdventureController extends ChangeNotifier {
 
   Future<void> _save() async {
     try {
-      final ok = await _backend.write(jsonEncode(_progress.toJson()));
+      final raw = jsonEncode(_progress.toJson());
+      final account = _accountId;
+      if (account != null) _volatile[account] = raw;
+      final ok = account == null
+          ? await _backend.write(raw)
+          : await _rawKeys?.writeKey(
+                  '$adventureStorageKey:account:$account',
+                  raw,
+                ) ??
+                true;
       if (!ok) _warning = true;
     } catch (_) {
       _warning = true;
@@ -168,7 +223,11 @@ class AdventureController extends ChangeNotifier {
 
   /// Records a win. [knownProblemIds] is the catalogue's problem id set, so a
   /// typo can never mint a stamp.
-  void recordWin(Set<String> knownProblemIds, {required String problemId, required String phase}) {
+  void recordWin(
+    Set<String> knownProblemIds, {
+    required String problemId,
+    required String phase,
+  }) {
     final next = recordCompletion(
       _progress,
       knownProblemIds,
@@ -183,13 +242,22 @@ class AdventureController extends ChangeNotifier {
 
   /// Selects a cosmetic map frame. Only `'default'` or a fully-completed
   /// world's topic wire value is accepted; anything unearned is ignored.
-  void selectFrame(String frame, Map<WorldDefinition, List<String>> missionIds) {
+  void selectFrame(
+    String frame,
+    Map<WorldDefinition, List<String>> missionIds,
+  ) {
     if (frame != 'default') {
-      final earned = completedWorlds(_progress, missionIds).any((w) => w.topic.wire == frame);
+      final earned = completedWorlds(
+        _progress,
+        missionIds,
+      ).any((w) => w.topic.wire == frame);
       if (!earned) return;
     }
     if (_progress.mapFrame == frame) return;
-    _progress = AdventureProgress(completed: _progress.completed, mapFrame: frame);
+    _progress = AdventureProgress(
+      completed: _progress.completed,
+      mapFrame: frame,
+    );
     _save();
   }
 
@@ -206,7 +274,33 @@ class AdventureController extends ChangeNotifier {
       }
     });
     if (!changed) return;
-    _progress = AdventureProgress(completed: Map.unmodifiable(merged), mapFrame: _progress.mapFrame);
+    _progress = AdventureProgress(
+      completed: Map.unmodifiable(merged),
+      mapFrame: _progress.mapFrame,
+    );
     _save();
+  }
+}
+
+class _ScopedKeys implements KeyValueStore {
+  _ScopedKeys(this.owner, this.scope);
+  final String scope;
+  final AdventureController owner;
+  @override
+  Future<String?> readKey(String key) async {
+    final scoped = '$key:$scope';
+    final saved =
+        await owner._rawKeys?.readKey(scoped) ?? owner._volatile[scoped];
+    if (saved != null) return saved;
+    // Legacy drafts belong to the guest device, never to the next signed-in account.
+    if (scope == 'guest') return await owner._rawKeys?.readKey(key);
+    return null;
+  }
+
+  @override
+  Future<bool> writeKey(String key, String raw) async {
+    final scoped = '$key:$scope';
+    owner._volatile[scoped] = raw;
+    return await owner._rawKeys?.writeKey(scoped, raw) ?? true;
   }
 }

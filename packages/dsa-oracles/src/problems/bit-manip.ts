@@ -123,7 +123,7 @@ function legalActions(state: GameState): LegalActionDescriptor[] {
   const next = actionsFor(state.instance)[num(state.internal['planIndex'], 0)]
   if (!next) return []
   if (next.type === 'selectObject') return [{ type: next.type, label: 'Fold the next value in', options: { objectIds: [next.objectId] } }]
-  if (next.type === 'assignValue') return [{ type: next.type, label: 'Record the accumulator', expects: 'value' }]
+  if (next.type === 'assignValue') return [{ type: next.type, label: 'Record the accumulator', expects: 'value', options: { objectIds: [], targetIds: [next.targetId] } }]
   if (next.type === 'submitAnswer') {
     return [{ type: next.type, label: 'Commit the survivor', expects: 'value', options: { objectIds: [next.targetId] } }]
   }

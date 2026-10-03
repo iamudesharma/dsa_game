@@ -9,3 +9,5 @@ export * from './coach.js'
 export * from './oracle.js'
 export * from './api-types.js'
 export * from './json-schema.js'
+
+export * from './lessons.js'
