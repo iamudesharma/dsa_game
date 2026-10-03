@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { chatLink } from '@/lib/learning-api'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { RobotGuide } from '@/components/adventure/WorldScene'
@@ -36,6 +37,7 @@ import { useGameStore } from '@/store/game'
  */
 export function DebriefView({ gameId }: { gameId: string }) {
   const router = useRouter()
+  const originChat = useSearchParams().get('chat')
   const hydrated = useStoreHydrated()
   const spec = useGameStore((s) => s.spec)
   const state = useGameStore((s) => s.state)
@@ -124,6 +126,7 @@ export function DebriefView({ gameId }: { gameId: string }) {
     return (
       <ThemeScope>
         <main className="mx-auto max-w-3xl px-4 py-16">
+
           <div className="h-8 w-1/2 animate-pulse rounded bg-[var(--dsa-border)]" />
           <span className="sr-only">Loading the debrief…</span>
         </main>
@@ -143,9 +146,8 @@ export function DebriefView({ gameId }: { gameId: string }) {
                 store rather than that the debrief was never retrievable. Saying
                 so is the difference between "try again" and "this is gone". */}
             <p className="text-sm text-[var(--dsa-muted)]">
-              Games are held in memory for a few hours, so a debrief link stops working once its
-              session expires. Nothing is wrong with your run — it just is not on the server any more.
-              Play it again to get a fresh debrief.
+              Sign in to the account that played this run. Signed-in runs are saved; guest runs can expire.
+              If the service is unavailable, retry once your connection returns.
             </p>
             {error && (
               <div className="mt-4">
@@ -171,6 +173,8 @@ export function DebriefView({ gameId }: { gameId: string }) {
   return (
     <ThemeScope spec={spec}>
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-3 py-4 sm:px-4 sm:py-6">
+              <div className="flex flex-wrap gap-2 mb-3">{originChat && <Link className="btn" href={`/chat/${encodeURIComponent(originChat)}`}>Return to conversation</Link>}<Link className="btn" href={chatLink('Discuss this run and help me practise what I missed.',{type:'run',gameId})}>Discuss this run</Link><Link className="btn" href={`/problem/${debrief.problemId}`}>Practise again</Link></div>
+        <section className="panel p-4"><h2 className="font-bold">Your practice takeaway</h2><p>{won ? "You completed the algorithm on this instance." : "You explored the algorithm; use the replay to revisit your choices."} {state.progress.mistakes ? `Revisit the ${state.progress.mistakes} wrong turns in the replay.` : state.progress.hintsUsed ? "Try a fresh instance with fewer hints when you feel ready." : "Try a fresh instance to check what you can recall independently."}</p></section>
         <header className="victory-scene"><RobotGuide>{won ? "Another big idea, discovered." : "Let’s explore what happened."}</RobotGuide>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
@@ -203,7 +207,7 @@ export function DebriefView({ gameId }: { gameId: string }) {
           if (next >= 0) { event.preventDefault(); setTab(tabs[next]!); document.getElementById(`tab-${tabs[next]}`)?.focus() }
         }}>{item === 'replay' ? '↺ Replay your journey' : item === 'explanation' ? '✧ The big idea' : '{ } The real code'}</button>)}</div>
         <section id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} tabIndex={0}>
-          {tab === 'replay' && <CanonicalCompare debrief={debrief} state={state} spec={spec} />}
+          {tab === 'replay' && <CanonicalCompare gameId={gameId} debrief={debrief} state={state} spec={spec} />}
           {tab === 'explanation' && (
             <div className="space-y-4">
               {!explanationRevealed && (

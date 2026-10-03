@@ -12,6 +12,7 @@
  * use the `seed` from the instance so replays are reproducible.
  */
 
+import type { DsaOp } from './mechanics.js'
 import type { Action } from './action.js'
 import type { TraceFrame, Complexity } from './trace.js'
 import type {
@@ -93,9 +94,11 @@ export interface Oracle {
 
 export interface LegalActionDescriptor {
   type: Action['type']
+  /** Oracle-confirmed operation when one mechanic serves multiple steps. */
+  dsaOp?: DsaOp
   label: string
   /** Object/container ids the player must choose from. */
-  options?: { objectIds: string[]; containerIds?: string[] }
+  options?: { objectIds: string[]; containerIds?: string[]; targetIds?: string[] }
   /** Set when the player must supply a relation/value too. */
   expects?: 'relation' | 'value' | 'none'
 }
@@ -137,11 +140,7 @@ export function linearSlots(n: number, prefix = 's'): Slot[] {
 }
 
 /** Build a linked list spec of `n` nodes with unique values. */
-export function buildListSpec(
-  n: number,
-  values: number[],
-  prefix = 'n',
-): LinkedNodeSpec[] {
+export function buildListSpec(n: number, values: number[], prefix = 'n'): LinkedNodeSpec[] {
   const nodes: LinkedNodeSpec[] = values.slice(0, n).map((value, i) => ({ id: `${prefix}${i}`, value }))
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i]!

@@ -436,7 +436,7 @@ function legalActions(id: RemainingId, state: GameState): LegalActionDescriptor[
   if (next.type === 'selectObject') return [{ type: next.type, label: 'Read the next item', options: { objectIds: [next.objectId] } }]
   if (next.type === 'comparePair') return [{ type: next.type, label: 'Compare these two items', options: { objectIds: [next.aId, next.bId] }, expects: 'relation' }]
   if (next.type === 'pushPop') return [{ type: next.type, label: next.op === 'push' ? 'Push / enqueue the selected item' : 'Pop / dequeue the next item', options: { objectIds: next.objectId ? [next.objectId] : [], containerIds: [next.containerId] } }]
-  if (next.type === 'assignValue') return [{ type: next.type, label: 'Record the value', expects: 'value' }]
+  if (next.type === 'assignValue') return [{ type: next.type, label: 'Record the value', expects: 'value', options: { objectIds: [], targetIds: [next.targetId] } }]
   if (next.type === 'traverseNode') return [{ type: next.type, label: 'Follow the next link', options: { objectIds: [next.fromNodeId, next.toNodeId] } }]
   if (next.type === 'connectNodes') return [{ type: next.type, label: 'Connect the next pointer', options: { objectIds: [next.fromNodeId, next.toNodeId] } }]
   if (next.type === 'swapPair') return [{ type: next.type, label: 'Swap the nonzero item into the write position', options: { objectIds: [next.aId, next.bId] } }]

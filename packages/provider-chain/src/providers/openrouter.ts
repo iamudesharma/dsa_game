@@ -105,7 +105,7 @@ export class OpenrouterProvider implements SpecProvider {
         'http-referer': 'https://github.com/dsa-game',
         'x-title': 'dsa-game provider-chain',
       },
-      signal: AbortSignal.timeout(this.cfg.timeoutMs),
+      signal: input.signal ? AbortSignal.any([input.signal, AbortSignal.timeout(this.cfg.timeoutMs)]) : AbortSignal.timeout(this.cfg.timeoutMs),
       body: JSON.stringify({
         model: this.cfg.model,
         temperature: this.cfg.temperature,

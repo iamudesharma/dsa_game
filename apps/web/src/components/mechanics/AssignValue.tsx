@@ -27,28 +27,30 @@ export function AssignValue({
   setPicked,
   dispatch,
   markers,
+  prompt,
 }: MechanicProps) {
-  const variableNames = orderedVariableEntries(state.variables).map(([name]) => name)
+  const variableNames = prompt?.assignmentTargetIds?.length ? [...prompt.assignmentTargetIds] : orderedVariableEntries(state.variables).map(([name]) => name)
   const [target, setTarget] = useState<string>(picked[0] ?? variableNames[0] ?? '')
   const [value, setValue] = useState('')
 
   // A board pick is the most direct way to choose a target, so it wins over the
   // variable default whenever it changes.
   useEffect(() => {
-    if (picked[0]) setTarget(picked[0])
-  }, [picked])
+    if (prompt?.assignmentTargetIds?.length) setTarget(prompt.assignmentTargetIds[0]!)
+    else if (picked[0]) setTarget(picked[0])
+  }, [picked, prompt?.assignmentTargetIds])
 
   const commit = (): void => {
     if (!target || value === '') return
     const action: Action = { type: 'assignValue', targetId: target, value }
     dispatch(action)
-    setValue('')
+    // Keep the draft until the learner changes it; failed requests must not erase it.
   }
 
   const marked = target ? findMarker(markers, target) : null
 
   return (
-    <section className="panel p-4" aria-label={binding.label}>
+    <section className="panel p-4" aria-label={binding.label || 'AssignValue'}>
       {/* The host blanks `binding.label` when the instruction is already on
           screen, so this heading disappears with it rather than repeating an
           imperative the learner has just read at 2rem. */}
@@ -92,7 +94,7 @@ export function AssignValue({
         </label>
 
         <label className="block text-[0.78rem] font-semibold text-[var(--dsa-muted)]">
-          <span className="mb-1 block">The value</span>
+          <span className="mb-1 block">The value · currently {String(state.variables[target] ?? model.byId[target]?.value ?? "unset")}</span>
           <input
             className="input"
             value={value}

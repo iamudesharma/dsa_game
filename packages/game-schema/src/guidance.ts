@@ -49,6 +49,10 @@ export interface TurnPrompt {
    * free input. The UI highlights exactly these — this is what turns "click
    * things" into an unambiguous instruction.
    */
+  /** Oracle-owned destination for a final answer; may be a nonvisual result ID. */
+  readonly answerTargetId?: string
+  /** Nonvisual variables or board destinations accepting typed values this turn. */
+  readonly assignmentTargetIds?: readonly string[]
   readonly targets: readonly TurnTarget[]
   /** Why this operation matters. Short, concrete, no jargon. */
   readonly reason: string

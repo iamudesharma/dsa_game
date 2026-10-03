@@ -39,6 +39,7 @@ export interface ChatRequest {
   readonly temperature?: number
   /** Per-call abort, so a hung provider cannot hold an HTTP request open. */
   readonly signal?: AbortSignal
+  readonly sessionId?: string
 }
 
 export interface ChatReply {
@@ -56,6 +57,7 @@ export interface ChatTransport {
   /** Cheap: must not perform a request, only report whether one is possible. */
   isAvailable(): Promise<boolean>
   chat(request: ChatRequest): Promise<ChatReply>
+  stream?(request: ChatRequest): AsyncIterable<string>
 }
 
 export interface ChatConfig {
@@ -141,6 +143,16 @@ export class OpenRouterChatTransport implements ChatTransport {
     return this.cfg.apiKey.length > 0
   }
 
+  async *stream(request: ChatRequest): AsyncIterable<string> {
+    const signal = request.signal ? AbortSignal.any([request.signal, AbortSignal.timeout(this.cfg.timeoutMs)]) : AbortSignal.timeout(this.cfg.timeoutMs)
+    const model = this.cfg.model
+    const headers: Record<string,string> = { authorization: `Bearer ${this.cfg.apiKey}`, 'content-type': 'application/json' }
+    if (request.sessionId && 'requestHeaders' in this) headers['x-opencode-session'] = request.sessionId
+    const response = await fetch(`${this.cfg.baseUrl}/chat/completions`, { method: 'POST', headers, signal, body: JSON.stringify({ model, stream: true, messages: request.messages, max_tokens: request.maxTokens ?? this.cfg.maxTokens, temperature: request.temperature ?? this.cfg.temperature }) })
+    if (!response.ok || !response.body) throw new Error(`Chat provider returned ${response.status}`)
+    yield* readChatStream(response.body)
+  }
+
   async chat(request: ChatRequest): Promise<ChatReply> {
     if (this.cfg.apiKey.length === 0) {
       throw new Error('OPENROUTER_API_KEY is empty; the coach transport cannot run')
@@ -201,9 +213,16 @@ export interface OpencodeGoChatConfig {
   temperature: number
   maxTokens: number
   enabled: boolean
+  /** Client identity; opencode-go rejects requests without one. */
+  userAgent: string
+  /** Pinned session id. Empty = one id per chat call. */
+  sessionId: string
 }
 
 const DEFAULT_OPENCODE_GO_MODEL = 'space-bunny-free'
+
+/** Matches the spec tier's default so both callers identify as one client. */
+const OPENCODE_GO_USER_AGENT = 'dsa-game/0.1.0'
 
 /**
  * The spec tier's config, narrowed to what a chat call needs.
@@ -222,6 +241,8 @@ function chatConfigFromOpencodeGo(env: NodeJS.ProcessEnv = process.env): Opencod
     timeoutMs: shared.timeoutMs,
     temperature: shared.temperature,
     maxTokens: shared.maxTokens,
+    userAgent: shared.userAgent,
+    sessionId: shared.sessionId,
   }
 }
 
@@ -245,14 +266,55 @@ export class OpencodeGoChatTransport implements ChatTransport {
   readonly model: string
   private readonly cfg: OpencodeGoChatConfig
   private modelPromise: Promise<string> | null = null
+  private callCounter = 0
+  private readonly instanceId = Math.random().toString(36).slice(2, 10)
 
   constructor(cfg: Partial<OpencodeGoChatConfig> = {}) {
     this.cfg = { ...chatConfigFromOpencodeGo(), ...cfg }
     this.model = this.cfg.model
   }
 
+  /**
+   * The two headers opencode-go requires, and the reason this transport was
+   * 400ing on every call until they were added.
+   *
+   * The endpoint answers
+   *   400 MissingSessionID: "Request is missing x-opencode-session and cannot
+   *   be routed efficiently"
+   * unless the request carries a client-specific `user-agent` AND a stable
+   * `x-opencode-session`. `OpencodeGoProvider.generate` has always sent both;
+   * this chat adapter did not, so every coach and resume-extraction call
+   * against the default tier failed with an error that named a routing
+   * problem rather than the missing header.
+   *
+   * One chat call is one conversation, so the id is unique per call — reusing
+   * one would attribute unrelated traffic to a single conversation and defeat
+   * the prompt caching the header exists for.
+   */
+  private requestHeaders(): Record<string, string> {
+    this.callCounter += 1
+    return {
+      authorization: `Bearer ${this.cfg.apiKey}`,
+      'content-type': 'application/json',
+      'user-agent': OPENCODE_GO_USER_AGENT,
+      'x-opencode-session': this.cfg.sessionId.length > 0
+        ? this.cfg.sessionId
+        : `chat-${this.instanceId}-${this.callCounter}`,
+    }
+  }
+
   async isAvailable(): Promise<boolean> {
     return this.cfg.enabled && this.cfg.apiKey.length > 0
+  }
+
+  async *stream(request: ChatRequest): AsyncIterable<string> {
+    const signal = request.signal ? AbortSignal.any([request.signal, AbortSignal.timeout(this.cfg.timeoutMs)]) : AbortSignal.timeout(this.cfg.timeoutMs)
+    const model = await this.resolveModel()
+    const headers = this.requestHeaders()
+    if (request.sessionId && 'requestHeaders' in this) headers['x-opencode-session'] = request.sessionId
+    const response = await fetch(`${this.cfg.baseUrl}/chat/completions`, { method: 'POST', headers, signal, body: JSON.stringify({ model, stream: true, messages: request.messages, max_tokens: request.maxTokens ?? this.cfg.maxTokens, temperature: request.temperature ?? this.cfg.temperature }) })
+    if (!response.ok || !response.body) throw new Error(`Chat provider returned ${response.status}`)
+    yield* readChatStream(response.body)
   }
 
   async chat(request: ChatRequest): Promise<ChatReply> {
@@ -269,10 +331,7 @@ export class OpencodeGoChatTransport implements ChatTransport {
 
     const res = await fetch(`${this.cfg.baseUrl}/chat/completions`, {
       method: 'POST',
-      headers: {
-        authorization: `Bearer ${this.cfg.apiKey}`,
-        'content-type': 'application/json',
-      },
+      headers: this.requestHeaders(),
       signal,
       body: JSON.stringify({
         model,
@@ -284,6 +343,12 @@ export class OpencodeGoChatTransport implements ChatTransport {
 
     if (!res.ok) {
       const detail = await res.text().catch(() => '')
+      // A bare 400 here is nearly always the routing headers, not the payload,
+      // so the message says so — the upstream error names a session header the
+      // caller has no way to know it omitted.
+      if (res.status === 400 && detail.includes('x-opencode-session')) {
+        throw new Error('opencode-go 400: request was rejected for routing (client user-agent + x-opencode-session header)')
+      }
       throw new Error(`opencode-go ${res.status}: ${detail.slice(0, 400)}`)
     }
 
@@ -336,3 +401,28 @@ interface ChatJson {
 }
 
 const isChatObj = (v: unknown): v is ChatJson => typeof v === 'object' && v !== null && !Array.isArray(v)
+
+/** Incremental SSE parser: UTF-8 and frames may be split across network chunks. */
+export async function* readChatStream(body: ReadableStream<Uint8Array>): AsyncIterable<string> {
+  const reader = body.getReader(); const decoder = new TextDecoder(); let buffer = ''; let doneMarker = false
+  try {
+    while (true) {
+      const {value,done}=await reader.read()
+      buffer += done ? decoder.decode() : decoder.decode(value,{stream:true})
+      buffer = buffer.replace(/\r\n/g,'\n')
+      let boundary: number
+      while((boundary=buffer.indexOf('\n\n'))>=0){
+        const frame=buffer.slice(0,boundary);buffer=buffer.slice(boundary+2)
+        const data=frame.split('\n').filter(l=>l.startsWith('data:')).map(l=>l.slice(5).trimStart()).join('\n')
+        if(!data)continue
+        if(data==='[DONE]'){doneMarker=true;return}
+        const parsed=JSON.parse(data)
+        if(parsed.error)throw new Error('Chat provider stream failed')
+        const delta=parsed.choices?.[0]?.delta?.content
+        if(typeof delta==='string' && delta)yield delta
+      }
+      if(done)break
+    }
+    if(!doneMarker)throw new Error('Chat provider stream ended before completion')
+  } finally { await reader.cancel().catch(()=>{}); reader.releaseLock() }
+}

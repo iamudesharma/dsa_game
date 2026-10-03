@@ -41,14 +41,27 @@ import type {
 import { defaultChatTransport } from '@dsa/provider-chain'
 import type { ChatMessage, ChatTransport } from '@dsa/provider-chain'
 
-import { assembleWindow, budgetAfterPreamble, estimateTokens, estimateTurnTokens, serialiseSnapshot } from './budget.js'
+import {
+  assembleWindow,
+  budgetAfterPreamble,
+  estimateTokens,
+  estimateTurnTokens,
+  serialiseSnapshot,
+} from './budget.js'
 import { classifyIntent, fallbackAnswer } from './fallback.js'
 import { screenCoachReply } from './guardrails.js'
 import { buildTurnPrompt } from './prompt.js'
 import { buildSnapshot } from './snapshot.js'
 import { makeCoachSpan, traceCoachCall } from './trace.js'
 import type { CoachOutcome } from './trace.js'
-import { appendTurn, createThread, getThread, listThreadsForGame, rememberHint, setThreadSummary } from './threads.js'
+import {
+  appendTurn,
+  createThread,
+  getThread,
+  listThreadsForGame,
+  rememberHint,
+  setThreadSummary,
+} from './threads.js'
 import type { CoachThreadSummary } from './threads.js'
 
 /** Hard ceiling on what a learner can type. Past this it is a paste, not a question. */
@@ -56,6 +69,7 @@ const MAX_QUESTION_CHARS = 1000
 const MAX_TITLE_CHARS = 60
 
 export interface CoachWorld {
+  readonly userId?: string
   readonly gameId: string
   readonly problemId: string
   readonly spec: GameSpec
@@ -112,6 +126,7 @@ export function createCoachService(deps: CoachDeps): CoachService {
       const thread =
         request.threadId === undefined
           ? createThread({
+              userId: world.userId,
               gameId: world.gameId,
               problemId: world.problemId,
               title: request.title?.trim().slice(0, MAX_TITLE_CHARS),
@@ -292,7 +307,8 @@ function buildMessages(args: {
   }
   for (const turn of args.window.turns) {
     if (turn.role === 'learner') {
-      const board = turn.snapshot === undefined ? '' : `\n[board at the time: ${serialiseSnapshot(turn.snapshot)}]`
+      const board =
+        turn.snapshot === undefined ? '' : `\n[board at the time: ${serialiseSnapshot(turn.snapshot)}]`
       history.push(`learner: ${turn.text}${board}`)
     } else {
       history.push(`coach: ${turn.text}`)
@@ -397,7 +413,8 @@ function makeTurn(
     role,
     text,
     at,
-    approxTokens: estimateTokens(text) + (snapshot === undefined ? 0 : estimateTokens(serialiseSnapshot(snapshot))),
+    approxTokens:
+      estimateTokens(text) + (snapshot === undefined ? 0 : estimateTokens(serialiseSnapshot(snapshot))),
     ...(synthetic ? { synthetic: true } : {}),
     // The snapshot rides on BOTH sides of an exchange, not just the learner's
     // side, so a turn can be read without reaching back to the turn it answered.

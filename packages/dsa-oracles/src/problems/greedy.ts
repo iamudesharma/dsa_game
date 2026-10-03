@@ -130,7 +130,7 @@ function legalActions(state: GameState): LegalActionDescriptor[] {
   const next = actionsFor(state.instance)[num(state.internal['planIndex'], 0)]
   if (!next) return []
   if (next.type === 'selectObject') return [{ type: next.type, label: 'Read how far this cell jumps', options: { objectIds: [next.objectId] } }]
-  if (next.type === 'assignValue') return [{ type: next.type, label: 'Record the new farthest reach', expects: 'value' }]
+  if (next.type === 'assignValue') return [{ type: next.type, label: 'Record the new farthest reach', expects: 'value', options: { objectIds: [], targetIds: [next.targetId] } }]
   if (next.type === 'submitAnswer') {
     return [{ type: next.type, label: 'Commit reachable or stuck', expects: 'value', options: { objectIds: [next.targetId] } }]
   }

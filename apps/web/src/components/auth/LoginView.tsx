@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { Button } from '@/components/ui/Button'
 import { Panel } from '@/components/ui/Panel'
@@ -14,18 +14,18 @@ import { Panel } from '@/components/ui/Panel'
 export function LoginView() {
   const router = useRouter()
   const { login, busy, error, clearError, user } = useAuth()
+  const [returnQuery, setReturnQuery] = useState('')
+  useEffect(() => { setReturnQuery(window.location.search) }, [])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
-  if (user) {
-    router.replace('/account')
-    return null
-  }
+  useEffect(() => { if (user) router.replace(safeDestination()) }, [user, router])
+  if (user) return null
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     clearError()
-    if (await login(email.trim(), password)) router.push('/account')
+    if (await login(email.trim(), password)) router.push(safeDestination())
   }
 
   return (
@@ -64,7 +64,9 @@ export function LoginView() {
           </Button>
         </form>
       </Panel>
-      <p className="mt-4 text-sm text-[var(--dsa-muted)]">No account yet? <Link href="/signup" className="underline underline-offset-4">Create one</Link> · <Link href="/" className="underline underline-offset-4">Back to the map</Link></p>
+      <p className="mt-4 text-sm text-[var(--dsa-muted)]">No account yet? <Link href={`/signup${returnQuery}`} className="underline underline-offset-4">Create one</Link> · <Link href="/" className="underline underline-offset-4">Back to the map</Link></p>
     </main>
   )
 }
+
+function safeDestination(){if(typeof window==='undefined')return '/account';const next=new URLSearchParams(window.location.search).get('next');return next?.startsWith('/')&&!next.startsWith('//')&&!next.includes('\\')?next:'/account'}

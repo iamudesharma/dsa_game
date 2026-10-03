@@ -47,6 +47,9 @@ function buildPrompt(resume: Resume, target: Target): { system: string; user: st
     '- Every question.practice.problemId, when present, MUST be one of the allowed catalogue ids. Never invent one.',
     '- Never assert facts about the company hiring process: no percentages, no "always asks", no named proprietary rounds, no interviewer names, no compensation figures, no guaranteed outcomes.',
     '- question.listeningFor must describe what an interviewer listens for in plain terms, grounded in the company values given.',
+    '- question.difficulty MUST be exactly easy, medium, or hard.',
+    '- question.type MUST be exactly behavioral, coding, concepts, system-design, resume-deep-dive, or ml.',
+    '- question.practice, when present, is an object with only problemId.',
     '- Keep each prompt under 800 characters.',
   ].join('\n')
   const user = [

@@ -50,7 +50,14 @@ class _ComparePairMechanicState extends MechanicViewState<ComparePairMechanic> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Center(child: PairReadout(state: widget.state, selection: selection, bracket: 'vs')),
+        Center(
+          child: PairReadout(
+            state: widget.state,
+            selection: [firstSelected ?? '—', secondSelected ?? '—'],
+            bracket: 'vs',
+          ),
+        ),
+        operandControls(),
         const SizedBox(height: 8),
         Row(
           children: [

@@ -184,7 +184,8 @@ export function salvageSpec(partial: unknown, input: GenerateSpecInput): GameSpe
       win: string(n['win'], base.narration.win),
       lose: string(n['lose'], base.narration.lose),
       // hintPool has a hard 2..6 bound; only accept a well-formed one.
-      hintPool: Array.isArray(n['hintPool']) && n['hintPool'].length >= 2 ? n['hintPool'] : base.narration.hintPool,
+      hintPool:
+        Array.isArray(n['hintPool']) && n['hintPool'].length >= 2 ? n['hintPool'] : base.narration.hintPool,
     }
   }
 
@@ -330,7 +331,7 @@ export class LocalLlmProvider implements SpecProvider {
     for (const mode of this.responseFormats(input)) {
       let text: string
       try {
-        const body = await this.post(system, user, mode)
+        const body = await this.post(system, user, mode, input.signal)
         text = contentOf(body)
         if (text.length === 0) {
           errors.push(`${mode.label}: empty content`)
@@ -383,11 +384,18 @@ export class LocalLlmProvider implements SpecProvider {
     return modes
   }
 
-  private async post(system: string, user: string, mode: { label: string; body: Json }): Promise<unknown> {
+  private async post(
+    system: string,
+    user: string,
+    mode: { label: string; body: Json },
+    signal?: AbortSignal,
+  ): Promise<unknown> {
     const res = await fetch(`${this.cfg.baseUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      signal: AbortSignal.timeout(this.cfg.timeoutMs),
+      signal: signal
+        ? AbortSignal.any([signal, AbortSignal.timeout(this.cfg.timeoutMs)])
+        : AbortSignal.timeout(this.cfg.timeoutMs),
       body: JSON.stringify({
         ...mode.body,
         messages: [

@@ -17,7 +17,9 @@ export function CanonicalCompare({
   debrief,
   state,
   spec,
+  gameId,
 }: {
+  gameId?: string
   debrief: DebriefResponse
   state: import('@dsa/game-schema').GameState
   spec: import('@dsa/game-schema').GameSpec
@@ -29,6 +31,7 @@ export function CanonicalCompare({
           frames={debrief.playedTrace}
           state={state}
           spec={spec}
+          gameId={gameId}
           title="Your run"
           subtitle={`${debrief.playedTrace.length} steps, ${debrief.stats.mistakes} mistakes`}
         />

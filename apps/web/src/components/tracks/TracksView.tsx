@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { getProblem } from '@dsa/game-schema'
+import { chatLink } from '@/lib/learning-api'
 import { Chip } from '@/components/ui/Chip'
 import { Panel } from '@/components/ui/Panel'
 import { useAdventure } from '@/components/adventure/AdventureProvider'
@@ -15,6 +16,7 @@ import { TRACKS, getTrack, trackItemDone, trackProgress } from '@/lib/tracks'
  */
 export function TracksView() {
   const [trackId, setTrackId] = useState<string>(TRACKS[0]?.id ?? 'interview-classics')
+  useEffect(()=>{const id=new URLSearchParams(window.location.search).get('track');if(id&&getTrack(id))setTrackId(id)},[])
   const { progress, ready } = useAdventure()
   const track = getTrack(trackId) ?? TRACKS[0]!
   const stats = useMemo(() => trackProgress(track, progress.completed), [track, progress.completed])
@@ -29,7 +31,7 @@ export function TracksView() {
 
       <Panel
         title="Interview tracks"
-        subtitle="Checklists that point at games, not just problems. Play a mapped game to stamp its items."
+        subtitle="Game completion stamps practice milestones; it does not certify independent interview readiness."
       >
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Track">
           {TRACKS.map((t) => (
@@ -37,7 +39,7 @@ export function TracksView() {
               key={t.id}
               className="btn"
               aria-pressed={trackId === t.id}
-              onClick={() => setTrackId(t.id)}
+              onClick={() => {setTrackId(t.id);window.history.replaceState(null,'',`/tracks?track=${t.id}`)}}
             >
               {t.title}
             </button>
@@ -53,6 +55,7 @@ export function TracksView() {
         )}
       </Panel>
 
+      <Panel title="Next practice step">{(() => { const id = track.categories.flatMap(c => c.items).flatMap(i => i.playIds).find(id => !progress.completed[id]); return id ? <Link className="btn" href={`/problem/${id}`}>{getProblem(id)?.title} →</Link> : <p>All mapped games completed. Revisit them or practise explaining your solutions in Chat.</p> })()}</Panel>
       {track.categories.map((category) => {
         const done = category.items.filter((i) => trackItemDone(i.playIds, progress.completed)).length
         const playable = category.items.filter((i) => i.playIds.length > 0).length
@@ -78,8 +81,9 @@ export function TracksView() {
                     <span>
                       {item.n > 0 && <span className="mono text-xs">#{item.n} </span>}
                       {item.name}
-                      {item.playIds.length === 0 && <small>Study on LeetCode — no game yet</small>}
+                      {item.playIds.length === 0 && <small>Study question · written practice available in Chat</small>}
                     </span>
+                    <Link className="btn text-xs" href={chatLink(`Teach me ${item.name}. Give an example, then ask me an interview question about it.`)}>Discuss</Link>
                     {item.playIds.length > 0 && (
                       <span className="flex flex-wrap gap-1">
                         {item.playIds.map((id) => (

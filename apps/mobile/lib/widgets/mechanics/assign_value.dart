@@ -65,15 +65,26 @@ class _AssignValueMechanicState extends MechanicViewState<AssignValueMechanic> {
 
   List<AssignTarget> get _targets {
     final state = widget.state;
+    final oracleTargets =
+        widget.controller.turnPrompt?.assignmentTargetIds ?? const <String>[];
+    if (oracleTargets.isNotEmpty) {
+      return oracleTargets
+          .map((id) => LabeledTarget(id, state.object(id)?.label ?? id))
+          .toList();
+    }
     final targets = <AssignTarget>[];
 
     for (final slot in state.orderedSlots) {
-      if (slot.kind == SlotKind.target || slot.kind == SlotKind.mid || slot.kind == SlotKind.sink) {
+      if (slot.kind == SlotKind.target ||
+          slot.kind == SlotKind.mid ||
+          slot.kind == SlotKind.sink) {
         targets.add(SlotTarget(slot));
       }
     }
     for (final object in state.orderedObjects) {
-      if (object.kind == GameObjectKind.target) targets.add(LabeledTarget(object.id, object.label));
+      if (object.kind == GameObjectKind.target) {
+        targets.add(LabeledTarget(object.id, object.label));
+      }
     }
     // Variables the engine already tracks are legitimate targets: assigning
     // into one is how "keep a running best" is expressed.
@@ -113,7 +124,9 @@ class _AssignValueMechanicState extends MechanicViewState<AssignValueMechanic> {
     if (value.isEmpty) return;
     final target = _effectiveTarget;
     await act(AssignValueAction(targetId: target.id, value: value));
-    if (mounted) _controller.clear();
+    if (mounted && widget.controller.lastOutcome?.correct == true) {
+      setState(_controller.clear);
+    }
   }
 
   @override
@@ -148,12 +161,23 @@ class _AssignValueMechanicState extends MechanicViewState<AssignValueMechanic> {
                 keyboardType: TextInputType.text,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _assign(),
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: colors.onSurface),
+                onChanged: (_) => setState(() {}),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: colors.onSurface,
+                ),
                 decoration: InputDecoration(
                   isDense: true,
+                  labelText: 'Value for ${target.label}',
+                  helperText:
+                      'Current: ${widget.state.variables.display(target.id)}',
                   hintText: 'value',
                   hintStyle: TextStyle(color: colors.muted, fontSize: 13),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ),
@@ -178,7 +202,9 @@ class _AssignValueMechanicState extends MechanicViewState<AssignValueMechanic> {
               for (final suggestion in suggestions)
                 ActionChip(
                   label: Text(suggestion),
-                  onPressed: canAct ? () => setState(() => _controller.text = suggestion) : null,
+                  onPressed: canAct
+                      ? () => setState(() => _controller.text = suggestion)
+                      : null,
                 ),
             ],
           ),

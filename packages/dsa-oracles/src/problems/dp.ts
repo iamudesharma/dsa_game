@@ -266,7 +266,7 @@ function legalActions(id: DpId, state: GameState): LegalActionDescriptor[] {
   if (next.type === 'comparePair') {
     return [{ type: next.type, label: 'Robbing here plus two doors down, versus skipping — which is larger?', options: { objectIds: [next.aId, next.bId] }, expects: 'relation' }]
   }
-  if (next.type === 'assignValue') return [{ type: next.type, label: 'Record the table value', expects: 'value' }]
+  if (next.type === 'assignValue') return [{ type: next.type, label: 'Record the table value', expects: 'value', options: { objectIds: [], targetIds: [next.targetId] } }]
   if (next.type === 'submitAnswer') {
     return [{ type: next.type, label: 'Submit the result', expects: 'value', options: { objectIds: [next.targetId] } }]
   }

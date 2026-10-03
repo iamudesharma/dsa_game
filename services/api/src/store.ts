@@ -1,7 +1,7 @@
 /**
  * In-memory game session store.
  *
- * MVP scope: one process, no persistence. Sessions hold the oracle (so the
+ * Guest scope: one process; owned sessions persist in SQLite. Sessions hold the oracle (so the
  * same deterministic engine drives the whole game), the LLM-authored spec,
  * and the current state. Undo is a bounded stack of prior states.
  *
@@ -12,10 +12,12 @@
 import type { GameSpec } from '@dsa/game-schema'
 import type { GameState } from '@dsa/game-schema'
 import type { Oracle } from '@dsa/game-schema'
+import { persistPractice, restorePractice } from './learning/store.js'
 
 import { deleteThread as deleteCoachThread, listThreadIdsForGame as listCoachThreadIds } from './coach/threads.js'
 
 export interface GameSession {
+  userId?: string
   gameId: string
   problemId: string
   seed: number
@@ -53,12 +55,14 @@ export function putSession(session: GameSession): void {
     byProblem.set(session.problemId, ids)
   }
   ids.add(session.gameId)
+  persistPractice(session)
   evictIfNeeded()
 }
 
 export function getSession(gameId: string): GameSession | undefined {
-  const session = sessions.get(gameId)
+  const session = sessions.get(gameId) ?? restorePractice(gameId)
   if (!session) return undefined
+  sessions.set(gameId, session)
   session.lastAccessedAt = Date.now()
   return session
 }
@@ -109,7 +113,7 @@ function evictIfNeeded(): void {
  * the one place the two stores have to be kept in step.
  */
 export function dropSessionCascade(gameId: string): void {
-  for (const threadId of listCoachThreadIds(gameId)) {
+  for (const threadId of sessions.get(gameId)?.userId ? [] : listCoachThreadIds(gameId)) {
     deleteCoachThread(threadId)
   }
   const session = sessions.get(gameId)

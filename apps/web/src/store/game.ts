@@ -113,6 +113,8 @@ export interface GameStore extends PersistedSlice, TransientSlice {
     spec: GameSpec
     state: GameState
     usedTier: ProviderTier
+    difficulty?:Difficulty
+    turnPrompt?:TurnPrompt|null
   }) => void
   generate: (intent: GenerateIntent, options?: { newSeed?: boolean }) => Promise<string | null>
   dispatch: (action: Action) => Promise<ActionOutcome | null>
@@ -186,7 +188,7 @@ export const useGameStore = create<GameStore>()(
        */
       hydrateFromServer: (game) =>
         set((prev) =>
-          prev.gameId === game.gameId && prev.state && !prev.busy && !prev.generating
+          prev.busy || prev.generating || (prev.gameId === game.gameId && prev.state && prev.state.trace.length === game.state.trace.length && prev.state.progress.hintsUsed === game.state.progress.hintsUsed && prev.state.progress.mistakes === game.state.progress.mistakes && prev.state.phase === game.state.phase)
             ? prev
             : {
                 gameId: game.gameId,
@@ -205,7 +207,9 @@ export const useGameStore = create<GameStore>()(
                 requestSeq: prev.requestSeq,
                 // A restored game has no live prompt, so the play screen falls
                 // back to the state-derived one until the first action.
-                turnPrompt: null,
+                turnPrompt: game.turnPrompt ?? null,
+                lastIntent:{problemId:game.problemId,difficulty:game.difficulty??'medium',seed:game.seed,forceTemplate:game.usedTier==='template'},
+                activeMechanicId:null,
                 feedback: null,
               },
         ),

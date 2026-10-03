@@ -156,6 +156,7 @@ export function MechanicHost({
                 data-mechanic={mechanic.id}
                 type="button"
                 role="tab"
+                  onKeyDown={event => { const keys = ['ArrowLeft','ArrowRight','Home','End']; if (!keys.includes(event.key)) return; event.preventDefault(); const tabs = Array.from(event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? []); const i = tabs.indexOf(event.currentTarget); const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length-1 : (i + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length; tabs[next]?.focus(); tabs[next]?.click() }}
                 aria-selected={isActive}
                 onClick={() => onSelectMechanic(mechanic.id)}
                 className={cn(

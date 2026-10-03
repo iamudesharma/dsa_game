@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import type { GameSpec, GameState, TraceFrame } from '@dsa/game-schema'
+import Link from 'next/link'
+import { chatLink } from '@/lib/learning-api'
 import { Button } from '@/components/ui/Button'
 import { buildReplayModel, rolesForFrame, type ReplayRole } from '@/lib/replay'
 import { cn } from '@/lib/format'
@@ -37,10 +39,11 @@ export interface ReplayPlayerProps {
   title: string
   subtitle?: string
   /** Play/pause/step controls are hidden for the small canonical strip. */
+  gameId?: string
   compact?: boolean
 }
 
-export function ReplayPlayer({ frames, state, spec, title, subtitle, compact = false }: ReplayPlayerProps) {
+export function ReplayPlayer({ frames, state, spec, title, subtitle, compact = false, gameId }: ReplayPlayerProps) {
   const reduceMotion = useReducedMotion()
   const [index, setIndex] = useState(0)
   const [playing, setPlaying] = useState(false)
@@ -116,6 +119,8 @@ export function ReplayPlayer({ frames, state, spec, title, subtitle, compact = f
             >
               ▶
             </Button>
+            <Button size="sm" disabled={!frames.some(f=>!f.correct)} onClick={()=>{setPlaying(false);const next=frames.findIndex((f,i)=>i>index&&!f.correct);setIndex(next<0?frames.findIndex(f=>!f.correct):next)}}>Jump to mistake</Button>
+            {gameId && frame && <Link className="btn" href={chatLink('Explain this replay step and the rule behind it.',{type:'run',gameId,step:frame.index})}>Discuss step</Link>}
             <select
               className="input !w-auto !py-1 text-xs"
               value={speed}

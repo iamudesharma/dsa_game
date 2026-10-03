@@ -1570,7 +1570,7 @@ function legalActions(state: GameState): LegalActionDescriptor[] {
     return [
       {
         type: 'comparePair',
-        label: 'Declare how the middle compares to the target',
+        label: 'Declare how the target compares to the middle',
         options: { objectIds: [objectId(i.mid), TARGET_OBJECT_ID] },
         expects: 'relation',
       },
@@ -1579,6 +1579,7 @@ function legalActions(state: GameState): LegalActionDescriptor[] {
   return [
     {
       type: 'choosePath',
+      dsaOp: i.lastRelation === 'eq' ? 'terminate' : 'choose-path',
       label: i.lastRelation === 'eq' ? 'Report the hit' : 'Keep the half that can still hold the target',
       options: { objectIds: [objectId(i.mid)] },
       expects: 'none',

@@ -10,7 +10,7 @@
  *
  * The eviction style deliberately mirrors `store.ts` (idle TTL + a hard cap,
  * oldest-touched first) because it is the same operational problem: one process,
- * no persistence, paid upstream. Read past the cap and a learner's coach
+ * a bounded cache, paid upstream. Owned threads also persist in SQLite. Read past the cap and a learner's coach
  * forgets them mid-conversation, which reads as the coach being broken rather
  * than as a cache miss — hence the cap is generous relative to session count.
  *
@@ -22,6 +22,7 @@
  */
 
 import type { CoachThread, CoachTurn } from '@dsa/game-schema'
+import { getDb, getDbPath } from '../db/index.js'
 
 /** Mirrors `store.ts`'s generosity: fewer games than conversation turns. */
 const MAX_THREADS = 400
@@ -37,6 +38,7 @@ export interface CoachThreadSummary {
 }
 
 export interface CreateThreadInput {
+  readonly userId?: string
   readonly gameId: string
   readonly problemId: string
   /** Optional client name for the switcher. */
@@ -50,6 +52,7 @@ export interface CreateThreadInput {
 
 /** Mutable working copy; `toThread` projects the readonly public shape. */
 interface ThreadRecord {
+  userId?: string
   id: string
   problemId: string
   gameId: string
@@ -78,6 +81,7 @@ export function createThread(input: CreateThreadInput): CoachThread {
   const now = input.now ?? Date.now()
   const id = newThreadId(input.gameId)
   const record: ThreadRecord = {
+    userId: input.userId,
     id,
     problemId: input.problemId,
     gameId: input.gameId,
@@ -90,20 +94,22 @@ export function createThread(input: CreateThreadInput): CoachThread {
     lastAccessedAt: now,
   }
   threads.set(id, record)
+  persist(record)
   indexThread(id, input.gameId)
   evictIfNeeded(now)
   return toThread(record)
 }
 
 export function getThread(threadId: string, now: number = Date.now()): CoachThread | undefined {
-  const record = threads.get(threadId)
+  const record = load(threadId)
   if (!record) return undefined
   record.lastAccessedAt = now
+  persist(record)
   return toThread(record)
 }
 
 export function threadExists(threadId: string): boolean {
-  return threads.has(threadId)
+  return Boolean(load(threadId))
 }
 
 /**
@@ -115,8 +121,12 @@ export function threadExists(threadId: string): boolean {
  * decides what is *sent*, this only bounds what is *retained*, so a thread that
  * is never sent cannot grow without limit.
  */
-export function appendTurn(threadId: string, turn: CoachTurn, now: number = Date.now()): CoachThread | undefined {
-  const record = threads.get(threadId)
+export function appendTurn(
+  threadId: string,
+  turn: CoachTurn,
+  now: number = Date.now(),
+): CoachThread | undefined {
+  const record = load(threadId)
   if (!record) return undefined
   record.turns = [...record.turns, turn]
   if (record.turns.length > MAX_TURNS_PER_THREAD) {
@@ -125,16 +135,18 @@ export function appendTurn(threadId: string, turn: CoachTurn, now: number = Date
   record.spentTokens += Math.max(0, Math.trunc(turn.approxTokens))
   record.updatedAt = now
   record.lastAccessedAt = now
+  persist(record)
   return toThread(record)
 }
 
 /** Record the rolling summary of what fell out of the window. */
 export function setThreadSummary(threadId: string, summary: string | null, now: number = Date.now()): void {
-  const record = threads.get(threadId)
+  const record = load(threadId)
   if (!record) return
   record.summary = summary === null || summary.trim() === '' ? null : summary
   record.updatedAt = now
   record.lastAccessedAt = now
+  persist(record)
 }
 
 /**
@@ -144,18 +156,20 @@ export function setThreadSummary(threadId: string, summary: string | null, now: 
  * would have to absorb for no teaching benefit.
  */
 export function rememberHint(threadId: string, hint: string, now: number = Date.now()): void {
-  const record = threads.get(threadId)
+  const record = load(threadId)
   if (!record) return
   const hints = [...record.givenHints, hint]
   record.givenHints = hints.slice(-12)
   record.updatedAt = now
   record.lastAccessedAt = now
+  persist(record)
 }
 
 export function deleteThread(threadId: string): boolean {
-  const record = threads.get(threadId)
+  const record = load(threadId)
   if (!record) return false
   threads.delete(threadId)
+  if (record.userId) getDb().prepare('DELETE FROM coach_history WHERE id=?').run(threadId)
   const ids = byGame.get(record.gameId)
   if (ids) {
     ids.delete(threadId)
@@ -166,6 +180,12 @@ export function deleteThread(threadId: string): boolean {
 
 /** Most recently updated first, so the client can default to the live one. */
 export function listThreadsForGame(gameId: string): CoachThreadSummary[] {
+  if (getDbPath()) {
+    const rows = getDb().prepare('SELECT id FROM coach_history WHERE game_id=?').all(gameId) as {
+      id: string
+    }[]
+    for (const row of rows) load(row.id)
+  }
   const ids = byGame.get(gameId)
   if (!ids) return []
   const out: CoachThreadSummary[] = []
@@ -261,4 +281,39 @@ export function resetThreads(): void {
   threads.clear()
   byGame.clear()
   counter = 0
+}
+
+function persist(record: ThreadRecord): void {
+  if (record.userId)
+    getDb()
+      .prepare(
+        'INSERT INTO coach_history VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET data_json=excluded.data_json',
+      )
+      .run(record.id, record.userId, record.gameId, JSON.stringify(record))
+}
+function load(id: string): ThreadRecord | undefined {
+  const cached = threads.get(id)
+  if (cached || !getDbPath()) return cached
+  const row = getDb().prepare('SELECT data_json FROM coach_history WHERE id=?').get(id) as
+    { data_json: string } | undefined
+  if (!row) return undefined
+  try {
+    const record = JSON.parse(row.data_json) as ThreadRecord
+    if (
+      record.id !== id ||
+      !record.userId ||
+      !Array.isArray(record.turns) ||
+      typeof record.gameId !== 'string'
+    )
+      return undefined
+    threads.set(id, record)
+    indexThread(id, record.gameId)
+    return record
+  } catch {
+    return undefined
+  }
+}
+
+export function getThreadOwner(id: string): string | undefined {
+  return load(id)?.userId
 }

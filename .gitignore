@@ -14,3 +14,8 @@ __pycache__/
 services/laya/models/
 services/local-llm/models/
 run/
+
+.next-dev/
+
+# Disposable local validation databases and credentials.
+.dev/

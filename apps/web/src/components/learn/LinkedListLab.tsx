@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { useEffect, useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/Button'
@@ -29,7 +30,8 @@ function gameHref(question: LinkedListQuestion, difficulty: (typeof DIFFICULTIES
   return `/problem/${question.gameProblemId}?${query.toString()}`
 }
 
-export function LinkedListLab() {
+function LinkedListLabContent() {
+  const {user}=useAuth()
   const [selectedQuestionId, setSelectedQuestionId] = useState<string>(LINKED_LIST_QUESTIONS[0].id)
   const [language, setLanguage] = useState<LinkedListLanguage>('javascript')
   const [draft, setDraft] = useState('')
@@ -39,11 +41,11 @@ export function LinkedListLab() {
     () => LINKED_LIST_QUESTIONS.find((question) => question.id === selectedQuestionId) ?? LINKED_LIST_QUESTIONS[0],
     [selectedQuestionId],
   )
-  const draftKey = `play-the-algorithms:linked-list-draft:${selectedQuestion.id}:${language}`
+  const draftKey = `play-the-algorithms:linked-list-draft:${user?.id ?? "guest"}:${selectedQuestion.id}:${language}`
   const starter = LINKED_LIST_STARTERS[selectedQuestion.id][language]
 
   useEffect(() => {
-    const loadProgress = (): void => setSolved(readSolvedLinkedListQuestions())
+    const loadProgress = (): void => setSolved(readSolvedLinkedListQuestions(user?.id))
     loadProgress()
     window.addEventListener('storage', loadProgress)
     window.addEventListener('linked-list-progress', loadProgress)
@@ -51,11 +53,11 @@ export function LinkedListLab() {
       window.removeEventListener('storage', loadProgress)
       window.removeEventListener('linked-list-progress', loadProgress)
     }
-  }, [])
+  }, [user?.id])
 
   useEffect(() => {
     try {
-      setDraft(window.localStorage.getItem(draftKey) ?? starter)
+      setDraft(window.localStorage.getItem(draftKey) ?? (!user ? window.localStorage.getItem(`play-the-algorithms:linked-list-draft:${selectedQuestion.id}:${language}`) : null) ?? starter)
     } catch {
       setDraft(starter)
     }
@@ -85,6 +87,7 @@ export function LinkedListLab() {
         <Link href="/" className="hover:text-[var(--dsa-accent)]">← Adventure map</Link>
       </nav>
 
+      <Link className="btn self-start" href="/chat?prompt=Explain%20linked-list%20traversal%2C%20reversal%2C%20and%20cycle%20detection%20with%20examples.">Ask about this lesson</Link>
       <header className="max-w-3xl">
         <Chip tone="primary">read · write · play</Chip>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-[var(--dsa-ink)] sm:text-4xl">
@@ -217,3 +220,5 @@ export function LinkedListLab() {
     </main>
   )
 }
+
+export function LinkedListLab() { const {user,ready}=useAuth(); return ready ? <LinkedListLabContent key={user?.id ?? 'guest'} /> : <p role="status">Loading your notebook…</p> }

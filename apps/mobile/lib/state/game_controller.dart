@@ -18,6 +18,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 
 import '../models/action.dart';
+import '../models/guidance.dart';
 import '../models/api.dart';
 import '../models/problem.dart';
 import '../models/provider.dart';
@@ -41,7 +42,11 @@ enum GameStatus {
 
 /// One accepted action plus the board it produced.
 class HistoryEntry {
-  const HistoryEntry({required this.action, required this.outcome, required this.state});
+  const HistoryEntry({
+    required this.action,
+    required this.outcome,
+    required this.state,
+  });
 
   final Action action;
   final ActionOutcome outcome;
@@ -57,12 +62,22 @@ class GameController extends ChangeNotifier {
 
   final ApiClient _api;
   final _random = Random();
+  int _generationEpoch = 0;
+  Completer<void>? _generationAbort;
+  void cancelGeneration() {
+    _generationEpoch++;
+    if (_generationAbort?.isCompleted == false) _generationAbort!.complete();
+    _status = GameStatus.idle;
+    notifyListeners();
+  }
 
   // ---------------------------------------------------------------- identity
 
   String? _gameId;
   GameSpec? _spec;
   GameState? _state;
+  TurnPrompt? _turnPrompt;
+  TurnPrompt? get turnPrompt=>_turnPrompt;
   Debrief? _debrief;
   ProblemMeta? _problem;
 
@@ -122,6 +137,7 @@ class GameController extends ChangeNotifier {
   bool get isActionInFlight => _actionInFlight;
   bool get isGenerating => _status == GameStatus.generating;
   bool get hasGame => _gameId != null && _state != null && _spec != null;
+
   /// True once the player has opened the "the algorithm expected…" affordance.
   bool get expectationRevealed => _expectationRevealed;
 
@@ -192,10 +208,14 @@ class GameController extends ChangeNotifier {
     ProblemMeta problem, {
     bool forceNewSeed = false,
     bool routeWish = true,
+    bool forceTemplate = false,
   }) async {
+    final generation = ++_generationEpoch;
+    if (_generationAbort?.isCompleted == false) _generationAbort!.complete();
+    final abort = Completer<void>();
+    _generationAbort = abort;
     _resetRun();
     _problem = problem;
-    _difficulty = problem.defaultDifficulty;
     _status = GameStatus.generating;
     _error = null;
     notifyListeners();
@@ -207,10 +227,13 @@ class GameController extends ChangeNotifier {
     // the theme via `freeText`.
     if (routeWish && trimmedWish.isNotEmpty) {
       routing = await _routeWish(trimmedWish, problem);
-      if (routing != null && routing.source == CoachSource.heuristic && routing.choice.isEmpty) {
+      if (routing != null &&
+          routing.source == CoachSource.heuristic &&
+          routing.choice.isEmpty) {
         routing = null;
       }
     }
+    if (generation != _generationEpoch) return;
     _wishRouting = routing;
 
     // A fresh seed means a new instance *and* a new theme, so the previous
@@ -221,13 +244,16 @@ class GameController extends ChangeNotifier {
       seed: seed,
       difficulty: _difficulty,
       freeText: trimmedWish.isEmpty ? null : trimmedWish,
+      forceTemplate: forceTemplate,
     );
 
     try {
-      final response = await _api.generate(request);
+      final response = await _api.generate(request, abortTrigger: abort.future);
+      if (generation != _generationEpoch) return;
       _gameId = response.gameId;
       _spec = response.spec;
       _state = response.state;
+      _turnPrompt=response.turnPrompt;
       _seed = response.seed;
       _usedTier = response.usedTier;
       _attempts = response.attempts;
@@ -237,15 +263,56 @@ class GameController extends ChangeNotifier {
       _lastFlavour = _spec?.narration.correctFlavour.isNotEmpty == true
           ? _spec!.narration.correctFlavour.first
           : null;
-      _status = response.state.isPlaying ? GameStatus.playing : GameStatus.finished;
+      _status = response.state.isPlaying
+          ? GameStatus.playing
+          : GameStatus.finished;
       _debrief = null;
       _error = null;
       if (_status == GameStatus.finished) _debriefEpoch++;
     } on ApiException catch (e) {
+      if (generation != _generationEpoch) return;
       _error = e;
       _status = GameStatus.failed;
     }
     notifyListeners();
+  }
+
+  void adoptGenerated(
+    GenerateResponse response,
+    ProblemMeta problem, {
+    Difficulty? difficulty,
+  }) {
+    _resetRun();
+    _problem = problem;
+    _difficulty = difficulty ?? problem.defaultDifficulty;
+    _gameId = response.gameId;
+    _spec = response.spec;
+    _state = response.state;
+      _turnPrompt=response.turnPrompt;
+    _seed = response.seed;
+    _usedTier = response.usedTier;
+    _attempts = response.attempts;
+    _notes = response.notes;
+    _status = response.state.isPlaying
+        ? GameStatus.playing
+        : GameStatus.finished;
+    notifyListeners();
+  }
+
+  Future<void> restore(String id, ProblemMeta problem) async {
+    final raw = await _api.fetchGame(id);
+    adoptGenerated(
+      GenerateResponse.from({
+        ...raw,
+        'gameId': id,
+        'problemId': problem.id,
+        'attempts': raw['attempts'] ?? [],
+        'notes': raw['notes'] ?? [],
+        'usedTier': raw['usedTier'] ?? 'template',
+      }),
+      problem,
+      difficulty:Difficulty.parse(raw['difficulty']),
+    );
   }
 
   /// Asks the coach (`POST /api/decide`) how to read the player's wish.
@@ -258,7 +325,8 @@ class GameController extends ChangeNotifier {
       return await _api.decide(
         DecideRequest(
           kind: DecisionKind.difficulty,
-          stateText: 'Problem: ${problem.title}. ${problem.learningObjective}\nPlayer wish: $wish',
+          stateText:
+              'Problem: ${problem.title}. ${problem.learningObjective}\nPlayer wish: $wish',
           options: const {
             'easy': 'A gentle first run: short data, forgiving, one idea at a time.',
             'medium': 'A real workout: the usual data size, a couple of decisions per step.',
@@ -275,6 +343,7 @@ class GameController extends ChangeNotifier {
   }
 
   void _resetRun() {
+    _turnPrompt=null;
     _gameId = null;
     _spec = null;
     _state = null;
@@ -312,16 +381,25 @@ class GameController extends ChangeNotifier {
     try {
       final response = await _api.submitAction(gameId: gameId, action: action);
       _state = response.state;
+      _turnPrompt=response.turnPrompt;
       _lastOutcome = response.outcome;
       _usedTier = response.usedTier;
-      _history = [..._history, HistoryEntry(action: action, outcome: response.outcome, state: response.state)];
+      _history = [
+        ..._history,
+        HistoryEntry(
+          action: action,
+          outcome: response.outcome,
+          state: response.state,
+        ),
+      ];
       if (response.outcome.correct) {
         final flavour = _spec?.narration.correctFlavour;
         if (flavour != null && flavour.isNotEmpty) {
           _lastFlavour = flavour[_random.nextInt(flavour.length)];
         }
       }
-      final finished = response.debrief != null || response.state.phase.isTerminal;
+      final finished =
+          response.debrief != null || response.state.phase.isTerminal;
       if (finished) {
         _debrief = response.debrief;
         _status = GameStatus.finished;
@@ -346,7 +424,12 @@ class GameController extends ChangeNotifier {
   }
 
   void dismissOutcome() {
-    if (_lastOutcome == null && !_expectationRevealed && _lastFlavour == null && _error == null) return;
+    if (_lastOutcome == null &&
+        !_expectationRevealed &&
+        _lastFlavour == null &&
+        _error == null) {
+      return;
+    }
     _lastOutcome = null;
     _expectationRevealed = false;
     _lastFlavour = null;
@@ -419,6 +502,8 @@ class GameController extends ChangeNotifier {
       final restored = await _api.undo(gameId);
       if (restored == null) return; // nothing to undo; leave the game alone
       _state = restored;
+      _turnPrompt=null;
+      try{final snapshot=await _api.fetchGame(gameId);if(snapshot['turnPrompt']!=null)_turnPrompt=TurnPrompt.from(snapshot['turnPrompt']);}catch(_){}
       _lastOutcome = null;
       // Drop the snapshot of the action we just took back, so the scrub rail
       // cannot show a board the server no longer considers part of the game.
@@ -444,6 +529,7 @@ class GameController extends ChangeNotifier {
 
   /// Leaves the finished game, keeping the debrief for the caller to read.
   void clearRun() {
+    cancelGeneration();
     _resetRun();
     _status = GameStatus.idle;
     notifyListeners();

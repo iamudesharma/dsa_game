@@ -1087,7 +1087,7 @@ function legalActions(id: GraphId, state: GameState): LegalActionDescriptor[] {
       : next.targetId === 'mst' ? 'Add this edge to the running total'
       : next.targetId.startsWith('parent_') ? 'Attach the root under the other set'
       : 'Record the table value'
-    return [{ type: next.type, label, expects: 'value' }]
+    return [{ type: next.type, label, expects: 'value', options: { objectIds: [], targetIds: [next.targetId] } }]
   }
   if (next.type === 'submitAnswer') {
     return [{ type: next.type, label: 'Submit the result', expects: 'value', options: { objectIds: [next.targetId] } }]

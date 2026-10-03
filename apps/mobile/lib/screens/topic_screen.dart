@@ -17,15 +17,15 @@ import '../adventure/world_scene.dart';
 import '../adventure/worlds.dart';
 import '../learn/onboarding.dart';
 import '../models/problem.dart';
+import '../models/learning.dart';
+import '../services/api_client.dart';
+import '../state/game_controller.dart';
+import 'play_screen.dart';
 import '../state/auth_controller.dart';
 import '../state/catalogue_controller.dart';
 import '../theme/palette.dart';
 import '../widgets/common.dart';
-import 'account_screen.dart';
-import 'learn_screen.dart';
-import 'patterns_screen.dart';
 import 'problem_screen.dart';
-import 'tracks_screen.dart';
 
 class TopicScreen extends StatefulWidget {
   const TopicScreen({super.key});
@@ -35,6 +35,13 @@ class TopicScreen extends StatefulWidget {
 }
 
 class _TopicScreenState extends State<TopicScreen> {
+  String _filter='';
+  Future<LearningDashboard>? _dashboard;
+  String? _dashboardAccount;
+  int _finishedEpoch=-1;
+  @override void didChangeDependencies(){super.didChangeDependencies();final id=context.watch<AuthController>().user?.id;final finished=context.watch<GameController>().debriefEpoch;if(id!=_dashboardAccount||finished!=_finishedEpoch){_dashboardAccount=id;_finishedEpoch=finished;_dashboard=id==null?null:context.read<ApiClient>().learningDashboard();}}
+  Future<void> _resume(String id)async{try{final game=context.read<GameController>();final data=await context.read<ApiClient>().fetchGame(id);if(!mounted)return;final problem=context.read<CatalogueController>().catalogue?.problemById(data['problemId'] as String? ?? '');if(problem==null)return;await game.restore(id,problem);if(!mounted)return;await Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const PlayScreen()));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('$e')));}}
+
   @override
   void initState() {
     super.initState();
@@ -50,41 +57,12 @@ class _TopicScreenState extends State<TopicScreen> {
   Widget build(BuildContext context) {
     final controller = context.watch<CatalogueController>();
     final adventure = context.watch<AdventureController>();
-    final auth = context.watch<AuthController>();
     final catalogue = controller.catalogue;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Play the Algorithms'),
         actions: [
-          IconButton(
-            onPressed: () => AccountScreen.open(context),
-            icon: auth.signedIn
-                ? const Icon(Icons.account_circle_rounded)
-                : const Icon(Icons.account_circle_outlined),
-            tooltip: auth.signedIn ? 'Your profile (${auth.user?.email ?? ''})' : 'Sign in',
-          ),
-          IconButton(
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const LearnScreen()),
-            ),
-            icon: const Icon(Icons.menu_book_outlined),
-            tooltip: 'Field notebook',
-          ),
-          IconButton(
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const PatternsScreen()),
-            ),
-            icon: const Icon(Icons.pattern_rounded),
-            tooltip: 'Patterns',
-          ),
-          IconButton(
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const TracksScreen()),
-            ),
-            icon: const Icon(Icons.route_rounded),
-            tooltip: 'Tracks',
-          ),
           IconButton(
             onPressed: catalogue == null ? null : () => _openCollection(context, catalogue),
             icon: Badge(
@@ -161,6 +139,7 @@ class _TopicScreenState extends State<TopicScreen> {
           _WarningBanner(
             text: 'Progress storage is unavailable or was reset. You can keep playing; new stamps may not be kept.',
           ),
+        if(_dashboard!=null) FutureBuilder<LearningDashboard>(future:_dashboard,builder:(context,snapshot){final r=snapshot.data?.recommendation;if(r==null)return const SizedBox.shrink();return Card(child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(r['reason'] as String? ?? 'Suggested next practice'),if(r['gameId'] is String)TextButton(onPressed:()=>_resume(r['gameId'] as String),child:const Text('Resume your run')) else TextButton(onPressed:(){final p=catalogue.problemById(r['problemId'] as String? ?? '');if(p!=null)Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>ProblemScreen(topic:catalogue.topics.firstWhere((t)=>t.problems.any((item)=>item.id==p.id)),initialProblemId:p.id)));},child:const Text('Start recommended practice'))])));}),
         _Hero(nextProblem: nextProblem, catalogue: catalogue),
         const SizedBox(height: 12),
         const _OnboardingCard(),
@@ -172,7 +151,9 @@ class _TopicScreenState extends State<TopicScreen> {
           style: TextStyle(fontSize: 12.5, height: 1.35, color: context.gameColors.muted),
         ),
         const SizedBox(height: 10),
-        for (final topic in catalogue.topics) ...[
+        TextFormField(initialValue:_filter,decoration:const InputDecoration(labelText:'Search worlds and missions'),onChanged:(value)=>setState(()=>_filter=value)),
+        if(!catalogue.topics.any((t)=>t.label.toLowerCase().contains(_filter.toLowerCase())||t.problems.any((p)=>p.title.toLowerCase().contains(_filter.toLowerCase()))))const Padding(padding:EdgeInsets.all(16),child:Text('No missions match. Try another name or clear your search.')),
+        for (final topic in catalogue.topics.where((t)=>t.label.toLowerCase().contains(_filter.toLowerCase())||t.problems.any((p)=>p.title.toLowerCase().contains(_filter.toLowerCase())))) ...[
           _WorldCard(topic: topic, nextProblemId: nextId),
           const SizedBox(height: 12),
         ],

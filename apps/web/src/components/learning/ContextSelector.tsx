@@ -1,0 +1,5 @@
+'use client'
+import type { ChatContext } from '@/lib/learning-api'
+export function ContextSelector({ context, busy, change }: { context: ChatContext; busy: boolean; change: (c: ChatContext) => void }) {
+  return <details className="my-3"><summary className="text-sm">Context: {(['history','resume','target'] as const).filter(k => context[k]).map(k => k === 'history' ? 'practice history' : k).join(', ') || 'conversation only'}{context.reference ? ' · selected item' : ''}</summary><fieldset className="flex flex-wrap gap-4 py-3 text-sm" disabled={busy}><legend className="sr-only">Context to include</legend>{(['history','resume','target'] as const).map(k => <label key={k} className="flex gap-2"><input type="checkbox" checked={context[k]} onChange={e => change({ ...context, [k]: e.target.checked })} />{k === 'history' ? 'Practice history' : k === 'resume' ? 'Resume (excludes contact details)' : 'Interview target'}</label>)}{context.reference && <button type="button" className="btn" onClick={() => change({ ...context, reference: undefined })}>Remove selected item</button>}</fieldset></details>
+}

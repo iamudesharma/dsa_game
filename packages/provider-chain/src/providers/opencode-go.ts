@@ -373,7 +373,7 @@ export class OpencodeGoProvider implements SpecProvider {
         'user-agent': this.cfg.userAgent,
         'x-opencode-session': this.sessionId(),
       },
-      signal: AbortSignal.timeout(this.cfg.timeoutMs),
+      signal: input.signal ? AbortSignal.any([input.signal, AbortSignal.timeout(this.cfg.timeoutMs)]) : AbortSignal.timeout(this.cfg.timeoutMs),
       body: JSON.stringify({
         model,
         temperature: this.cfg.temperature,

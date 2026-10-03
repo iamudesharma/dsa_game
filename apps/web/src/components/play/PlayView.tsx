@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import {useAuth} from '@/components/auth/AuthProvider'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { getProblem } from '@dsa/game-schema'
@@ -69,6 +70,8 @@ export interface PlayViewProps {
  */
 export function PlayView({ gameId }: PlayViewProps) {
   const router = useRouter()
+  const {user,ready:authReady}=useAuth()
+  const originChat = useSearchParams().get('chat')
   const hydrated = useStoreHydrated()
 
   const spec = useGameStore((s) => s.spec)
@@ -128,22 +131,25 @@ export function PlayView({ gameId }: PlayViewProps) {
   // rather than telling the player to regenerate. Runs once per gameId and only
   // when the store genuinely does not have this game.
   const hydrateFromServer = useGameStore((s) => s.hydrateFromServer)
-  const attemptedRecovery = useRef(false)
+  const attemptedRecovery = useRef<string | null>(null)
+  const [recovering,setRecovering]=useState(true)
+  const [recoveryAttempt,setRecoveryAttempt]=useState(0)
   useEffect(() => {
-    if (!hydrated || loaded || attemptedRecovery.current) return
-    attemptedRecovery.current = true
+    if (!hydrated || !authReady || attemptedRecovery.current === gameId) return
+    attemptedRecovery.current = gameId
+    setRecovering(true)
     const controller = new AbortController()
     void getGame(gameId, controller.signal).then((game) => {
-      if (game) hydrateFromServer(game)
-    })
-    return () => controller.abort()
-  }, [hydrated, loaded, gameId, hydrateFromServer])
+      if (game && !controller.signal.aborted) hydrateFromServer(game)
+    }).finally(()=>{if(!controller.signal.aborted)setRecovering(false)})
+    return () => {controller.abort();attemptedRecovery.current=null}
+  }, [hydrated,authReady,user?.id,gameId,hydrateFromServer,recoveryAttempt])
 
   useEffect(() => {
     if (!loaded || state?.phase !== 'won') return
     const question = questionForGameProblem(spec?.problemId ?? state.problemId)
-    if (question) markLinkedListQuestionSolved(question.id)
-  }, [loaded, spec?.problemId, state?.phase, state?.problemId])
+    if (question) markLinkedListQuestionSolved(question.id,user?.id)
+  }, [loaded, spec?.problemId, state?.phase, state?.problemId,user?.id])
 
   useEffect(() => {
     setPicked([])
@@ -195,7 +201,7 @@ export function PlayView({ gameId }: PlayViewProps) {
 
   const endDemo = useCallback(() => setDemoState('done'), [])
 
-  if (!hydrated) {
+  if (!hydrated || !authReady || (!loaded && recovering)) {
     return (
       <ThemeScope>
         <main className="mx-auto max-w-6xl px-4 py-10" aria-busy="true">
@@ -212,10 +218,10 @@ export function PlayView({ gameId }: PlayViewProps) {
       <ThemeScope>
         <main className="mx-auto max-w-2xl px-4 py-16">
           <section className="panel p-5">
-            <h1 className="text-xl font-bold text-[var(--dsa-ink)]">This game is not loaded in this tab</h1>
+            <h1 className="text-xl font-bold text-[var(--dsa-ink)]">This run could not be opened</h1>
+            <button className="toy-button mt-3" onClick={()=>{attemptedRecovery.current=null;setRecoveryAttempt(n=>n+1)}}>Retry opening run</button>
             <p className="mt-2 text-[0.95rem] text-[var(--dsa-muted)]">
-              A game lives in this tab while you play it, so a link pasted into a new tab cannot pick up where it
-              left off. Go back to the problem and start a fresh board.
+              Check your connection and sign in to the account that started this run. Your saved progress stays on the server.
             </p>
             {error ? (
               <div className="mt-4">
@@ -249,6 +255,7 @@ export function PlayView({ gameId }: PlayViewProps) {
             both put the same sentence on the page twice, which is textbook
             extraneous load — the reader has to work out whether the two versions
             differ. The full objective is one tap away, for when they want it. */}
+        <div className="flex flex-wrap gap-2"><Link className="btn" href={originChat ? `/chat/${encodeURIComponent(originChat)}` : '/chat'}>{originChat ? 'Return to conversation' : 'Full explanations in Chat'}</Link></div>
         <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-1">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1"><Link href="/" className="btn" aria-label="Adventure map">← Map</Link>
             <h1 className="break-words text-[1.05rem] font-bold text-[var(--dsa-ink)] sm:text-[1.2rem]">
@@ -261,7 +268,7 @@ export function PlayView({ gameId }: PlayViewProps) {
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             <Button size="sm" variant="ghost" onClick={() => setCoachOpen((open) => !open)} aria-pressed={coachOpen}>
-              {coachOpen ? 'Close coach' : 'Ask a coach'}
+              {coachOpen ? 'Close coach' : 'Ask a hint coach'}
             </Button>
             <Link className="btn min-h-9 px-2.5 text-xs" href={`/problem/${spec.problemId}`}>
               Change problem
@@ -321,7 +328,7 @@ export function PlayView({ gameId }: PlayViewProps) {
                   {state.phase === 'won' ? spec.narration.win : spec.narration.lose}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Button variant="primary" onClick={() => router.push(`/debrief/${gameId}`)}>
+                  <Button variant="primary" onClick={() => router.push(`/debrief/${gameId}${originChat ? `?chat=${encodeURIComponent(originChat)}` : ''}`)}>
                     Explore the algorithm
                   </Button>
                   <Button onClick={() => router.push(`/problem/${spec.problemId}`)}>New board</Button>
@@ -386,7 +393,7 @@ export function PlayView({ gameId }: PlayViewProps) {
                   state={state}
                   work={work}
                   onDismiss={() => setDismissedStep(outcome.traceStep)}
-                  onGoToDebrief={() => router.push(`/debrief/${gameId}`)}
+                  onGoToDebrief={() => router.push(`/debrief/${gameId}${originChat ? `?chat=${encodeURIComponent(originChat)}` : ''}`)}
                 />
               ) : null}
             </AnimatePresence>

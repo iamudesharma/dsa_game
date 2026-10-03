@@ -198,7 +198,7 @@ function legalActions(id: BacktrackingId, state: GameState): LegalActionDescript
   }
   if (next.type === 'assignValue') {
     const label = next.value === '1' ? 'Mark it and go deeper' : 'Unmark it — backtrack and try the other way'
-    return [{ type: next.type, label, expects: 'value' }]
+    return [{ type: next.type, label, expects: 'value', options: { objectIds: [], targetIds: [next.targetId] } }]
   }
   if (next.type === 'submitAnswer') {
     return [{ type: next.type, label: 'Submit the full enumeration', expects: 'value', options: { objectIds: [next.targetId] } }]

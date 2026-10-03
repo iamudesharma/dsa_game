@@ -42,9 +42,9 @@ export function questionForGameProblem(problemId: string | null | undefined): Li
 
 export const LINKED_LIST_PROGRESS_KEY = 'play-the-algorithms:linked-list-solved:v1'
 
-export function readSolvedLinkedListQuestions(): string[] {
+export function readSolvedLinkedListQuestions(accountId?:string): string[] {
   try {
-    const parsed: unknown = JSON.parse(window.localStorage.getItem(LINKED_LIST_PROGRESS_KEY) ?? '[]')
+    const parsed: unknown = JSON.parse(window.localStorage.getItem(accountId ? `${LINKED_LIST_PROGRESS_KEY}:${accountId}` : LINKED_LIST_PROGRESS_KEY) ?? '[]')
     if (!Array.isArray(parsed)) return []
     const validIds = new Set<string>(LINKED_LIST_QUESTIONS.map((question) => question.id))
     return parsed.filter((id): id is string => typeof id === 'string' && validIds.has(id))
@@ -53,12 +53,12 @@ export function readSolvedLinkedListQuestions(): string[] {
   }
 }
 
-export function markLinkedListQuestionSolved(questionId: string): void {
+export function markLinkedListQuestionSolved(questionId: string,accountId?:string): void {
   if (!LINKED_LIST_QUESTIONS.some((question) => question.id === questionId)) return
-  const solved = new Set(readSolvedLinkedListQuestions())
+  const solved = new Set(readSolvedLinkedListQuestions(accountId))
   solved.add(questionId)
   try {
-    window.localStorage.setItem(LINKED_LIST_PROGRESS_KEY, JSON.stringify([...solved]))
+    window.localStorage.setItem(accountId ? `${LINKED_LIST_PROGRESS_KEY}:${accountId}` : LINKED_LIST_PROGRESS_KEY, JSON.stringify([...solved]))
     window.dispatchEvent(new Event('linked-list-progress'))
   } catch {
     // Storage can be disabled; the game still completes normally.

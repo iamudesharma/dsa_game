@@ -64,7 +64,8 @@ Future<void> _bootApp(
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
-  final mock = client ??
+  final mock =
+      client ??
       _RecordingClient({
         '/api/catalogue': (_) => catalogueJson,
         '/api/health': (_) => healthJson,
@@ -106,56 +107,80 @@ void main() {
     expect(find.text('template'), findsWidgets);
   });
 
-  testWidgets('an unreachable API shows a real error state, not a blank screen', (tester) async {
-    tester.view.physicalSize = _phone;
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.reset);
+  testWidgets(
+    'an unreachable API shows a real error state, not a blank screen',
+    (tester) async {
+      tester.view.physicalSize = _phone;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
 
-    final dead = MockClient((_) async => throw const _DeadSocket());
-    await tester.pumpWidget(DsaGameApp(api: ApiClient(httpClient: dead)));
-    await tester.pumpAndSettle();
+      final dead = MockClient((_) async => throw const _DeadSocket());
+      await tester.pumpWidget(DsaGameApp(api: ApiClient(httpClient: dead)));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Cannot reach the API'), findsOneWidget);
-    expect(find.text('Reload the catalogue'), findsOneWidget);
-  });
+      expect(find.text('Cannot reach the API'), findsOneWidget);
+      expect(find.text('Reload the catalogue'), findsOneWidget);
+    },
+  );
 
-  testWidgets('problem screen generates, then the board renders with pointers and variables', (tester) async {
-    await _bootApp(tester);
+  testWidgets(
+    'problem screen generates, then the board renders with pointers and variables',
+    (tester) async {
+      await _bootApp(tester);
 
-    // Topic -> problem.
-    await _openMission(tester, 'Find the target in a sorted array');
-    expect(find.text('The canonical algorithm'.toUpperCase()), findsOneWidget);
-    expect(find.textContaining('Binary search halves'), findsOneWidget);
+      // Topic -> problem.
+      await _openMission(tester, 'Find the target in a sorted array');
+      await _scrollTo(tester, find.text('The canonical algorithm'.toUpperCase()));
+      expect(
+        find.text('The canonical algorithm'.toUpperCase()),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Binary search halves'), findsWidgets);
 
-    // Wish box is wired to /api/decide on generate.
-    await tester.enterText(
-      find.byType(TextField).first,
-      'make it a heist and give me a hard one',
-    );
-    await tester.pumpAndSettle();
+      await tester.fling(
+        find.byType(ListView).last,
+        const Offset(0, 1600),
+        1200,
+      );
+      await tester.pumpAndSettle();
+      // Wish box is wired to /api/decide on generate.
+      await tester.enterText(
+        find.byType(TextField).first,
+        'make it a heist and give me a hard one',
+      );
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Start mission'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Start mission'));
+      await tester.pumpAndSettle();
 
-    // The play screen pushed itself once the spec arrived.
-    expect(find.byType(PlayScreen), findsOneWidget);
-    expect(find.text('The Ledger Room'), findsOneWidget);
-    expect(find.textContaining('Halve the search space'), findsOneWidget);
-    // lo / mid / hi are drawn as pointer chips on the board and in the strip.
-    expect(find.text('lo'), findsWidgets);
-    expect(find.text('mid'), findsWidgets);
-    expect(find.text('hi'), findsWidgets);
-    // Variables from `state.variables` are on screen, each in its own chip.
-    expect(find.text('ALGORITHM STATE'), findsOneWidget);
-    expect(find.text('target'), findsOneWidget);
-    expect(find.text('55'), findsWidgets);
-    // The mechanism, not a bare spinner.
-    // The binding label appears in the control strip and in the switcher chip.
-    expect(find.text('read two entries against each other'), findsNWidgets(2));
-    expect(tester.takeException(), isNull);
-  });
+      // The play screen pushed itself once the spec arrived.
+      expect(find.byType(PlayScreen), findsOneWidget);
+      expect(find.text('The Ledger Room'), findsOneWidget);
+      expect(find.textContaining('Halve the search space'), findsOneWidget);
+      // lo / mid / hi are drawn as pointer chips on the board and in the strip.
+      expect(find.text('lo'), findsWidgets);
+      expect(find.text('mid'), findsWidgets);
+      expect(find.text('hi'), findsWidgets);
+      expect(find.text('ALGORITHM STATE'), findsNothing);
+      await tester.tap(find.text('Memory and move history'));
+      await tester.pumpAndSettle();
+      // Variables from `state.variables` are on screen, each in its own chip.
+      expect(find.text('ALGORITHM STATE'), findsOneWidget);
+      expect(find.text('target'), findsOneWidget);
+      expect(find.text('55'), findsWidgets);
+      // The mechanism, not a bare spinner.
+      // The binding label appears in the control strip and in the switcher chip.
+      expect(
+        find.text('read two entries against each other'),
+        findsNWidgets(2),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-  testWidgets('a wrong action shows the feedback and the expected move', (tester) async {
+  testWidgets('a wrong action shows the feedback and the expected move', (
+    tester,
+  ) async {
     final client = _RecordingClient({
       '/api/catalogue': (_) => catalogueJson,
       '/api/health': (_) => healthJson,
@@ -188,12 +213,16 @@ void main() {
     await tester.tap(find.text('The algorithm expected…'));
     await tester.pumpAndSettle();
     expect(find.text('THE ALGORITHM EXPECTED'), findsOneWidget);
+    await tester.tap(find.text('Memory and move history'));
+    await tester.pumpAndSettle();
     // And the trace rail logged the mistake.
     expect(find.textContaining('TRACE · 1 step'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('undo takes the move back on the server, not just in the view', (tester) async {
+  testWidgets('undo takes the move back on the server, not just in the view', (
+    tester,
+  ) async {
     // Guards the distinction the two buttons exist for. Rewind scrubs the
     // view; Undo must change the game, and the trace has to shrink with it —
     // otherwise the debrief replays a step the player already took back.
@@ -235,7 +264,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('undo is a no-op when the server has nothing to pop', (tester) async {
+  testWidgets('undo is a no-op when the server has nothing to pop', (
+    tester,
+  ) async {
     final client = _RecordingClient({
       '/api/catalogue': (_) => catalogueJson,
       '/api/health': (_) => healthJson,
@@ -266,76 +297,80 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('a finished game opens the debrief with replay, mapping and code', (tester) async {
-    final client = _RecordingClient({
-      '/api/catalogue': (_) => catalogueJson,
-      '/api/health': (_) => healthJson,
-      '/api/generate': (_) => generateJson,
-      '/api/action': (_) => finishActionJson,
-      '/api/hint': (_) => hintJson,
-      '/api/decide': (_) => decideJson,
-    });
-    await _bootApp(tester, client: client);
+  testWidgets(
+    'a finished game opens the debrief with replay, mapping and code',
+    (tester) async {
+      final client = _RecordingClient({
+        '/api/catalogue': (_) => catalogueJson,
+        '/api/health': (_) => healthJson,
+        '/api/generate': (_) => generateJson,
+        '/api/action': (_) => finishActionJson,
+        '/api/hint': (_) => hintJson,
+        '/api/decide': (_) => decideJson,
+      });
+      await _bootApp(tester, client: client);
 
-    await _openMission(tester, 'Find the target in a sorted array');
-    await tester.tap(find.text('Start mission'));
-    await tester.pumpAndSettle();
+      await _openMission(tester, 'Find the target in a sorted array');
+      await tester.tap(find.text('Start mission'));
+      await tester.pumpAndSettle();
 
-    await _gameController(tester).dispatch(const SubmitAnswerAction(targetId: 't1', value: '6'));
-    await tester.pumpAndSettle();
+      await _gameController(tester)
+          .dispatch(const SubmitAnswerAction(targetId: 't1', value: '6'));
+      await tester.pumpAndSettle();
 
-    // The victory moment is player-controlled: a stamp card, not an
-    // automatic push to the debrief.
-    expect(find.text('Mission complete. Stamp collected!'), findsOneWidget);
-    expect(find.byType(DebriefScreen), findsNothing);
-    await tester.tap(find.text('Explore the algorithm'));
-    await tester.pumpAndSettle();
+      // The victory moment is player-controlled: a stamp card, not an
+      // automatic push to the debrief.
+      expect(find.text('Mission complete. Stamp collected!'), findsOneWidget);
+      expect(find.byType(DebriefScreen), findsNothing);
+      await tester.tap(find.text('Explore the algorithm'));
+      await tester.pumpAndSettle();
 
-    // The debrief arrived on the player's terms.
-    expect(find.text('You solved it'), findsOneWidget);
-    expect(find.text('index 6'), findsOneWidget);
-    expect(find.text('Play a new version of this game'), findsOneWidget);
-    expect(tester.takeException(), isNull);
+      // The debrief arrived on the player's terms.
+      expect(find.text('You solved it'), findsOneWidget);
+      expect(find.text('index 6'), findsOneWidget);
+      expect(find.text('Play a new version of this game'), findsOneWidget);
+      expect(tester.takeException(), isNull);
 
-    // Replay tab: the played run, replayable.
-    expect(find.text('Your run, step by step'), findsOneWidget);
-    expect(find.textContaining('step 2 / 2'), findsOneWidget);
+      // Replay tab: the played run, replayable.
+      expect(find.text('Your run, step by step'), findsOneWidget);
+      expect(find.textContaining('step 2 / 2'), findsOneWidget);
 
-    // Explain tab: the action meanings and the metaphor -> algorithm table.
-    await tester.tap(find.text('Explain'));
-    await tester.pumpAndSettle();
-    expect(find.text('What you were really doing'), findsOneWidget);
-    expect(find.text('a[mid]'), findsWidgets);
-    await _scrollTo(tester, find.text('metaphor → algorithm'.toUpperCase()));
-    expect(find.text('the window'), findsOneWidget);
+      // Explain tab: the action meanings and the metaphor -> algorithm table.
+      await tester.tap(find.text('Explain'));
+      await tester.pumpAndSettle();
+      expect(find.text('What you were really doing'), findsOneWidget);
+      expect(find.text('a[mid]'), findsWidgets);
+      await _scrollTo(tester, find.text('metaphor → algorithm'.toUpperCase()));
+      expect(find.text('the window'), findsOneWidget);
 
-    // Code tab: real code, with the line the mistake ran on marked.
-    await tester.tap(find.text('Code'));
-    await tester.pumpAndSettle();
-    expect(find.text('The algorithm itself'), findsOneWidget);
-    expect(find.text('function search(a, target) {'), findsOneWidget);
-    // Once for the real code, once for the pseudocode.
-    expect(find.text('you reached this'), findsNWidgets(2));
-    // A language switcher, because the contract ships more than one.
-    expect(find.text('python'), findsOneWidget);
+      // Code tab: real code, with the line the mistake ran on marked.
+      await tester.tap(find.text('Code'));
+      await tester.pumpAndSettle();
+      expect(find.text('The algorithm itself'), findsOneWidget);
+      expect(find.text('function search(a, target) {'), findsOneWidget);
+      // Once for the real code, once for the pseudocode.
+      expect(find.text('you reached this'), findsNWidgets(2));
+      // A language switcher, because the contract ships more than one.
+      expect(find.text('python'), findsOneWidget);
 
-    // Explain tab ends with the coach's misconception. (Anything above the
-    // scroll target is legitimately unmounted in a lazy ListView, so the
-    // complexity chips are asserted in the contract test instead.)
-    await tester.tap(find.text('Explain'));
-    await tester.pumpAndSettle();
-    await _scrollTo(tester, find.text('MISCONCEPTION SPOTTED'));
-    expect(find.textContaining('which half survives'), findsWidgets);
-    expect(tester.takeException(), isNull);
+      // Explain tab ends with the coach's misconception. (Anything above the
+      // scroll target is legitimately unmounted in a lazy ListView, so the
+      // complexity chips are asserted in the contract test instead.)
+      await tester.tap(find.text('Explain'));
+      await tester.pumpAndSettle();
+      await _scrollTo(tester, find.text('MISCONCEPTION SPOTTED'));
+      expect(find.textContaining('which half survives'), findsWidgets);
+      expect(tester.takeException(), isNull);
 
-    // The bottom bar stays reachable: the "new version" button is the payoff.
-    await tester.ensureVisible(find.text('Play a new version of this game'));
-    await tester.tap(find.text('Play a new version of this game'));
-    await tester.pumpAndSettle();
-    // A fresh game was generated (no seed) and a new play screen was pushed.
-    expect(find.byType(PlayScreen), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+      // The bottom bar stays reachable: the "new version" button is the payoff.
+      await tester.ensureVisible(find.text('Play a new version of this game'));
+      await tester.tap(find.text('Play a new version of this game'));
+      await tester.pumpAndSettle();
+      // A fresh game was generated (no seed) and a new play screen was pushed.
+      expect(find.byType(PlayScreen), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('the hint affordance shows its source', (tester) async {
     await _bootApp(tester);
@@ -345,7 +380,10 @@ void main() {
 
     await tester.tap(find.text('Hint').first);
     await tester.pumpAndSettle();
-    expect(find.text('The middle entry decides which half you keep.'), findsOneWidget);
+    expect(
+      find.text('The middle entry decides which half you keep.'),
+      findsOneWidget,
+    );
     expect(find.text('built-in'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -373,10 +411,11 @@ Future<void> _openMission(WidgetTester tester, String title) async {
 }
 
 /// The single `GameController` installed by the app under test.
-GameController _gameController(WidgetTester tester) => Provider.of<GameController>(
-  tester.element(find.byType(PlayScreen)),
-  listen: false,
-);
+GameController _gameController(WidgetTester tester) =>
+    Provider.of<GameController>(
+      tester.element(find.byType(PlayScreen)),
+      listen: false,
+    );
 
 /// Stands in for `SocketException`, which `dart:io` raises for a refused
 /// connection; the client only needs *an* exception to classify.

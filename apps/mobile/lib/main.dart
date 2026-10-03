@@ -14,7 +14,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'adventure/progress_store.dart';
-import 'screens/topic_screen.dart';
+import 'screens/app_shell.dart';
 import 'services/api_client.dart';
 import 'state/auth_controller.dart';
 import 'state/catalogue_controller.dart';
@@ -34,7 +34,9 @@ Future<void> main() async {
   // the app still runs, with progress kept for the session.
   ProgressBackend backend;
   try {
-    backend = AdventureKeyBackend(SharedPreferencesStore(await SharedPreferences.getInstance()));
+    backend = AdventureKeyBackend(
+      SharedPreferencesStore(await SharedPreferences.getInstance()),
+    );
   } catch (_) {
     backend = MemoryBackend();
   }
@@ -42,7 +44,12 @@ Future<void> main() async {
 }
 
 class DsaGameApp extends StatefulWidget {
-  const DsaGameApp({this.api, this.adventureBackend, this.authTokenStore, super.key});
+  const DsaGameApp({
+    this.api,
+    this.adventureBackend,
+    this.authTokenStore,
+    super.key,
+  });
 
   /// Injected by tests so the whole tree can run against a mocked transport;
   /// production leaves it null and gets a client built from [ApiConfig].
@@ -78,8 +85,10 @@ class _DsaGameAppState extends State<DsaGameApp> {
     _auth = AuthController(_api, tokenStore: widget.authTokenStore);
     _catalogue = CatalogueController(_api);
     _game = GameController(_api);
-    _adventure = AdventureController(widget.adventureBackend ?? MemoryBackend());
-    // Wins mirror server-side while signed in; first sign-in merges.
+    _adventure = AdventureController(
+      widget.adventureBackend ?? MemoryBackend(),
+    );
+    // Signed-in wins mirror server-side; guest stamps require explicit import.
     // Local stays the truth either way.
     _auth.attachAdventure(_adventure);
     _auth.boot();
@@ -109,7 +118,7 @@ class _DsaGameAppState extends State<DsaGameApp> {
         title: 'DSA by playing',
         debugShowCheckedModeBanner: false,
         theme: buildShellTheme(),
-        home: const TopicScreen(),
+        home: const AppShell(),
       ),
     );
   }

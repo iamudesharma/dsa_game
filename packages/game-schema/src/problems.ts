@@ -85,7 +85,9 @@ export type Difficulty = 'easy' | 'medium' | 'hard'
 
 export const DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard'] as const
 
+export interface AnswerFormat { kind: 'number' | 'boolean' | 'index-or-value' | 'node' | 'text'; label: string; placeholder: string }
 export interface ProblemMeta {
+  answerFormat?: AnswerFormat
   id: string
   topic: DsaTopic
   title: string
@@ -792,6 +794,23 @@ export const PROBLEMS: readonly ProblemMeta[] = [
 ] as const
 
 export const PROBLEM_IDS = PROBLEMS.map((p) => p.id)
+
+const booleanAnswers = new Set(['jump-game','word-search'])
+const numberAnswers = new Set(['kadane-max-subarray','sliding-window-max-sum','prefix-sum-range','frequency-count','trie-prefix-search','kth-largest-heap','num-islands','max-area-island','rotting-oranges','climbing-stairs','house-robber','single-number','network-delay-time','coin-change','kruskal-mst','unique-paths','lcs-length','edit-distance'])
+const nodeAnswers = new Set(['reverse-linked-list'])
+for (const problem of PROBLEMS) {
+  problem.answerFormat = ['valid-parentheses','valid-palindrome','valid-anagram','bst-validate'].includes(problem.id)
+    ? {kind:'text',label:'Enter valid or invalid.',placeholder:'valid or invalid'}
+    : problem.id === 'linked-list-cycle' ? {kind:'text',label:'Enter cycle or acyclic.',placeholder:'cycle or acyclic'}
+    : problem.id === 'rotated-search' || problem.id === 'bst-search' ? {kind:'number',label:'Enter the zero-based index of the target.',placeholder:'Target index'}
+    : problem.id === 'binary-search'
+    ? { kind: 'index-or-value', label: 'Enter the zero-based target index or the target value.', placeholder: 'Target index or value' }
+    : booleanAnswers.has(problem.id)
+      ? { kind: 'boolean', label: 'Enter true or false.', placeholder: 'true or false' }
+      : nodeAnswers.has(problem.id)
+        ? { kind: 'node', label: 'Enter the resulting head node or value requested by the task.', placeholder: 'Head node or value' }
+        : numberAnswers.has(problem.id) ? {kind:'number',label:'Enter the numeric result requested by the mission.',placeholder:'Number'} : { kind: 'text', label: 'Enter the result requested in the mission objective.', placeholder: 'Your result' }
+}
 
 export function getProblem(id: string): ProblemMeta | undefined {
   return PROBLEMS.find((p) => p.id === id)

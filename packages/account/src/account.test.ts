@@ -15,6 +15,63 @@ import {
 } from '@dsa/account'
 
 describe('resume parser', () => {
+  it('parses a realistic resume that starts with a name and contact line', () => {
+    resetResumeIds()
+    // The shape most real resumes have: a header block before any heading, a
+    // "Title, Company YYYY - Present" line, and degree-before-school.
+    const text = [
+      'Jane Doe',
+      'jane@example.com · Berlin',
+      'Summary',
+      'Backend engineer focused on payments infrastructure.',
+      'Experience',
+      'Senior Engineer, Northwind Labs 2019 - Present',
+      '- Led the migration of the ledger service to Postgres',
+      'Education',
+      'BSc Computer Science, TU Berlin, 2015 - 2019',
+      'Skills',
+      'Go, Postgres, Kubernetes, gRPC',
+    ].join('\n')
+    const { resume } = parseResumeText(text)
+    expect(resume.experience).toHaveLength(1)
+    expect(resume.experience[0]!.title).toBe('Senior Engineer')
+    expect(resume.experience[0]!.company).toBe('Northwind Labs')
+    expect(resume.experience[0]!.start).toBe('2019')
+    expect(resume.experience[0]!.end).toBe('Present')
+    expect(resume.experience[0]!.bullets).toEqual(['Led the migration of the ledger service to Postgres'])
+    expect(resume.education).toHaveLength(1)
+    expect(resume.skills.map((s) => s.name)).toEqual(['Go', 'Postgres', 'Kubernetes', 'gRPC'])
+  })
+
+  it('keeps content that sits on the heading line', () => {
+    const { resume } = parseResumeText('Summary: Backend engineer\nSKILLS: Go, Rust')
+    expect(resume.summary).toContain('Backend engineer')
+    expect(resume.skills.map((s) => s.name)).toEqual(['Go', 'Rust'])
+  })
+
+  it('reads degree-before-school lines correctly', () => {
+    // UK/EU convention. Getting this backwards put the degree in the school
+    // field, which then disagreed with the model and duplicated the entry.
+    resetResumeIds()
+    const { resume } = parseResumeText('Education\nBSc Computer Science, TU Berlin, 2015 - 2019')
+    expect(resume.education).toHaveLength(1)
+    expect(resume.education[0]!.degree).toBe('BSc Computer Science')
+    expect(resume.education[0]!.school).toBe('TU Berlin')
+  })
+
+  it('still reads school-before-degree lines', () => {
+    resetResumeIds()
+    const { resume } = parseResumeText('Education\nTU Berlin, BSc Computer Science, 2015 - 2019')
+    expect(resume.education[0]!.school).toBe('TU Berlin')
+    expect(resume.education[0]!.degree).toBe('BSc Computer Science')
+  })
+
+  it('does not invent an employer from a non-company fragment', () => {
+    const { resume } = parseResumeText('Experience\nEngineer, Payments team\n- Shipped features')
+    expect(resume.experience[0]!.company).toBe('')
+    expect(resume.experience[0]!.title).toContain('Engineer')
+  })
+
   it('parses a headed resume into structured entries', () => {
     resetResumeIds()
     const text = [

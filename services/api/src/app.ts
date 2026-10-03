@@ -9,6 +9,9 @@
  */
 
 import { Hono } from 'hono'
+import { installLearningRoutes } from './learning/routes.js'
+import { persistPractice } from './learning/store.js'
+import { getThread as getCoachThread, getThreadOwner } from './coach/threads.js'
 import {
   API_ERRORS,
   DSA_TOPICS,
@@ -25,6 +28,7 @@ import {
   deriveTurnPrompt,
   nextHint,
   incrementHintsUsed,
+  rewindProgressTo,
 } from '@dsa/game-engine'
 import { chainGenerateSpec } from '@dsa/provider-chain'
 import type { SpecProvider } from '@dsa/provider-chain'
@@ -54,6 +58,7 @@ import {
 } from './auth/session.js'
 import { createUser, findUserByEmail, getRequestIp, resolveUser } from './auth/middleware.js'
 import { getKit, getProgress, getResume, getTarget, listKits, mergeProgress, putResume, putTarget, saveKit } from './account/store.js'
+import { extractResume } from './account/extract.js'
 import { generateInterviewKit } from './interview/service.js'
 import {
   COMPANY_PROFILES,
@@ -121,6 +126,29 @@ export function createApp(deps: AppDeps): Hono {
     return c.json(body, status as 400)
   }
 
+  app.use('/api/*', async (c, next) => {
+    const path = c.req.path
+    const actor = resolveUser(c)
+    let gameId: string | undefined
+    if (path.startsWith('/api/game/')) gameId = c.req.param('gameId') || path.split('/')[3]
+    else if (['/api/action','/api/undo','/api/hint','/api/coach/ask'].includes(path)) {
+      try { gameId = ((await c.req.raw.clone().json()) as { gameId?: string }).gameId } catch { /* route validates */ }
+    } else if (path === '/api/coach/threads') gameId = c.req.query('gameId')
+    else if (path.startsWith('/api/coach/threads/')) {
+      const threadId = path.split('/').pop()!
+      const owner = getThreadOwner(threadId)
+      if (owner && owner !== actor?.id) return fail(c, 404, API_ERRORS.unknownThread, 'Unknown conversation')
+      const coach = getCoachThread(threadId)
+      gameId = coach?.gameId
+    }
+    if (typeof gameId === 'string') {
+      const session = getSession(gameId)
+      if (session?.userId && session.userId !== actor?.id) return fail(c, 404, API_ERRORS.unknownGame, 'Unknown game')
+    }
+    await next()
+  })
+  installLearningRoutes(app)
+
   // ------------------------------------------------------------------ health
 
   app.get('/api/health', async (c) => {
@@ -180,6 +208,7 @@ export function createApp(deps: AppDeps): Hono {
     if (!parsed.success) return fail(c, 400, API_ERRORS.badRequest, 'Invalid generate request', parsed.error.issues)
 
     const body = parsed.data
+    const ownerId = resolveUser(c)?.id
     const problem = getProblem(body.problemId)
     if (!problem) {
       return fail(c, 400, API_ERRORS.unknownProblem, `Unknown problem '${body.problemId}'`, {
@@ -221,6 +250,7 @@ export function createApp(deps: AppDeps): Hono {
       generated = await chainGenerateSpec(
         {
           problem,
+          signal: c.req.raw.signal,
           instance: state.instance,
           seed,
           difficulty,
@@ -234,9 +264,11 @@ export function createApp(deps: AppDeps): Hono {
       return fail(c, 502, API_ERRORS.generationFailed, 'All provider tiers failed', errText(err))
     }
 
+    if (c.req.raw.signal.aborted) return fail(c, 408, API_ERRORS.badRequest, 'Generation cancelled')
     const gameId = newGameId(problem.id)
     const now = Date.now()
     putSession({
+      ...(ownerId ? { userId: ownerId } : {}),
       gameId,
       problemId: problem.id,
       seed,
@@ -283,6 +315,7 @@ export function createApp(deps: AppDeps): Hono {
 
     session.state = state
     pushUndo(session, prior)
+    persistPractice(session)
 
     // The frame this action produced, if any. A rejected move produces none,
     // which is why feedback must not require one.
@@ -324,8 +357,9 @@ export function createApp(deps: AppDeps): Hono {
     if (!restored) {
       return c.json({ gameId: session.gameId, state: session.state, undone: false })
     }
-    session.state = restored
-    return c.json({ gameId: session.gameId, state: restored, undone: true })
+    session.state = rewindProgressTo(session.state, restored)
+    persistPractice(session)
+    return c.json({ gameId: session.gameId, state: session.state, undone: true })
   })
 
   // -------------------------------------------------------------------- hint
@@ -366,6 +400,7 @@ export function createApp(deps: AppDeps): Hono {
     }
 
     session.state = incrementHintsUsed(session.state)
+    persistPractice(session)
     return c.json({
       hint: result.hint,
       source: result.source,
@@ -452,7 +487,7 @@ export function createApp(deps: AppDeps): Hono {
 
     try {
       const response = await getCoachService().ask(
-        { gameId: session.gameId, problemId: session.problemId, spec: session.spec, state: session.state, oracle: session.oracle },
+        { userId: session.userId, gameId: session.gameId, problemId: session.problemId, spec: session.spec, state: session.state, oracle: session.oracle },
         { gameId: body.gameId, threadId: body.threadId, message: body.message, band: body.band, title: body.title },
       )
       return c.json(response)
@@ -492,6 +527,12 @@ export function createApp(deps: AppDeps): Hono {
    * they are looking at, which is why the client should call this before asking
    * again rather than after.
    */
+  app.get('/api/coach/threads/:threadId', (c) => {
+    const thread = getCoachThread(c.req.param('threadId'))
+    if (!thread) return fail(c, 404, API_ERRORS.unknownThread, 'Unknown conversation')
+    return c.json({ thread })
+  })
+
   app.delete('/api/coach/threads/:threadId', (c) => {
     const threadId = c.req.param('threadId')
     const deleted = deleteCoachThread(threadId)
@@ -601,18 +642,32 @@ export function createApp(deps: AppDeps): Hono {
   })
 
   /**
-   * Deterministic paste → parse. The parser never invents facts; anything it
-   * cannot place comes back as `unparsed` lines for the user to fix by hand.
-   * `save` persists the draft in the same call when the client asks.
+   * Paste/upload text → structured resume.
+   *
+   * A model gets first refusal on real-world messy resumes, but every field it
+   * produces is screened against the source text by `groundedResume` before it
+   * can be served: an ungrounded employer, date, or skill is replaced from the
+   * deterministic parse. `source` reports which path won, and `unparsed`
+   * carries the lines neither path could place so the user fixes them by hand.
+   * The endpoint always returns a resume — a failed model is a mode, not an error.
    */
   app.post('/api/me/parse-resume', async (c) => {
     const user = needUser(c)
     if (!user) return fail(c, 401, API_ERRORS.unauthorized, 'Sign in to continue.')
     const parsed = ParseResumeBodySchema.safeParse(await safeJson(c))
     if (!parsed.success) return fail(c, 400, API_ERRORS.badRequest, 'Invalid parse request', parsed.error.issues)
-    const { resume, unparsed } = parseResumeText(parsed.data.text)
-    const saved = parsed.data.save === true ? putResume(user.id, resume) : null
-    return c.json({ resume: saved ?? resume, unparsed, saved: saved !== null })
+
+    const { unparsed } = parseResumeText(parsed.data.text)
+    const result = await extractResume({ text: parsed.data.text })
+    const saved = parsed.data.save === true ? putResume(user.id, result.resume) : null
+    return c.json({
+      resume: saved ?? result.resume,
+      unparsed,
+      source: result.source,
+      notes: result.notes,
+      rejected: result.rejected,
+      saved: saved !== null,
+    })
   })
 
   app.get('/api/me/target', (c) => {
@@ -720,6 +775,8 @@ export function createApp(deps: AppDeps): Hono {
       gameId: session.gameId,
       problemId: session.problemId,
       seed: session.seed,
+      difficulty:session.difficulty,
+      turnPrompt:deriveTurnPrompt({state:session.state,oracle:session.oracle,spec:session.spec}),
       spec: session.spec,
       state: session.state,
       usedTier: session.usedTier,
