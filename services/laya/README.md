@@ -1,5 +1,11 @@
 # Laya sidecar
 
+For the smaller ONNX alternatives and app-specific evaluation, see
+[local routing](../../docs/local-routing.md). The published typed-decisions score
+below is not a DSA routing result. This catalogue now has 45 problems; evaluate
+option-token limits rather than relying on the older twelve-option assumption.
+
+
 Laya ([github.com/NandhaKishorM/laya](https://github.com/NandhaKishorM/laya), Apache 2.0) is a
 **non-autoregressive "System 1" decision engine**. It reads a state and answers any number of
 **typed questions** about it in a single forward pass — 33 ms on a T4, tens of ms on this M1.

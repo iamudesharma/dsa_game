@@ -65,3 +65,8 @@ export type {
   MisconceptionTag,
   ProblemScore,
 } from './heuristics.js'
+
+export { LocalRouter, rankScores } from './local-router.js'
+export { CANDIDATES } from './candidates.js'
+export { INTENT_OPTIONS, ruleIntent } from './examples.js'
+export type { CandidateId } from './candidates.js'

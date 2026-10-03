@@ -18,7 +18,12 @@ export interface DecisionOutcome {
   choice: string
   /** 0..1. Always a number in [0,1] — callers must not re-clamp. */
   confidence: number
-  source: 'laya' | 'heuristic'
+  source: 'laya' | 'heuristic' | 'semantic' | 'zero-shot'
+  model?: string
+  scoreKind?: 'cosine-similarity' | 'uncalibrated-probability' | 'heuristic'
+  score?: number
+  margin?: number
+  fallbackReason?: string
   /**
    * Only meaningful when `source === 'laya'`: the full per-option
    * distribution the model produced. Heuristics may also populate it
@@ -28,6 +33,8 @@ export interface DecisionOutcome {
 }
 
 export interface DecisionEngine {
+  status?(): { backend: string; model?: string; available: boolean; detail?: string }
+  classifyIntent?(text: string): Promise<DecisionOutcome>
   isEnabled(): boolean
   isAvailable(): Promise<boolean>
   /**
@@ -39,6 +46,8 @@ export interface DecisionEngine {
 }
 
 export interface DecisionEngineOptions {
+  backend?: 'heuristic' | 'semantic' | 'laya'
+  local?: import('./local-router.js').LocalRouterOptions
   baseUrl?: string
   enabled?: boolean
   model?: string
@@ -62,13 +71,7 @@ export interface DecisionEngineOptions {
 
 /** Defaults, exported so callers and tests can assert against them. */
 export const DEFAULT_BASE_URL = 'http://127.0.0.1:8000'
-/**
- * `typed-decisions` is the fine-tuned checkpoint, and every question this
- * package asks is a typed decision. It scores 0.766 on the typed-decisions
- * benchmark against 0.352 for `multilingual` (0.318 is random), so task fit
- * beats the ~200 MB the larger checkpoint costs. Set LAYA_MODEL=multilingual
- * for the smallest possible resident set. See services/laya/README.md.
- */
+/** Legacy Laya checkpoint. Its workflow benchmark does not establish DSA routing accuracy. */
 export const DEFAULT_MODEL = 'typed-decisions'
 export const DEFAULT_TIMEOUT_MS = 1500
 

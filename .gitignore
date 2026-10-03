@@ -19,3 +19,5 @@ run/
 
 # Disposable local validation databases and credentials.
 .dev/
+
+.cache/dsa-router/

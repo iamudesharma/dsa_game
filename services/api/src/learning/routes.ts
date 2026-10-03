@@ -1,3 +1,4 @@
+import type { RoutingPolicy } from '../routing.js'
 import type { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
 import { z } from 'zod'
@@ -34,7 +35,7 @@ let transportOverride: ChatTransport | null | undefined
 export function setLearningTransportForTests(value: ChatTransport | null | undefined) {
   transportOverride = value
 }
-export function installLearningRoutes(app: Hono) {
+export function installLearningRoutes(app: Hono, routing?: RoutingPolicy) {
   app.get('/api/lessons', c => c.json({ lessons: TOPIC_LESSONS }))
   // Database migrations run lazily; recover streams once this app first accesses learning data.
   let recovered = false
@@ -249,7 +250,7 @@ export function installLearningRoutes(app: Hono) {
           .map((m) => `${m.role}: ${m.text.slice(0, 200)}`)
           .join('\n')
           .slice(-6000)
-        const transport = transportOverride === undefined ? await defaultChatTransport() : transportOverride
+        const transport = transportOverride === undefined ? (routing ? routing.chat() : await defaultChatTransport()) : transportOverride
         if (!transport) {
           reply.text =
             'The AI tutor is unavailable right now. Your conversations and practice history are still saved. You can continue with the built-in practice games below.'

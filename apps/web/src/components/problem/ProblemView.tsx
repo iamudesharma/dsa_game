@@ -352,7 +352,7 @@ export function ProblemView({
                   </span>
                 </p>
                 <p className="mono mt-1 text-[0.6rem] text-[var(--dsa-ink-faint)]">
-                  {decision.source === 'laya' ? 'Laya' : 'heuristic'} · confidence{' '}
+                  {decision.source} · {decision.scoreKind === 'cosine-similarity' ? 'similarity' : 'score'}{' '}
                   {Math.round(decision.confidence * 100)}%
                 </p>
               </div>

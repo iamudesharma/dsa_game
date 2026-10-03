@@ -1,3 +1,6 @@
+import { LocalRouter } from './local-router.js'
+import { CANDIDATES, type CandidateId } from './candidates.js'
+import { INTENT_OPTIONS, ruleIntent } from './examples.js'
 /**
  * `createDecisionEngine` — the whole decision layer, Laya-first with a
  * deterministic heuristic underneath.
@@ -53,7 +56,7 @@ import {
   type DecisionOutcome,
 } from './types.js'
 
-export function createDecisionEngine(opts: DecisionEngineOptions = {}): DecisionEngine {
+function createLayaEngine(opts: DecisionEngineOptions = {}): DecisionEngine {
   const env = readLayaEnv()
 
   const offline = opts.offline ?? false
@@ -203,6 +206,7 @@ export function createDecisionEngine(opts: DecisionEngineOptions = {}): Decision
   }
 
   return {
+    status: () => ({ backend: 'laya', model, available: healthOk, detail: enabled ? undefined : 'disabled' }),
     isEnabled: () => enabled,
     isAvailable,
     decide,
@@ -320,6 +324,13 @@ export function heuristicFor(req: DecideRequest): DecisionOutcome {
       break
     }
     case 'difficulty': {
+      const explicit = /\b(easy|low|gentle|beginner|medium|moderate|hard|high|challenging)\b/i.exec((text.split(/player wish:|their wish:/i).at(-1) ?? text).replace(/\bnot\s+(easy|low|gentle|beginner|medium|moderate|hard|high|challenging)\b/gi, ''))
+      const hasStats = [...STEP_COUNT_NAMES, ...MISTAKE_COUNT_NAMES, ...HINT_COUNT_NAMES].some(name => readCount(text, [name]) !== null)
+      if (explicit && !hasStats) {
+        const level = explicit[1]!.toLowerCase()
+        outcome = { choice: /easy|low|gentle|beginner/.test(level) ? 'easy' : /hard|high|challenging/.test(level) ? 'hard' : 'medium', confidence: 1, source: 'heuristic' }
+        break
+      }
       const steps = readCount(text, STEP_COUNT_NAMES) ?? 0
       const mistakes = readCount(text, MISTAKE_COUNT_NAMES) ?? 0
       const hintsUsed = readCount(text, HINT_COUNT_NAMES) ?? 0
@@ -350,4 +361,55 @@ function readLastMistakeOp(text: string): string | undefined {
   const match = /\blastmistake(?:dsa)?op\b\D{0,3}([a-z-]+)/i.exec(text)
   const raw = match?.[1]?.toLowerCase()
   return raw !== undefined && isDsaOp(raw) ? raw : undefined
+}
+
+
+/** New installations use rules until a locally measured candidate qualifies. */
+export function createDecisionEngine(opts: DecisionEngineOptions = {}): DecisionEngine {
+  const configured = process.env.DECISION_BACKEND
+  const backend = opts.backend ?? (configured === 'semantic' || configured === 'heuristic' || configured === 'laya' ? configured : (opts.enabled === true || opts.baseUrl !== undefined || opts.model !== undefined || process.env.LAYA_ENABLED !== undefined || process.env.LAYA_BASE_URL !== undefined || process.env.LAYA_MODEL !== undefined ? 'laya' : 'heuristic'))
+  // Explicit Laya configuration and the legacy default remain compatible.
+  if (backend === 'laya') {
+    const legacy = createLayaEngine(opts)
+    return { ...legacy, async decide(req) {
+      const keys = Object.keys(req.options)
+      if (keys.length === 0) return { choice: '', confidence: 0, source: 'heuristic', scoreKind: 'heuristic' }
+      if (keys.length === 1 || !['route-problem', 'pick-theme'].includes(req.kind)) return { ...heuristicFor(req), scoreKind: 'heuristic' }
+      return legacy.decide(req)
+    } }
+  }
+  const enabled = backend === 'semantic' && !opts.offline && opts.enabled !== false
+  const candidate = process.env.DECISION_CANDIDATE
+  const router = enabled ? new LocalRouter({
+    ...(candidate && Object.hasOwn(CANDIDATES, candidate) ? { candidate: candidate as CandidateId } : {}),
+    cacheDir: process.env.DECISION_CACHE_DIR || undefined,
+    minScore: Number(process.env.DECISION_MIN_SCORE) || undefined,
+    minMargin: process.env.DECISION_MIN_MARGIN === undefined ? undefined : Number(process.env.DECISION_MIN_MARGIN),
+    ...opts.local,
+  }) : undefined
+  // Initialization is off the request path and only reads prepared local files.
+  if (router) void router.prepare()
+  const fallback = (req: DecideRequest, reason?: string): DecisionOutcome => ({ ...heuristicFor(req), scoreKind: 'heuristic', ...(reason ? { fallbackReason: reason } : {}) })
+  return {
+    isEnabled: () => enabled,
+    isAvailable: async () => router?.status().available ?? false,
+    status: () => router?.status() ?? { backend: 'heuristic', available: true },
+    async decide(req) {
+      const keys = Object.keys(req.options)
+      if (keys.length === 0) return { choice: '', confidence: 0, source: 'heuristic', scoreKind: 'heuristic' }
+      if (keys.length === 1) return { choice: keys[0]!, confidence: 1, source: 'heuristic', scoreKind: 'heuristic' }
+      if (!router || !['route-problem', 'pick-theme'].includes(req.kind)) return fallback(req)
+      if (!router.status().available) {
+        void router.prepare()
+        return fallback(req, 'model loading or unavailable')
+      }
+      return await router.decide(req.kind, req.stateText, req.options) ?? fallback(req, 'unavailable, uncertain, or deadline exceeded')
+    },
+    async classifyIntent(text) {
+      if (router && !router.status().available) void router.prepare()
+      const picked = router?.status().available ? await router.decide('request-intent', text, INTENT_OPTIONS) : null
+      return picked ?? { choice: ruleIntent(text), confidence: 0, source: 'heuristic', scoreKind: 'heuristic', fallbackReason: router ? 'unavailable, uncertain, or deadline exceeded' : 'rules configured' }
+    },
+    dispose: async () => { await router?.dispose() },
+  }
 }

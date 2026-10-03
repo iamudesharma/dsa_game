@@ -485,11 +485,16 @@ let transportPromise: Promise<ChatTransport | null> | null = null
  * `COACH_TRANSPORT=0` forces the deterministic path, which is what the test suite
  * relies on and what a demo without a key should get.
  */
-export function getCoachService(env: NodeJS.ProcessEnv = process.env): CoachService {
+export function getCoachService(env: NodeJS.ProcessEnv = process.env, routedTransport?: ChatTransport): CoachService {
   if (instance !== null) return instance
 
   if (env.COACH_TRANSPORT === '0' || env.COACH_TRANSPORT === 'off') {
     instance = createCoachService({ transport: null })
+    return instance
+  }
+
+  if (routedTransport) {
+    instance = createCoachService({ transport: routedTransport })
     return instance
   }
 

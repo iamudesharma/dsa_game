@@ -66,7 +66,9 @@ class GenerateResponse {
       throw const MalformedResponse('generate response is missing gameId');
     }
     return GenerateResponse(
-      turnPrompt:map['turnPrompt']==null?null:TurnPrompt.from(map['turnPrompt']),
+      turnPrompt: map['turnPrompt'] == null
+          ? null
+          : TurnPrompt.from(map['turnPrompt']),
       gameId: gameId,
       problemId: Json.str(map['problemId']),
       seed: Json.intOr(map['seed']),
@@ -180,7 +182,9 @@ class ActionResponse {
       throw const MalformedResponse('action response is missing gameId');
     }
     return ActionResponse(
-      turnPrompt:map['turnPrompt']==null?null:TurnPrompt.from(map['turnPrompt']),
+      turnPrompt: map['turnPrompt'] == null
+          ? null
+          : TurnPrompt.from(map['turnPrompt']),
       gameId: gameId,
       state: GameState.from(map['state']),
       outcome: ActionOutcome.from(map['outcome']),
@@ -531,6 +535,11 @@ class DecideResponse {
     required this.confidence,
     required this.source,
     this.distribution,
+    this.model,
+    this.scoreKind,
+    this.score,
+    this.margin,
+    this.fallbackReason,
   });
 
   factory DecideResponse.from(Object? raw) {
@@ -545,16 +554,26 @@ class DecideResponse {
       choice: Json.str(map['choice']),
       confidence: Json.doubleOr(map['confidence'], fallback: 0),
       source: CoachSource.parse(map['source']),
+      model: Json.strOrNull(map['model']),
+      scoreKind: Json.strOrNull(map['scoreKind']),
+      score: Json.numberOrNull(map['score'])?.toDouble(),
+      margin: Json.numberOrNull(map['margin'])?.toDouble(),
+      fallbackReason: Json.strOrNull(map['fallbackReason']),
       distribution: distribution.isEmpty
           ? null
           : Map.unmodifiable(distribution),
     );
   }
 
+  final String? model;
+  final String? scoreKind;
+  final double? score;
+  final double? margin;
+  final String? fallbackReason;
   final DecisionKind kind;
   final String choice;
 
-  /// 0..1 probability of the chosen option.
+  /// Compatibility score; scoreKind identifies similarity versus probability.
   final double confidence;
 
   final CoachSource source;
@@ -572,6 +591,7 @@ class HealthResponse {
     required this.tiers,
     required this.laya,
     required this.uptimeSec,
+    this.decision,
   });
 
   factory HealthResponse.from(Object? raw) {
@@ -587,9 +607,13 @@ class HealthResponse {
           ? LayaAvailability.unknown
           : LayaAvailability.from(map['laya']),
       uptimeSec: Json.doubleOr(map['uptimeSec']),
+      decision: map['decision'] == null
+          ? null
+          : DecisionAvailability.from(map['decision']),
     );
   }
 
+  final DecisionAvailability? decision;
   final bool ok;
   final String version;
   final List<TierAvailability> tiers;

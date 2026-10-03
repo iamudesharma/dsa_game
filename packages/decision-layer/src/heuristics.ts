@@ -1,12 +1,9 @@
 /**
  * Deterministic fallbacks for every `DecisionKind`.
  *
- * WHY this file is larger than the Laya path: Laya is a zero-shot 322M
- * classifier. On the typed-decisions benchmark it scores ~0.35 argmax accuracy
- * (0.766 only for the fine-tuned `typed-decisions` checkpoint, which is 421M
- * and out of budget on this hardware). These functions are the part that is
- * *never* wrong by omission: given the same inputs they always return the same
- * valid key, with no network, no model, and no chance of an exception.
+ * These rules are the zero-model fallback for the local routing backends.
+ * They constrain outputs to allowed labels without model latency or memory.
+ * See docs/local-routing-results.md for application-specific comparisons.
  *
  * Every exported function is total: it returns a `DecisionOutcome` whose
  * `choice` is a member of the input label set whenever that set is non-empty.

@@ -1,3 +1,4 @@
+import { RoutingPolicy } from './routing.js'
 /**
  * The HTTP surface. Both clients (Next.js and Flutter) talk only to this.
  *
@@ -92,6 +93,7 @@ export interface AppDeps {
 
 export function createApp(deps: AppDeps): Hono {
   const app = new Hono()
+  const routing = new RoutingPolicy(deps.decisions)
 
   /**
    * CORS, restricted to loopback origins.
@@ -147,7 +149,7 @@ export function createApp(deps: AppDeps): Hono {
     }
     await next()
   })
-  installLearningRoutes(app)
+  installLearningRoutes(app, routing)
 
   // ------------------------------------------------------------------ health
 
@@ -164,13 +166,15 @@ export function createApp(deps: AppDeps): Hono {
         }
       }),
     )
-    const layaAvailable = await deps.decisions.isAvailable()
+    const decision = deps.decisions.status?.()
+    const layaAvailable = !decision || decision.backend === 'laya' ? await deps.decisions.isAvailable() : false
     return c.json({
       ok: true,
       version: deps.version,
       tiers,
+      decision: decision?.backend === 'laya' ? { ...decision, available: layaAvailable } : decision ?? { backend: 'laya', available: layaAvailable },
       laya: {
-        enabled: deps.decisions.isEnabled(),
+        enabled: (!decision || decision.backend === 'laya') && deps.decisions.isEnabled(),
         available: layaAvailable,
         detail: layaAvailable ? undefined : 'sidecar offline — heuristics in use',
       },
@@ -196,7 +200,7 @@ export function createApp(deps: AppDeps): Hono {
         })),
       })),
       tiers: PROVIDER_TIERS.map((tier) => ({ tier, available: false })),
-      laya: { enabled: deps.decisions.isEnabled(), available: false },
+      laya: { enabled: deps.decisions.status?.().backend === 'laya' && deps.decisions.isEnabled(), available: false },
       activeGames: sessionCount(),
     }),
   )
@@ -257,7 +261,12 @@ export function createApp(deps: AppDeps): Hono {
           freeText: body.freeText,
           forceTemplate: body.forceTemplate,
         },
-        { providers: deps.chain, onAttempt: () => {} },
+        {
+          providers: body.forceTemplate ? deps.chain : await routing.providers(deps.chain, body.freeText ?? problem.title, c.req.raw.signal),
+          onAttempt: attempt => {
+            if (!attempt.error?.startsWith('skipped:')) routing.record(attempt.tier, attempt.ok, attempt.ms)
+          },
+        },
       )
     } catch (err) {
       console.error('[generate] every provider tier failed:', err)
@@ -429,10 +438,14 @@ export function createApp(deps: AppDeps): Hono {
       return fail(c, 400, API_ERRORS.badRequest, 'freeText is required')
     }
     const text = freeText.slice(0, 500)
-    const result = routeProblem(text)
+    const playable = PROBLEMS.filter(p => getOracle(p.id) !== undefined)
+    const options = Object.fromEntries(playable.map(p => [p.id, `${p.title}: ${p.learningObjective}`]))
+    const normalized = text.trim().toLowerCase().replaceAll('-', ' ')
+    const direct = playable.find(p => normalized === p.id.replaceAll('-', ' ') || normalized === p.title.toLowerCase())
+    const result = direct ? { choice: direct.id, confidence: 1, source: 'heuristic' as const, scoreKind: 'heuristic' as const } : await deps.decisions.decide({ kind: 'route-problem', stateText: text, options, instructions: 'Select the playable problem matching this request.' })
     const problem = getProblem(result.choice)
     const alternatives = scoreProblems(text)
-      .filter((s) => s.id !== result.choice)
+      .filter((s) => s.id !== result.choice && getOracle(s.id) !== undefined)
       .slice(0, 3)
       .map((s) => ({ problemId: s.id, score: s.score }))
     return c.json({
@@ -441,6 +454,8 @@ export function createApp(deps: AppDeps): Hono {
       confidence: result.confidence,
       source: result.source,
       alternatives,
+      scoreKind: result.scoreKind,
+      model: result.model,
     })
   })
 
@@ -458,6 +473,11 @@ export function createApp(deps: AppDeps): Hono {
         confidence: result.confidence,
         source: result.source,
         distribution: result.distribution,
+        model: result.model,
+        scoreKind: result.scoreKind,
+        score: result.score,
+        margin: result.margin,
+        fallbackReason: result.fallbackReason,
       })
     } catch (err) {
       return fail(c, 500, API_ERRORS.internal, 'Decision layer failed', errText(err))
@@ -486,7 +506,7 @@ export function createApp(deps: AppDeps): Hono {
     if (!session) return fail(c, 404, API_ERRORS.unknownGame, `Unknown game '${body.gameId}'`)
 
     try {
-      const response = await getCoachService().ask(
+      const response = await getCoachService(process.env, routing.chat()).ask(
         { userId: session.userId, gameId: session.gameId, problemId: session.problemId, spec: session.spec, state: session.state, oracle: session.oracle },
         { gameId: body.gameId, threadId: body.threadId, message: body.message, band: body.band, title: body.title },
       )

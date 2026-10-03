@@ -94,7 +94,7 @@ export const UndoBodySchema = z.object({
 export const DecideBodySchema = z.object({
   kind: z.enum(['route-problem', 'pick-theme', 'pick-hint', 'tag-misconception', 'difficulty']),
   stateText: z.string().min(1).max(4000),
-  options: z.record(z.string().max(60), z.string().max(200)),
+  options: z.record(z.string().max(60), z.string().max(200)).refine(options => Object.keys(options).length <= 64, 'At most 64 routing options'),
   instructions: z.string().min(1).max(600),
 })
 
