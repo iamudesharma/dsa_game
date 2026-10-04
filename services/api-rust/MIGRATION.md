@@ -165,3 +165,13 @@ share this bound. `DSA_MAX_REQUESTS` remains 32. Rejected operations return the
 existing 429 envelope and `Retry-After`; no waiting queue is introduced. Health
 exposes `activeGameOperations` and `gameOperations`. This is an additional
 allocation bound, not a claim that the full memory acceptance has passed.
+
+
+### User-authorized 512 MiB fallback
+
+The backend-only target remains 256 MiB first. If measured memory acceptance
+fails, a 512 MiB container is now authorized, with peak below 460 MiB. CI keeps
+both reports and repeats the full workload at the larger budget; this does not
+turn a failed 256 MiB result into a successful one. Behavior errors and incomplete
+runs cannot trigger fallback unless the container was OOM-killed. All other
+acceptance requirements and the cutover gate remain in effect.

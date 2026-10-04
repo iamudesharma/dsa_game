@@ -116,11 +116,12 @@ def request(base, path, body=None, token=None, raw=None):
         return response.status, value, dict(response.headers)
 
 
-def run(image, label, seconds, output, fixtures):
+def run(image, label, seconds, output, fixtures, memory_mib=256):
+    peak_limit_mib = {256: 230, 512: 460}[memory_mib]
     name = f'dsa-benchmark-{label}'
     docker('rm', '-f', name, check=False)
     Provider.peak = Provider.calls = 0
-    docker('run', '-d', '--name', name, '--memory=256m', '--memory-swap=256m',
+    docker('run', '-d', '--name', name, f'--memory={memory_mib}m', f'--memory-swap={memory_mib}m',
            '--cpus=2', '--add-host=host.docker.internal:host-gateway',
            '-p', '127.0.0.1::8787',
            '-e', 'PORT=8787', '-e', 'API_HOST=0.0.0.0', '-e', 'DSA_DB_PATH=/data/dsa.db',
@@ -320,11 +321,11 @@ def run(image, label, seconds, output, fixtures):
     growth = ((sum(steady[midpoint:]) / max(1, len(steady[midpoint:]))) -
               (sum(steady[:midpoint]) / max(1, len(steady[:midpoint])))) if steady else 0
     passed = (seconds >= 3600 and len(samples) >= 700 and not errors and not state['OOMKilled']
-              and 0 < peak < 230 * 1024 * 1024 and growth < 5 * 1024 * 1024
+              and 0 < peak < peak_limit_mib * 1024 * 1024 and growth < 5 * 1024 * 1024
               and Provider.peak == 2 and Provider.calls > 100
               and all(n >= 10 for n in activity[:20]) and min(activity[20:]) >= 100
               and not any(s['events'].get('oom_kill', 0) for s in samples))
-    report = {'backend': label, 'durationSeconds': seconds, 'measuredElapsedSeconds': samples[-1]['seconds'] if samples else 0, 'players': 20, 'peakBytes': peak if samples else None,
+    report = {'backend': label, 'memoryLimitMiB': memory_mib, 'peakLimitMiB': peak_limit_mib, 'durationSeconds': seconds, 'measuredElapsedSeconds': samples[-1]['seconds'] if samples else 0, 'players': 20, 'peakBytes': peak if samples else None,
               'steadyGrowthBytes': growth if steady else None, 'oomKilled': state['OOMKilled'], 'errors': errors,
               'requests': counts, 'completedIterationsByWorker':activity, 'samples': samples, 'mockProviderCalls': Provider.calls,
               'peakUpstreamOperations': Provider.peak, 'accepted': passed,
@@ -381,10 +382,40 @@ def http_smoke(base, fixtures):
                       'memoryAcceptance': 'not measured'}))
 
 
+def memory_rejected(report):
+    """Permit the larger budget only for measured memory rejection."""
+    if report['accepted']:
+        return False
+    if report['oomKilled']:
+        return True
+    # A workload error or incomplete run needs repair, not a larger budget.
+    if report['errors'] or report['measuredElapsedSeconds'] < 3600:
+        return False
+    peak = report['peakBytes']
+    growth = report['steadyGrowthBytes']
+    return ((peak is not None and peak >= report['peakLimitMiB'] * 2**20)
+            or (growth is not None and growth >= 5 * 2**20))
+
+
+def benchmark_pair(args, output, fixtures, memory_mib):
+    output.mkdir(parents=True, exist_ok=True)
+    node = run(args.node_image, 'node', args.seconds, output, fixtures, memory_mib)
+    rust = run(args.rust_image, 'rust', args.seconds, output, fixtures, memory_mib)
+    comparison = {'node': node['peakBytes'], 'rust': rust['peakBytes'],
+                  'rustAccepted': rust['accepted'], 'memoryLimitMiB': memory_mib,
+                  'peakLimitMiB': rust['peakLimitMiB']}
+    (output / 'comparison.json').write_text(json.dumps(comparison, indent=2))
+    print(json.dumps(comparison), flush=True)
+    return rust
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--http-smoke', metavar='DISPOSABLE_BACKEND_URL')
     parser.add_argument('--seconds', type=int, default=3600)
+    parser.add_argument('--memory-mib', type=int, choices=(256, 512), default=256)
+    parser.add_argument('--allow-512-fallback', action='store_true',
+                        help='Retry measured 256 MiB memory failures at 512 MiB; retain both reports')
     parser.add_argument('--rust-image', default='dsa-rust-benchmark')
     parser.add_argument('--node-image', default='dsa-node-benchmark')
     parser.add_argument('--output', default='run/container-benchmark')
@@ -398,12 +429,10 @@ def main():
     provider = http.server.ThreadingHTTPServer(('0.0.0.0', 18999), Provider)
     threading.Thread(target=provider.serve_forever, daemon=True).start()
     try:
-        node = run(args.node_image, 'node', args.seconds, output, fixtures)
-        rust = run(args.rust_image, 'rust', args.seconds, output, fixtures)
-        (output / 'comparison.json').write_text(json.dumps({'node': node['peakBytes'],
-            'rust': rust['peakBytes'], 'rustAccepted': rust['accepted']}, indent=2))
-        print(json.dumps({'nodePeakMiB': node['peakBytes'] / 2**20 if node['peakBytes'] is not None else None,
-                          'rustPeakMiB': rust['peakBytes'] / 2**20 if rust['peakBytes'] is not None else None, 'rustAccepted': rust['accepted']}))
+        rust = benchmark_pair(args, output, fixtures, args.memory_mib)
+        if args.allow_512_fallback and args.memory_mib == 256 and memory_rejected(rust):
+            print('256 MiB memory acceptance failed; retrying backend-only at 512 MiB.', flush=True)
+            rust = benchmark_pair(args, output / 'fallback-512', fixtures, 512)
         if not rust['accepted']:
             raise SystemExit(1)
     finally:

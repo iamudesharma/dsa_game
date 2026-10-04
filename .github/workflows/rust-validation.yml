@@ -39,13 +39,14 @@ jobs:
       - run: pnpm --filter @dsa/web build
   container-memory:
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
+      - run: python3 scripts/rust-container-benchmark-test.py
       - run: docker build -f services/api-rust/Dockerfile -t dsa-rust-benchmark .
       - run: docker build -f services/api-rust/Dockerfile.node-baseline -t dsa-node-benchmark .
-      - name: Sixty-minute workloads, Node baseline and Rust acceptance
-        run: python3 scripts/rust-container-benchmark.py
+      - name: Sixty-minute workloads at 256 MiB, optional 512 MiB memory fallback
+        run: python3 scripts/rust-container-benchmark.py --allow-512-fallback
       - uses: actions/upload-artifact@v4
         if: always()
         with:

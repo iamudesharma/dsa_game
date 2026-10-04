@@ -261,7 +261,7 @@ unusable responses fall back to deterministic heuristics. No local process start
 
 ## Container acceptance and rollback commands
 
-The GitHub `container-memory` job runs both backends with a 256 MiB memory and
+The GitHub `container-memory` job first runs both backends with a 256 MiB memory and
 swap limit, two CPUs, 20 player workers and two external mock AI workers. It
 samples cgroup v2 `memory.current`, `memory.peak`, and `memory.events`; the
 SQLite files live inside the backend container, so their charged filesystem
@@ -335,3 +335,19 @@ rejection. Browser owned practice also completed in ten moves with zero mistakes
 and one hint; its debrief and scheduled review are visible in dashboard history.
 
 Game read, action, undo, hint, and debrief handlers share a separate immediate-admission limit. It bounds simultaneous decoded board/undo allocations while SQLite persists their changes. Excess operations receive the standard 429 envelope and `Retry-After`; clients should retry the same action ID before advancing. Coach operations remain bounded by the AI limit. Serialized cache accounting excludes these transient decoded objects.
+
+
+The backend-only budget may increase to 512 MiB if the 256 MiB run fails for
+measured memory reasons. CI uses `--allow-512-fallback`: it retains the original
+reports, then benchmarks both backends for another full hour at 512 MiB under
+`fallback-512/`. The larger budget requires peak below 460 MiB and retains all
+behavior, growth, concurrency, and OOM checks. Workload errors without an OOM,
+or incomplete runs, do not trigger a memory fallback. A standalone 512 MiB run
+uses `python3 scripts/rust-container-benchmark.py --memory-mib 512`. Neither
+budget includes frontend or remote AI processes; both include SQLite and charged
+filesystem memory. Acceptance records the actual budget used.
+
+Compressing HTTP requests reduces transfer bytes, but JSON still requires
+decoding in memory. Small gameplay commands do not contain the retained undo
+histories. Request compression is therefore not enabled as a memory fix; the
+body limit and decoded snapshot admission bounds remain in effect.
