@@ -195,3 +195,21 @@ high-water RSS was 161.96 MiB. Cgroup peak was 256.32 MiB, so the original
 and charged file cache about 133.31 MiB. These are different measurements:
 process RSS is not total container memory. Full reports remain in that run's
 `container-memory-comparison` artifact.
+
+
+### Linux SQLite filesystem cache
+
+Run `37198342311` completed both five-minute workloads without OOM or request
+errors. At 512 MiB, peak container memory was 325.0547 MiB, but warmed growth
+was 54.48 MiB: approximately 51.67 MiB file cache and 2.99 MiB anonymous memory.
+The growth gate correctly failed. At 256 MiB, filesystem cache also pushed the
+container to its limit.
+
+On Linux the SQLite worker now performs a passive WAL checkpoint and syncs the
+database/WAL before `POSIX_FADV_DONTNEED`, at most once per second after a job.
+This releases clean filesystem pages rather than excluding them from accounting.
+SQLite's eight MiB user-space cache and all durable history remain intact.
+The Linux regression test checks payload recovery, backup contents, and SQLite
+integrity after cache release. This adds disk activity under write-heavy load;
+all I/O remains on the dedicated worker. The short CI duration and thresholds
+are unchanged. Other operating systems retain their normal filesystem caching.

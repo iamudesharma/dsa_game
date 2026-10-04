@@ -67,11 +67,22 @@ impl Db {
             }
         }
         let (sender, receiver) = mpsc::sync_channel::<Job>(queue);
+        #[cfg(target_os = "linux")]
+        let cache_path = path.to_owned();
         std::thread::Builder::new()
             .name("sqlite".into())
             .spawn(move || {
+                #[cfg(target_os = "linux")]
+                let mut last_release = std::time::Instant::now();
                 for job in receiver {
                     job(&mut connection);
+                    #[cfg(target_os = "linux")]
+                    if last_release.elapsed() >= Duration::from_secs(1) {
+                        if let Err(error) = release_file_cache(&mut connection, &cache_path) {
+                            eprintln!("[dsa-api] SQLite file-cache release: {error}");
+                        }
+                        last_release = std::time::Instant::now();
+                    }
                 }
             })?;
         Ok(Self {
@@ -105,9 +116,70 @@ impl Db {
     }
 }
 
+/// SQLite's page-cache limit does not bound Linux's charged filesystem cache.
+/// Run on the dedicated worker, after the current statement/transaction ended.
+/// Checkpoint and sync before advising clean pages away; never discard user data.
+#[cfg(target_os = "linux")]
+fn release_file_cache(
+    connection: &mut Connection,
+    path: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use std::os::fd::AsRawFd;
+    connection.execute_batch("PRAGMA wal_checkpoint(PASSIVE);")?;
+    let mut wal = path.as_os_str().to_os_string();
+    wal.push("-wal");
+    for file_path in [path.to_path_buf(), wal.into()] {
+        let file = match std::fs::File::open(file_path) {
+            Ok(file) => file,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(error) => return Err(error.into()),
+        };
+        // DONTNEED is advisory and ignores dirty pages. Flush first so the
+        // kernel can release them without relying on container-limit reclaim.
+        file.sync_data()?;
+        // SAFETY: the descriptor belongs to a live File; offset/length zero
+        // select the entire file. No pointers or ownership cross the FFI call.
+        let result =
+            unsafe { libc::posix_fadvise(file.as_raw_fd(), 0, 0, libc::POSIX_FADV_DONTNEED) };
+        if result != 0 {
+            return Err(std::io::Error::from_raw_os_error(result).into());
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn file_cache_release_preserves_wal_data_and_backup() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("cache.sqlite");
+        let mut db = Connection::open(&path).unwrap();
+        db.execute_batch("PRAGMA journal_mode=WAL; CREATE TABLE records(payload TEXT);")
+            .unwrap();
+        let payload = "durable payload ".repeat(100_000);
+        db.execute("INSERT INTO records VALUES(?)", [&payload])
+            .unwrap();
+        release_file_cache(&mut db, &path).unwrap();
+        let backup = dir.path().join("backup.sqlite");
+        db.backup("main", &backup, None).unwrap();
+        drop(db);
+        for stored in [path, backup] {
+            let reopened = Connection::open(stored).unwrap();
+            let actual: String = reopened
+                .query_row("SELECT payload FROM records", [], |row| row.get(0))
+                .unwrap();
+            assert_eq!(actual, payload);
+            assert_eq!(
+                reopened
+                    .query_row("PRAGMA integrity_check", [], |row| row.get::<_, String>(0))
+                    .unwrap(),
+                "ok"
+            );
+        }
+    }
     #[tokio::test]
     async fn migration_restart_and_backup() {
         let dir = tempfile::tempdir().unwrap();

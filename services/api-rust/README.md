@@ -361,3 +361,10 @@ Compressing HTTP requests reduces transfer bytes, but JSON still requires
 decoding in memory. Small gameplay commands do not contain the retained undo
 histories. Request compression is therefore not enabled as a memory fix; the
 body limit and decoded snapshot admission bounds remain in effect.
+
+
+On Linux, the SQLite worker periodically checkpoints and syncs database/WAL
+writes, then advises the kernel to release clean file-cache pages. This bounds
+retained filesystem memory under history churn without deleting records or
+changing SQLite's user-space page-cache limit. It can increase disk I/O under
+heavy load. Filesystem charges remain included in the container benchmark.
