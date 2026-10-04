@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+**/.env
+**/.env.*
+**/node_modules
+**/target
+**/.next
+**/.next-dev
+**/.turbo
+**/__pycache__
+run
+.opencode
+services/api-rust/tests

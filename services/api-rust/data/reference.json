@@ -1,0 +1,2200 @@
+{
+  "problems": [
+    {
+      "id": "binary-search",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "choosePath",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "choosePath",
+        "submitAnswer"
+      ],
+      "topic": "binary-search",
+      "title": "Find the target in a sorted array",
+      "learningObjective": "Binary search halves the search space on every comparison: compute mid, compare, discard one half, repeat.",
+      "canonicalAlgorithm": "Set lo=0, hi=n-1. While lo<=hi compute mid=(lo+hi)/2. If a[mid]==target stop. If a[mid]<target set lo=mid+1 else set hi=mid-1. If lo>hi the target is absent.",
+      "instanceHints": {
+        "minLength": 8,
+        "maxLength": 16,
+        "unique": true,
+        "sorted": true,
+        "targetGuaranteed": true,
+        "valueRange": [
+          1,
+          99
+        ]
+      },
+      "complexity": {
+        "time": "O(log n)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "easy",
+      "answerFormat": {
+        "kind": "index-or-value",
+        "label": "Enter the zero-based target index or the target value.",
+        "placeholder": "Target index or value"
+      }
+    },
+    {
+      "id": "array-max-min",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "submitAnswer"
+      ],
+      "topic": "arrays",
+      "title": "Find the maximum / minimum",
+      "learningObjective": "A single linear scan keeps a running best value; it costs n-1 comparisons and no extra space.",
+      "canonicalAlgorithm": "Keep best = a[0]. For i from 1 to n-1, compare a[i] with best and update best when greater. best is the answer.",
+      "instanceHints": {
+        "minLength": 6,
+        "maxLength": 10,
+        "valueRange": [
+          1,
+          99
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "easy",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter the result requested in the mission objective.",
+        "placeholder": "Your result"
+      }
+    },
+    {
+      "id": "two-sum",
+      "allowedMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "arrays",
+      "title": "Two Sum",
+      "learningObjective": "For each element compute the complement; a hash lookup turns a nested O(n^2) scan into one pass.",
+      "canonicalAlgorithm": "For i from 0 to n-1 compute need = target - a[i]. If need is already in the seen set, the answer is (indexOf(need), i). Otherwise insert a[i] into the set.",
+      "instanceHints": {
+        "minLength": 6,
+        "maxLength": 10,
+        "valueRange": [
+          1,
+          40
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(n)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter the result requested in the mission objective.",
+        "placeholder": "Your result"
+      }
+    },
+    {
+      "id": "move-zeroes",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "swapPair",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "swapPair",
+        "submitAnswer"
+      ],
+      "topic": "arrays",
+      "title": "Move zeroes to the end",
+      "learningObjective": "A write pointer plus a read pointer relocates non-zero values in one pass, in O(1) extra space.",
+      "canonicalAlgorithm": "Keep write = 0. For read from 0 to n-1, if a[read] != 0 swap a[write] with a[read] (or assign) and increment write. Fill the tail with zeroes.",
+      "instanceHints": {
+        "minLength": 6,
+        "maxLength": 10,
+        "valueRange": [
+          1,
+          99
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter the result requested in the mission objective.",
+        "placeholder": "Your result"
+      }
+    },
+    {
+      "id": "bubble-sort",
+      "allowedMechanics": [
+        "comparePair",
+        "swapPair",
+        "selectObject",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "swapPair",
+        "submitAnswer"
+      ],
+      "topic": "sorting",
+      "title": "Bubble Sort",
+      "learningObjective": "Repeatedly compare adjacent pairs and swap inversions; the largest value bubbles to the end each pass.",
+      "canonicalAlgorithm": "For pass from 0 to n-2, for j from 0 to n-2-pass compare a[j] with a[j+1] and swap when a[j] > a[j+1].",
+      "instanceHints": {
+        "minLength": 5,
+        "maxLength": 8,
+        "unique": true,
+        "valueRange": [
+          1,
+          99
+        ]
+      },
+      "complexity": {
+        "time": "O(n^2)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "easy",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter the result requested in the mission objective.",
+        "placeholder": "Your result"
+      }
+    },
+    {
+      "id": "selection-sort",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "swapPair",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "swapPair",
+        "submitAnswer"
+      ],
+      "topic": "sorting",
+      "title": "Selection Sort",
+      "learningObjective": "Scan the unsorted suffix for the minimum, then swap it into place; exactly n-1 swaps regardless of input.",
+      "canonicalAlgorithm": "For i from 0 to n-2, set min = i. For j from i+1 to n-1, if a[j] < a[min] set min = j. Swap a[i] with a[min].",
+      "instanceHints": {
+        "minLength": 5,
+        "maxLength": 8,
+        "unique": true,
+        "valueRange": [
+          1,
+          99
+        ]
+      },
+      "complexity": {
+        "time": "O(n^2)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "easy",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter the result requested in the mission objective.",
+        "placeholder": "Your result"
+      }
+    },
+    {
+      "id": "valid-parentheses",
+      "allowedMechanics": [
+        "selectObject",
+        "pushPop",
+        "comparePair",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "pushPop",
+        "comparePair",
+        "submitAnswer"
+      ],
+      "topic": "stack",
+      "title": "Valid Parentheses",
+      "learningObjective": "Pushing every opener and popping on each closer makes mismatches obvious at the top of the stack.",
+      "canonicalAlgorithm": "For each token: if it is an opener, push it. If it is a closer, pop and verify the popped opener is its match. At the end the stack must be empty.",
+      "instanceHints": {
+        "minLength": 6,
+        "maxLength": 10,
+        "tokenAlphabet": [
+          "(",
+          ")",
+          "[",
+          "]",
+          "{",
+          "}"
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(n)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter valid or invalid.",
+        "placeholder": "valid or invalid"
+      }
+    },
+    {
+      "id": "stack-push-pop",
+      "allowedMechanics": [
+        "selectObject",
+        "pushPop",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "pushPop",
+        "submitAnswer"
+      ],
+      "topic": "stack",
+      "title": "Stack push / pop simulation",
+      "learningObjective": "A stack is LIFO: push adds to the top, pop removes from the top, and underflow is the only failure mode.",
+      "canonicalAlgorithm": "push(x): if size == capacity report full, else place x at top and increment top. pop(): if top < 0 report empty, else return the value at top and decrement top.",
+      "instanceHints": {
+        "minLength": 5,
+        "maxLength": 8,
+        "valueRange": [
+          1,
+          99
+        ]
+      },
+      "complexity": {
+        "time": "O(1) per op",
+        "space": "O(n)"
+      },
+      "defaultDifficulty": "easy",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter the result requested in the mission objective.",
+        "placeholder": "Your result"
+      }
+    },
+    {
+      "id": "queue-operations",
+      "allowedMechanics": [
+        "selectObject",
+        "pushPop",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "pushPop",
+        "submitAnswer"
+      ],
+      "topic": "queue",
+      "title": "Basic queue operations",
+      "learningObjective": "A queue is FIFO: enqueue at the rear, dequeue from the front, and front/rear wrap around in a circular buffer.",
+      "canonicalAlgorithm": "enqueue(x): if full report full, else place at rear and advance rear. dequeue(): if empty report empty, else return front and advance front.",
+      "instanceHints": {
+        "minLength": 5,
+        "maxLength": 8,
+        "valueRange": [
+          1,
+          99
+        ]
+      },
+      "complexity": {
+        "time": "O(1) per op",
+        "space": "O(n)"
+      },
+      "defaultDifficulty": "easy",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter the result requested in the mission objective.",
+        "placeholder": "Your result"
+      }
+    },
+    {
+      "id": "linked-list-traversal",
+      "allowedMechanics": [
+        "traverseNode",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "traverseNode",
+        "submitAnswer"
+      ],
+      "topic": "linked-list",
+      "title": "Linked list traversal",
+      "learningObjective": "There is no indexing: reaching position k means following k next pointers from the head.",
+      "canonicalAlgorithm": "current = head. For each step, read current.value, then current = current.next. Stop when current is null.",
+      "instanceHints": {
+        "minLength": 4,
+        "maxLength": 7,
+        "unique": true,
+        "valueRange": [
+          1,
+          99
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "easy",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter the result requested in the mission objective.",
+        "placeholder": "Your result"
+      }
+    },
+    {
+      "id": "reverse-linked-list",
+      "allowedMechanics": [
+        "connectNodes",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "connectNodes",
+        "submitAnswer"
+      ],
+      "topic": "linked-list",
+      "title": "Reverse a linked list",
+      "learningObjective": "Swapping prev and next while advancing rewires the list in one pass, then the new head is the old tail.",
+      "canonicalAlgorithm": "prev = null, current = head. While current is not null: next = current.next; current.next = prev; prev = current; current = next. The new head is prev.",
+      "instanceHints": {
+        "minLength": 4,
+        "maxLength": 6,
+        "unique": true,
+        "valueRange": [
+          1,
+          99
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "hard",
+      "answerFormat": {
+        "kind": "node",
+        "label": "Enter the resulting head node or value requested by the task.",
+        "placeholder": "Head node or value"
+      }
+    },
+    {
+      "id": "sliding-window-max-sum",
+      "allowedMechanics": [
+        "selectObject",
+        "assignValue",
+        "comparePair",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "arrays",
+      "title": "Maximum sum of any window of size k",
+      "learningObjective": "A fixed-size sliding window reuses the previous sum instead of recomputing it: add the entrant, drop the leaver, track the best.",
+      "canonicalAlgorithm": "Sum the first k values. Then slide: add a[read], subtract a[read-k], and keep the largest window sum seen. The best is the answer.",
+      "instanceHints": {
+        "minLength": 6,
+        "maxLength": 10,
+        "valueRange": [
+          1,
+          20
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    },
+    {
+      "id": "two-pointers-pair",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "submitAnswer"
+      ],
+      "topic": "arrays",
+      "title": "Two Sum in a sorted array",
+      "learningObjective": "Two pointers converge from opposite ends: the pair sum tells you which pointer to move, so each step discards one index.",
+      "canonicalAlgorithm": "Set left=0, right=n-1. While left<right compare a[left]+a[right] with target: equal stops, smaller moves left right, larger moves right left.",
+      "instanceHints": {
+        "minLength": 6,
+        "maxLength": 10,
+        "unique": true,
+        "sorted": true,
+        "targetGuaranteed": true,
+        "valueRange": [
+          1,
+          40
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter the result requested in the mission objective.",
+        "placeholder": "Your result"
+      }
+    },
+    {
+      "id": "prefix-sum-range",
+      "allowedMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "arrays",
+      "title": "Range sum with a prefix array",
+      "learningObjective": "One preprocessing pass stores every prefix total, so any range sum is a single subtraction: prefix[r+1] - prefix[l].",
+      "canonicalAlgorithm": "Build prefix[0]=0, prefix[i+1]=prefix[i]+a[i]. Answer each query [l,r] as prefix[r+1]-prefix[l].",
+      "instanceHints": {
+        "minLength": 6,
+        "maxLength": 10,
+        "valueRange": [
+          1,
+          20
+        ]
+      },
+      "complexity": {
+        "time": "O(n) build, O(1) query",
+        "space": "O(n)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    },
+    {
+      "id": "kadane-max-subarray",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "submitAnswer"
+      ],
+      "topic": "arrays",
+      "title": "Kadane's maximum subarray",
+      "learningObjective": "At each value decide extend-or-restart: carry the running sum forward only while it stays positive, and remember the best seen.",
+      "canonicalAlgorithm": "Keep current=a[0], best=a[0]. For each next value set current=max(value, current+value) and best=max(best, current). best is the answer.",
+      "instanceHints": {
+        "minLength": 6,
+        "maxLength": 10,
+        "valueRange": [
+          -9,
+          20
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    },
+    {
+      "id": "merge-intervals",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "submitAnswer"
+      ],
+      "topic": "arrays",
+      "title": "Merge overlapping intervals",
+      "learningObjective": "Sorted by start, overlap is one test: the next start is at or before the running end, so extend the end or emit the interval.",
+      "canonicalAlgorithm": "Sort by start. Walk the intervals keeping cur=[s,e]: if next.s<=cur.e set cur.e=max(cur.e,next.e), else emit cur and start next.",
+      "instanceHints": {
+        "minLength": 4,
+        "maxLength": 7,
+        "valueRange": [
+          1,
+          20
+        ]
+      },
+      "complexity": {
+        "time": "O(n log n)",
+        "space": "O(n)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter the result requested in the mission objective.",
+        "placeholder": "Your result"
+      }
+    },
+    {
+      "id": "next-greater-element",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "pushPop",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "pushPop",
+        "submitAnswer"
+      ],
+      "topic": "stack",
+      "title": "Next greater element (monotonic stack)",
+      "learningObjective": "A decreasing stack resolves each element the moment a larger value arrives: pop everything smaller, then push the current value.",
+      "canonicalAlgorithm": "Walk left to right with a decreasing stack of indices. While the stack top holds a smaller value, pop it and record the current value as its answer. Push the current index.",
+      "instanceHints": {
+        "minLength": 5,
+        "maxLength": 8,
+        "unique": true,
+        "valueRange": [
+          1,
+          99
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(n)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter the result requested in the mission objective.",
+        "placeholder": "Your result"
+      }
+    },
+    {
+      "id": "rotated-search",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "choosePath",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "choosePath",
+        "submitAnswer"
+      ],
+      "topic": "binary-search",
+      "title": "Search in a rotated sorted array",
+      "learningObjective": "One half of a rotated array is always sorted: find which half, test whether the target lies inside it, and discard the other half.",
+      "canonicalAlgorithm": "With lo/hi, read mid. If a[mid]==target stop. If the left half is sorted and the target lies in it, search left; if the right half is sorted and holds the target, search right; otherwise search the other half.",
+      "instanceHints": {
+        "minLength": 7,
+        "maxLength": 11,
+        "unique": true,
+        "targetGuaranteed": true,
+        "valueRange": [
+          1,
+          99
+        ]
+      },
+      "complexity": {
+        "time": "O(log n)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the zero-based index of the target.",
+        "placeholder": "Target index"
+      }
+    },
+    {
+      "id": "linked-list-cycle",
+      "allowedMechanics": [
+        "selectObject",
+        "traverseNode",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "traverseNode",
+        "submitAnswer"
+      ],
+      "topic": "linked-list",
+      "title": "Detect a cycle (tortoise and hare)",
+      "learningObjective": "A fast pointer gains one node per round on a slow pointer, so on a cycle they must eventually meet; on a plain list the fast pointer runs off the end.",
+      "canonicalAlgorithm": "Advance slow by one and fast by two each round. If they land on the same node there is a cycle. If fast reaches null there is none.",
+      "instanceHints": {
+        "minLength": 4,
+        "maxLength": 7,
+        "unique": true,
+        "valueRange": [
+          1,
+          99
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter cycle or acyclic.",
+        "placeholder": "cycle or acyclic"
+      }
+    },
+    {
+      "id": "frequency-count",
+      "allowedMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "hash-table",
+      "title": "Most frequent value (frequency map)",
+      "learningObjective": "Counting with a hash map trades space for time: one pass records every frequency, and the largest count is the answer.",
+      "canonicalAlgorithm": "Walk the array incrementing count[value] for each value. Then scan the map and return the value with the largest count.",
+      "instanceHints": {
+        "minLength": 6,
+        "maxLength": 10,
+        "valueRange": [
+          1,
+          9
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(n)"
+      },
+      "defaultDifficulty": "easy",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    },
+    {
+      "id": "valid-anagram",
+      "allowedMechanics": [
+        "selectObject",
+        "assignValue",
+        "comparePair",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "hash-table",
+      "title": "Valid anagram by counting letters",
+      "learningObjective": "Two strings are anagrams exactly when every letter count matches: add one string, subtract the other, and require all zeroes.",
+      "canonicalAlgorithm": "Count each letter of s, then subtract each letter of t. If every count returns to zero the strings are anagrams.",
+      "instanceHints": {
+        "minLength": 4,
+        "maxLength": 8,
+        "tokenAlphabet": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter valid or invalid.",
+        "placeholder": "valid or invalid"
+      }
+    },
+    {
+      "id": "valid-palindrome",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "submitAnswer"
+      ],
+      "topic": "strings",
+      "title": "Valid palindrome (two pointers)",
+      "learningObjective": "Symmetry is checked from the outside in: compare the outermost unmatched pair, and any mismatch decides the answer.",
+      "canonicalAlgorithm": "Set left=0, right=n-1. While left<right compare s[left] with s[right]: on mismatch return false, else move both inward. Equal all the way means palindrome.",
+      "instanceHints": {
+        "minLength": 4,
+        "maxLength": 8,
+        "tokenAlphabet": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "easy",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter valid or invalid.",
+        "placeholder": "valid or invalid"
+      }
+    },
+    {
+      "id": "tree-traversals",
+      "allowedMechanics": [
+        "selectObject",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "submitAnswer"
+      ],
+      "topic": "trees",
+      "title": "Binary tree traversals (pre/in/post-order)",
+      "learningObjective": "Preorder, inorder, and postorder differ only in when the node itself is visited relative to its children — the routes are the same walk.",
+      "canonicalAlgorithm": "Walk the tree recursively: preorder visits node, left, right; inorder visits left, node, right; postorder visits left, right, node. Record each visit.",
+      "instanceHints": {
+        "minLength": 5,
+        "maxLength": 9,
+        "unique": true,
+        "valueRange": [
+          1,
+          99
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(h)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter the result requested in the mission objective.",
+        "placeholder": "Your result"
+      }
+    },
+    {
+      "id": "bst-validate",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "submitAnswer"
+      ],
+      "topic": "trees",
+      "title": "Validate a binary search tree",
+      "learningObjective": "A binary tree is a BST exactly when its inorder walk is sorted: one descending adjacent pair anywhere disproves the whole tree.",
+      "canonicalAlgorithm": "Walk the nodes inorder, comparing each value with the previous one. If any value is smaller than its predecessor the tree is not a BST; otherwise it is.",
+      "instanceHints": {
+        "minLength": 5,
+        "maxLength": 9,
+        "unique": true,
+        "valueRange": [
+          1,
+          99
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(h)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter valid or invalid.",
+        "placeholder": "valid or invalid"
+      }
+    },
+    {
+      "id": "tree-level-order",
+      "allowedMechanics": [
+        "selectObject",
+        "pushPop",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "pushPop",
+        "submitAnswer"
+      ],
+      "topic": "trees",
+      "title": "Level-order traversal with a queue",
+      "learningObjective": "Breadth-first order falls out of a FIFO queue: dequeue a node, visit it, enqueue its children, and levels emerge left to right.",
+      "canonicalAlgorithm": "Enqueue the root. While the queue is nonempty, dequeue the front, visit it, then enqueue its left child and right child when they exist.",
+      "instanceHints": {
+        "minLength": 5,
+        "maxLength": 9,
+        "unique": true,
+        "valueRange": [
+          1,
+          99
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(w)"
+      },
+      "defaultDifficulty": "easy",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter the result requested in the mission objective.",
+        "placeholder": "Your result"
+      }
+    },
+    {
+      "id": "bst-search",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "choosePath",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "choosePath",
+        "submitAnswer"
+      ],
+      "topic": "trees",
+      "title": "Search in a binary search tree",
+      "learningObjective": "The BST invariant decides the direction at every node: smaller goes left, larger goes right, and each step discards a whole subtree.",
+      "canonicalAlgorithm": "Start at the root. Compare the target with the node: equal stops, smaller descends to the left child, larger to the right child. Repeat until found.",
+      "instanceHints": {
+        "minLength": 5,
+        "maxLength": 9,
+        "unique": true,
+        "targetGuaranteed": true,
+        "valueRange": [
+          1,
+          99
+        ]
+      },
+      "complexity": {
+        "time": "O(h)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the zero-based index of the target.",
+        "placeholder": "Target index"
+      }
+    },
+    {
+      "id": "kth-largest-heap",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "swapPair",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "swapPair",
+        "submitAnswer"
+      ],
+      "topic": "heap",
+      "title": "Kth largest with a size-k min-heap",
+      "learningObjective": "A min-heap of size k holds exactly the k largest values seen: anything smaller than its minimum is irrelevant, anything larger replaces it.",
+      "canonicalAlgorithm": "Heapify the first k values into a min-heap. For each remaining value, if it exceeds the heap minimum, replace the root and sift down. The root is the kth largest.",
+      "instanceHints": {
+        "minLength": 6,
+        "maxLength": 9,
+        "unique": true,
+        "valueRange": [
+          1,
+          99
+        ]
+      },
+      "complexity": {
+        "time": "O(n log k)",
+        "space": "O(k)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    },
+    {
+      "id": "num-islands",
+      "allowedMechanics": [
+        "selectObject",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "submitAnswer"
+      ],
+      "topic": "graphs",
+      "title": "Number of islands (grid DFS)",
+      "learningObjective": "One depth-first walk claims exactly one island: every reachable land cell belongs to it, so the next unvisited land starts a new one.",
+      "canonicalAlgorithm": "Scan row by row. On an unvisited land cell, flood through its land neighbours and count one island. Water and visited cells are skipped.",
+      "instanceHints": {
+        "minLength": 16,
+        "maxLength": 30,
+        "valueRange": [
+          0,
+          1
+        ]
+      },
+      "complexity": {
+        "time": "O(rows × cols)",
+        "space": "O(rows × cols)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    },
+    {
+      "id": "max-area-island",
+      "allowedMechanics": [
+        "selectObject",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "submitAnswer"
+      ],
+      "topic": "graphs",
+      "title": "Max area of island",
+      "learningObjective": "Area is just the size of one flood: measure each island as you claim it and keep the largest.",
+      "canonicalAlgorithm": "Flood each island exactly as in counting, but record how many cells the flood covered. The largest cover is the answer.",
+      "instanceHints": {
+        "minLength": 16,
+        "maxLength": 30,
+        "valueRange": [
+          0,
+          1
+        ]
+      },
+      "complexity": {
+        "time": "O(rows × cols)",
+        "space": "O(rows × cols)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    },
+    {
+      "id": "rotting-oranges",
+      "allowedMechanics": [
+        "selectObject",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "submitAnswer"
+      ],
+      "topic": "graphs",
+      "title": "Rotting oranges (multi-source BFS)",
+      "learningObjective": "Breadth-first search from every rotten orange at once measures minutes: each wave rots the neighbours, and unreachable fresh means impossible.",
+      "canonicalAlgorithm": "Queue all rotten cells at minute 0. Repeatedly rot their fresh neighbours at the next minute. The last minute with a rotting is the answer, or -1 when fresh cells remain.",
+      "instanceHints": {
+        "minLength": 16,
+        "maxLength": 25,
+        "valueRange": [
+          0,
+          2
+        ]
+      },
+      "complexity": {
+        "time": "O(rows × cols)",
+        "space": "O(rows × cols)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    },
+    {
+      "id": "word-search",
+      "allowedMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "graphs",
+      "title": "Word search (backtracking on a grid)",
+      "learningObjective": "Backtracking is DFS with an undo: mark the cell, explore, and unmark when the path dies — so every attempt leaves the board as it found it.",
+      "canonicalAlgorithm": "Try every cell as a start. Walk letter by letter through unvisited neighbours, marking the path. On a dead end unmark and back up. Finding every letter in order means the word exists.",
+      "instanceHints": {
+        "minLength": 16,
+        "maxLength": 25,
+        "tokenAlphabet": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ]
+      },
+      "complexity": {
+        "time": "O(rows × cols × 4^L)",
+        "space": "O(L)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "boolean",
+        "label": "Enter true or false.",
+        "placeholder": "true or false"
+      }
+    },
+    {
+      "id": "union-find-connect",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "graphs",
+      "title": "Connected components (union-find)",
+      "learningObjective": "Each set keeps one root: find climbs parent pointers to compare sets, and union attaches one root under the other, dropping the component count by one.",
+      "canonicalAlgorithm": "Start with every node its own parent. For each edge, find both roots by climbing. Different roots union (one fewer component); equal roots are already connected.",
+      "instanceHints": {
+        "minLength": 6,
+        "maxLength": 9,
+        "valueRange": [
+          0,
+          8
+        ]
+      },
+      "complexity": {
+        "time": "O(n α(n))",
+        "space": "O(n)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter the result requested in the mission objective.",
+        "placeholder": "Your result"
+      }
+    },
+    {
+      "id": "climbing-stairs",
+      "allowedMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "dp",
+      "title": "Climbing stairs (Fibonacci DP)",
+      "learningObjective": "The ways to reach step i reuse smaller answers: step 1 or 2 at a time means ways[i] is the sum of the two previous counts.",
+      "canonicalAlgorithm": "Set dp[0]=1, dp[1]=1. For each step i from 2 to n, record dp[i]=dp[i-1]+dp[i-2]. dp[n] is the answer.",
+      "instanceHints": {
+        "minLength": 6,
+        "maxLength": 11,
+        "valueRange": [
+          0,
+          10
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "easy",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    },
+    {
+      "id": "house-robber",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "dp",
+      "title": "House robber (take-or-skip DP)",
+      "learningObjective": "At each house decide take or skip: robbing it adds its money to the best from two doors down, skipping keeps the best so far.",
+      "canonicalAlgorithm": "Keep dp[-1]=0, dp[0]=money[0]. For each house i, take=money[i]+dp[i-2] and skip=dp[i-1]; record dp[i]=max(take, skip). The last dp is the answer.",
+      "instanceHints": {
+        "minLength": 5,
+        "maxLength": 8,
+        "valueRange": [
+          1,
+          20
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    },
+    {
+      "id": "subsets",
+      "allowedMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "backtracking",
+      "title": "Subsets (choose / unchoose)",
+      "learningObjective": "Every element is a fork: include it and enumerate the rest, then unmark it and enumerate without it — the undo is what makes it backtracking.",
+      "canonicalAlgorithm": "Walk positions in order. At each one, mark include and recurse, then unmark (exclude) and recurse. Each root-to-leaf path is one subset.",
+      "instanceHints": {
+        "minLength": 3,
+        "maxLength": 4,
+        "unique": true,
+        "valueRange": [
+          1,
+          9
+        ]
+      },
+      "complexity": {
+        "time": "O(n × 2^n)",
+        "space": "O(n)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter the result requested in the mission objective.",
+        "placeholder": "Your result"
+      }
+    },
+    {
+      "id": "permutations",
+      "allowedMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "backtracking",
+      "title": "Permutations (used-flag backtracking)",
+      "learningObjective": "Each open position tries every unused value: mark it used, fill the rest, then free it — freeing is what lets the next branch reuse the value.",
+      "canonicalAlgorithm": "At each open position, try every unused value in order: mark it used, recurse, then unmark it. Each full path is one permutation.",
+      "instanceHints": {
+        "minLength": 3,
+        "maxLength": 4,
+        "unique": true,
+        "valueRange": [
+          1,
+          9
+        ]
+      },
+      "complexity": {
+        "time": "O(n × n!)",
+        "space": "O(n)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "text",
+        "label": "Enter the result requested in the mission objective.",
+        "placeholder": "Your result"
+      }
+    },
+    {
+      "id": "jump-game",
+      "allowedMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "greedy",
+      "title": "Jump game (greedy reach)",
+      "learningObjective": "One running number decides everything: the farthest reachable index. A cell beyond it ends the run; otherwise it may extend it.",
+      "canonicalAlgorithm": "Track reach=0. For each index i in order, if i is beyond reach the end is unreachable; otherwise extend reach to max(reach, i+jumps[i]). Reaching the last index wins.",
+      "instanceHints": {
+        "minLength": 5,
+        "maxLength": 8,
+        "valueRange": [
+          0,
+          4
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "boolean",
+        "label": "Enter true or false.",
+        "placeholder": "true or false"
+      }
+    },
+    {
+      "id": "single-number",
+      "allowedMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "bit-manip",
+      "title": "Single number (XOR accumulation)",
+      "learningObjective": "XOR cancels pairs: a number XOR itself is zero, so folding the whole array leaves exactly the unpaired value.",
+      "canonicalAlgorithm": "Fold an accumulator starting at 0: acc = acc XOR value for each value. Pairs cancel to zero and the survivor is the single number.",
+      "instanceHints": {
+        "minLength": 5,
+        "maxLength": 9,
+        "valueRange": [
+          1,
+          30
+        ]
+      },
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "easy",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    },
+    {
+      "id": "trie-prefix-search",
+      "allowedMechanics": [
+        "selectObject",
+        "traverseNode",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "traverseNode",
+        "submitAnswer"
+      ],
+      "topic": "trie",
+      "title": "Prefix search on a trie",
+      "learningObjective": "Shared prefixes share nodes: walking the query letter by letter either falls off (no words) or lands where every completion hangs below.",
+      "canonicalAlgorithm": "Follow one link per query letter from the root. If a link is missing the prefix matches nothing; otherwise every word-end in the landed subtree is a completion.",
+      "instanceHints": {
+        "minLength": 4,
+        "maxLength": 8,
+        "tokenAlphabet": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ]
+      },
+      "complexity": {
+        "time": "O(L + C)",
+        "space": "O(1)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    },
+    {
+      "id": "network-delay-time",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "graphs",
+      "title": "Network delay time (Dijkstra)",
+      "learningObjective": "Dijkstra always settles the closest unsettled node first: its distance is final, so every relaxation from it is trustworthy.",
+      "canonicalAlgorithm": "Set dist[source]=0 and the rest to infinity. Repeatedly settle the unsettled node with the smallest distance, then relax each outgoing edge (dist[v] = min(dist[v], dist[u]+w)). The largest settled distance is the delay.",
+      "instanceHints": {
+        "minLength": 5,
+        "maxLength": 8,
+        "valueRange": [
+          0,
+          8
+        ]
+      },
+      "complexity": {
+        "time": "O(E log V)",
+        "space": "O(V)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    },
+    {
+      "id": "coin-change",
+      "allowedMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "dp",
+      "title": "Coin change (fewest coins)",
+      "learningObjective": "The fewest coins for each amount reuses smaller answers: try every coin, take one plus the best for the remainder, and keep the minimum.",
+      "canonicalAlgorithm": "Set dp[0]=0. For each amount x from 1 to the target, record dp[x] = 1 + min(dp[x-c]) over coins c no larger than x. dp[target] is the answer.",
+      "instanceHints": {
+        "minLength": 5,
+        "maxLength": 10,
+        "valueRange": [
+          0,
+          10
+        ]
+      },
+      "complexity": {
+        "time": "O(amount × coins)",
+        "space": "O(amount)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    },
+    {
+      "id": "kruskal-mst",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "graphs",
+      "title": "Minimum connection cost (Kruskal)",
+      "learningObjective": "Kruskal takes edges lightest-first and keeps an edge exactly when it joins two different groups: the lightest safe edge is always part of some optimum.",
+      "canonicalAlgorithm": "Sort all edges by weight. Walk them in order, finding both roots: different roots union (add the weight to the total), equal roots skip. The total is the minimum connection cost.",
+      "instanceHints": {
+        "minLength": 5,
+        "maxLength": 8,
+        "valueRange": [
+          1,
+          9
+        ]
+      },
+      "complexity": {
+        "time": "O(E log E)",
+        "space": "O(V)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    },
+    {
+      "id": "unique-paths",
+      "allowedMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "dp",
+      "title": "Unique paths through obstacles (grid DP)",
+      "learningObjective": "The ways to reach a cell reuse smaller answers: add the ways from above and from the left — a blocked cell contributes zero.",
+      "canonicalAlgorithm": "Set dp[0][0]=1 when the start is open. Walk row by row: a blocked cell records 0, any other cell records the ways from above plus the ways from the left. The finish cell is the answer.",
+      "instanceHints": {
+        "minLength": 16,
+        "maxLength": 30,
+        "valueRange": [
+          0,
+          1
+        ]
+      },
+      "complexity": {
+        "time": "O(rows × cols)",
+        "space": "O(rows × cols)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    },
+    {
+      "id": "lcs-length",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "dp",
+      "title": "Longest common subsequence (grid DP)",
+      "learningObjective": "A matching pair extends the best of the shorter prefixes by one; a mismatch inherits the better of dropping one side or the other.",
+      "canonicalAlgorithm": "Walk the table row by row. A match records the diagonal plus one; a mismatch compares the cell above with the cell to the left and records the larger. The bottom-right cell is the answer.",
+      "instanceHints": {
+        "minLength": 16,
+        "maxLength": 25,
+        "valueRange": [
+          0,
+          1
+        ],
+        "tokenAlphabet": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ]
+      },
+      "complexity": {
+        "time": "O(m × n)",
+        "space": "O(m × n)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    },
+    {
+      "id": "edit-distance",
+      "allowedMechanics": [
+        "selectObject",
+        "comparePair",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "requiredMechanics": [
+        "selectObject",
+        "comparePair",
+        "assignValue",
+        "submitAnswer"
+      ],
+      "topic": "dp",
+      "title": "Edit distance (grid DP)",
+      "learningObjective": "Turning one string into the other reuses smaller answers: a match copies the diagonal for free, otherwise pay one plus the cheapest of deleting, inserting, or substituting.",
+      "canonicalAlgorithm": "Walk the table row by row. A match copies the diagonal; a mismatch compares above against left, compares the winner against the diagonal, and records one plus the smallest. The bottom-right cell is the answer.",
+      "instanceHints": {
+        "minLength": 16,
+        "maxLength": 25,
+        "valueRange": [
+          0,
+          1
+        ],
+        "tokenAlphabet": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ]
+      },
+      "complexity": {
+        "time": "O(m × n)",
+        "space": "O(m × n)"
+      },
+      "defaultDifficulty": "medium",
+      "answerFormat": {
+        "kind": "number",
+        "label": "Enter the numeric result requested by the mission.",
+        "placeholder": "Number"
+      }
+    }
+  ],
+  "lessons": [
+    {
+      "topic": "arrays",
+      "title": "Arrays and running state",
+      "concept": "An array stores ordered values. Many linear scans keep a small running state instead of re-reading earlier values.",
+      "example": "For [3,1,7], the running maximum is 3, then 3, then 7.",
+      "code": "def maximum(values):\n    if not values:\n        return None\n    best = values[0]\n    for value in values[1:]:\n        best = max(best, value)\n    return best"
+    },
+    {
+      "topic": "sorting",
+      "title": "Sorting by an invariant",
+      "concept": "A sorting algorithm progressively establishes order. In insertion sort, the prefix before the current item is already sorted.",
+      "example": "Insert 2 into the sorted prefix [1,4]: shift 4 right to obtain [1,2,4].",
+      "code": "def insertion_sort(a):\n    for i in range(1, len(a)):\n        value, j = a[i], i - 1\n        while j >= 0 and a[j] > value:\n            a[j + 1] = a[j]\n            j -= 1\n        a[j + 1] = value\n    return a"
+    },
+    {
+      "topic": "stack",
+      "title": "Stacks: last in, first out",
+      "concept": "A stack remembers nested work. The most recent unfinished item is handled first.",
+      "example": "For (), push the opening bracket, then pop it when the closing bracket arrives.",
+      "code": "def balanced(text):\n    stack = []\n    pairs = {\"(\": \")\", \"[\": \"]\", \"{\": \"}\"}\n    for char in text:\n        if char in pairs:\n            stack.append(pairs[char])\n        elif not stack or stack.pop() != char:\n            return False\n    return not stack"
+    },
+    {
+      "topic": "queue",
+      "title": "Queues: first in, first out",
+      "concept": "A queue processes items in arrival order. Breadth-first traversal uses it to explore each level before the next.",
+      "example": "Enqueue A, then B. Dequeue returns A before B.",
+      "code": "from collections import deque\nqueue = deque([\"A\", \"B\"])\nfirst = queue.popleft()\nqueue.append(\"C\")"
+    },
+    {
+      "topic": "binary-search",
+      "title": "Binary search on sorted data",
+      "concept": "Keep a range containing every possible answer. Each comparison removes a half that cannot contain the target.",
+      "example": "Search 7 in [1,3,7,9]: compare 3, then search indices 2 through 3.",
+      "code": "def search(a, target):\n    lo, hi = 0, len(a) - 1\n    while lo <= hi:\n        mid = (lo + hi) // 2\n        if a[mid] == target:\n            return mid\n        if a[mid] < target:\n            lo = mid + 1\n        else:\n            hi = mid - 1\n    return -1"
+    },
+    {
+      "topic": "linked-list",
+      "title": "Follow links, preserve reachability",
+      "concept": "A linked list is a sequence of nodes connected by next pointers. Save the next node before changing a link.",
+      "example": "To reverse A → B → null, keep B reachable before changing A.next to null.",
+      "code": "def reverse(head):\n    previous = None\n    while head is not None:\n        following = head.next\n        head.next = previous\n        previous, head = head, following\n    return previous"
+    },
+    {
+      "topic": "hash-table",
+      "title": "Hash tables and frequencies",
+      "concept": "A hash table maps keys to values. Frequency counts make repeated membership and counting queries efficient on average.",
+      "example": "Counting [a,b,a] gives {a:2,b:1}.",
+      "code": "def frequencies(values):\n    counts = {}\n    for value in values:\n        counts[value] = counts.get(value, 0) + 1\n    return counts"
+    },
+    {
+      "topic": "strings",
+      "title": "Strings and two pointers",
+      "concept": "Strings are ordered character sequences. Two pointers can compare mirrored positions without creating a reversed copy.",
+      "example": "For radar, compare r with r, then a with a; the middle needs no pair.",
+      "code": "def palindrome(s):\n    left, right = 0, len(s) - 1\n    while left < right:\n        if s[left] != s[right]:\n            return False\n        left += 1\n        right -= 1\n    return True"
+    },
+    {
+      "topic": "trees",
+      "title": "Trees and recursive subproblems",
+      "concept": "A binary tree node has up to two children. Traversal order determines when the node is processed relative to its subtrees.",
+      "example": "Inorder visits left subtree, root, then right subtree. A valid BST produces sorted values.",
+      "code": "def inorder(node):\n    if node is None:\n        return []\n    return inorder(node.left) + [node.value] + inorder(node.right)"
+    },
+    {
+      "topic": "heap",
+      "title": "Heaps and the smallest candidate",
+      "concept": "A min-heap exposes its smallest element. Keeping only k candidates makes kth-largest selection efficient.",
+      "example": "For k=2 and [3,1,7], retain [3,7]; its minimum 3 is the second-largest value.",
+      "code": "import heapq\ndef kth_largest(values, k):\n    if not 1 <= k <= len(values):\n        raise ValueError(\"Invalid k\")\n    heap = []\n    for value in values:\n        heapq.heappush(heap, value)\n        if len(heap) > k:\n            heapq.heappop(heap)\n    return heap[0]"
+    },
+    {
+      "topic": "graphs",
+      "title": "Graphs and visited sets",
+      "concept": "A graph connects vertices through edges. A visited set prevents cycles from causing repeated exploration.",
+      "example": "In A ↔ B ↔ C, marking A before exploring B prevents returning to A forever.",
+      "code": "def reachable(graph, start):\n    seen, pending = set(), [start]\n    while pending:\n        node = pending.pop()\n        if node in seen:\n            continue\n        seen.add(node)\n        pending.extend(graph.get(node, []))\n    return seen"
+    },
+    {
+      "topic": "dp",
+      "title": "Dynamic programming",
+      "concept": "When subproblems repeat, store their answers. Define what each state means and how smaller states combine.",
+      "example": "With 1- or 2-step climbs, ways(n) = ways(n-1) + ways(n-2). There are 3 ways to climb 3 steps.",
+      "code": "def ways(n):\n    if n < 0:\n        return 0\n    previous, current = 1, 1\n    for _ in range(n):\n        previous, current = current, previous + current\n    return previous"
+    },
+    {
+      "topic": "backtracking",
+      "title": "Choose, explore, undo",
+      "concept": "Backtracking explores a decision tree. Undo a choice before exploring its sibling so branches do not share accidental state.",
+      "example": "The subsets of [1,2] are [], [1], [2], and [1,2].",
+      "code": "def subsets(values):\n    result = []\n    def visit(i, chosen):\n        if i == len(values):\n            result.append(chosen.copy())\n            return\n        visit(i + 1, chosen)\n        chosen.append(values[i])\n        visit(i + 1, chosen)\n        chosen.pop()\n    visit(0, [])\n    return result"
+    },
+    {
+      "topic": "greedy",
+      "title": "Greedy choices need a reason",
+      "concept": "A greedy method keeps the best local choice when it can be shown to preserve a possible global solution.",
+      "example": "For jump lengths [2,0,1], index 0 reaches index 2, which is already the destination.",
+      "code": "def can_reach_end(jumps):\n    farthest = 0\n    for i, jump in enumerate(jumps):\n        if i > farthest:\n            return False\n        farthest = max(farthest, i + jump)\n    return bool(jumps)"
+    },
+    {
+      "topic": "bit-manip",
+      "title": "Bit operations and XOR",
+      "concept": "XOR cancels equal values: x XOR x = 0, and x XOR 0 = x. This helps when every value except one appears twice.",
+      "example": "[4,1,4] reduces to 1 because the two 4 values cancel.",
+      "code": "def single_number(values):\n    answer = 0\n    for value in values:\n        answer ^= value\n    return answer"
+    },
+    {
+      "topic": "trie",
+      "title": "Tries share prefixes",
+      "concept": "A trie follows one edge per character. A terminal marker distinguishes a complete word from an existing prefix.",
+      "example": "The words cat and car share the c → a prefix, then branch.",
+      "code": "def insert(root, word):\n    node = root\n    for char in word:\n        node = node.setdefault(char, {})\n    node[None] = True\n\ndef contains(root, word):\n    node = root\n    for char in word:\n        if char not in node:\n            return False\n        node = node[char]\n    return None in node"
+    }
+  ],
+  "companies": [
+    {
+      "id": "faang-general",
+      "label": "Big Tech (general)",
+      "aliases": [
+        "faang",
+        "big tech",
+        "meta",
+        "google",
+        "amazon",
+        "apple",
+        "microsoft",
+        "netflix"
+      ],
+      "values": [
+        "Customer focus",
+        "Ownership",
+        "Bias for action",
+        "Insist on highest standards"
+      ],
+      "hiringAxes": [
+        {
+          "id": "dsa",
+          "label": "Data structures & algorithms",
+          "weight": 0.4,
+          "categories": [
+            "coding",
+            "concepts"
+          ]
+        },
+        {
+          "id": "behavioral",
+          "label": "Leadership & behavioral",
+          "weight": 0.25,
+          "categories": [
+            "behavioral"
+          ]
+        },
+        {
+          "id": "system",
+          "label": "System design (senior+)",
+          "weight": 0.2,
+          "categories": [
+            "system-design"
+          ]
+        },
+        {
+          "id": "resume",
+          "label": "Past work depth",
+          "weight": 0.15,
+          "categories": [
+            "resume-deep-dive"
+          ]
+        }
+      ],
+      "rounds": [
+        {
+          "name": "Phone screen",
+          "focus": "One or two coding problems with discussion"
+        },
+        {
+          "name": "Onsite coding",
+          "focus": "Data structures, algorithms, and trade-offs"
+        },
+        {
+          "name": "Behavioral",
+          "focus": "Past ownership, conflict, and delivery stories"
+        },
+        {
+          "name": "System design (senior+)",
+          "focus": "Scale a familiar system and defend choices"
+        }
+      ],
+      "techSignals": [
+        "arrays",
+        "hash tables",
+        "trees",
+        "graphs",
+        "dynamic programming"
+      ]
+    },
+    {
+      "id": "ai-lab",
+      "label": "AI lab",
+      "aliases": [
+        "openai",
+        "anthropic",
+        "deepmind",
+        "ai research",
+        "llm"
+      ],
+      "values": [
+        "Research taste",
+        "Empirical rigor",
+        "Mission alignment",
+        "Fast iteration"
+      ],
+      "hiringAxes": [
+        {
+          "id": "ml",
+          "label": "ML fundamentals & reasoning",
+          "weight": 0.35,
+          "categories": [
+            "ml",
+            "concepts"
+          ]
+        },
+        {
+          "id": "coding",
+          "label": "Coding & algorithms",
+          "weight": 0.3,
+          "categories": [
+            "coding"
+          ]
+        },
+        {
+          "id": "research",
+          "label": "Research depth",
+          "weight": 0.2,
+          "categories": [
+            "resume-deep-dive"
+          ]
+        },
+        {
+          "id": "behavioral",
+          "label": "Mission & collaboration",
+          "weight": 0.15,
+          "categories": [
+            "behavioral"
+          ]
+        }
+      ],
+      "rounds": [
+        {
+          "name": "Research discussion",
+          "focus": "Walk through a past project and its trade-offs"
+        },
+        {
+          "name": "ML coding",
+          "focus": "Implement and reason about models or algorithms"
+        },
+        {
+          "name": "ML concepts",
+          "focus": "Probability, optimisation, and evaluation"
+        }
+      ],
+      "techSignals": [
+        "python",
+        "pytorch",
+        "transformers",
+        "evaluation",
+        "distributed training"
+      ]
+    },
+    {
+      "id": "big-tech-cloud",
+      "label": "Cloud / infra",
+      "aliases": [
+        "aws",
+        "azure",
+        "gcp",
+        "cloud",
+        "infrastructure",
+        "platform"
+      ],
+      "values": [
+        "Operational excellence",
+        "Ownership",
+        "Customer obsession"
+      ],
+      "hiringAxes": [
+        {
+          "id": "coding",
+          "label": "Coding & algorithms",
+          "weight": 0.35,
+          "categories": [
+            "coding",
+            "concepts"
+          ]
+        },
+        {
+          "id": "system",
+          "label": "Distributed systems",
+          "weight": 0.35,
+          "categories": [
+            "system-design"
+          ]
+        },
+        {
+          "id": "behavioral",
+          "label": "Ownership stories",
+          "weight": 0.2,
+          "categories": [
+            "behavioral"
+          ]
+        },
+        {
+          "id": "resume",
+          "label": "Systems you shipped",
+          "weight": 0.1,
+          "categories": [
+            "resume-deep-dive"
+          ]
+        }
+      ],
+      "rounds": [
+        {
+          "name": "Coding",
+          "focus": "Algorithms with an eye on scale"
+        },
+        {
+          "name": "System design",
+          "focus": "Design a distributed component"
+        },
+        {
+          "name": "Behavioral",
+          "focus": "On-call, incidents, and ownership"
+        }
+      ],
+      "techSignals": [
+        "concurrency",
+        "networking",
+        "storage",
+        "caching",
+        "queues"
+      ]
+    },
+    {
+      "id": "fintech",
+      "label": "Fintech",
+      "aliases": [
+        "stripe",
+        "fintech",
+        "payments",
+        "banking",
+        "trading app"
+      ],
+      "values": [
+        "Correctness",
+        "Risk awareness",
+        "Customer trust"
+      ],
+      "hiringAxes": [
+        {
+          "id": "coding",
+          "label": "Coding & edge cases",
+          "weight": 0.4,
+          "categories": [
+            "coding",
+            "concepts"
+          ]
+        },
+        {
+          "id": "system",
+          "label": "Reliable systems",
+          "weight": 0.25,
+          "categories": [
+            "system-design"
+          ]
+        },
+        {
+          "id": "behavioral",
+          "label": "Judgment under risk",
+          "weight": 0.2,
+          "categories": [
+            "behavioral"
+          ]
+        },
+        {
+          "id": "resume",
+          "label": "Domain experience",
+          "weight": 0.15,
+          "categories": [
+            "resume-deep-dive"
+          ]
+        }
+      ],
+      "rounds": [
+        {
+          "name": "Coding",
+          "focus": "Correctness-first implementation"
+        },
+        {
+          "name": "System design",
+          "focus": "Reliable money movement"
+        },
+        {
+          "name": "Behavioral",
+          "focus": "Handling ambiguity and risk"
+        }
+      ],
+      "techSignals": [
+        "idempotency",
+        "ledgers",
+        "consistency",
+        "api design"
+      ]
+    },
+    {
+      "id": "quant",
+      "label": "Quant / trading",
+      "aliases": [
+        "quant",
+        "hedge fund",
+        "trading",
+        "jane street",
+        "citadel"
+      ],
+      "values": [
+        "Probabilistic thinking",
+        "Precision under time pressure",
+        "Intellectual honesty"
+      ],
+      "hiringAxes": [
+        {
+          "id": "coding",
+          "label": "Algorithms & probability",
+          "weight": 0.45,
+          "categories": [
+            "coding",
+            "concepts"
+          ]
+        },
+        {
+          "id": "math",
+          "label": "Probability & games",
+          "weight": 0.3,
+          "categories": [
+            "concepts"
+          ]
+        },
+        {
+          "id": "behavioral",
+          "label": "Thinking aloud",
+          "weight": 0.15,
+          "categories": [
+            "behavioral"
+          ]
+        },
+        {
+          "id": "resume",
+          "label": "Quantitative work",
+          "weight": 0.1,
+          "categories": [
+            "resume-deep-dive"
+          ]
+        }
+      ],
+      "rounds": [
+        {
+          "name": "Coding + probability",
+          "focus": "Fast, exact reasoning with code"
+        },
+        {
+          "name": "Games & estimation",
+          "focus": "Expected value and structured guessing"
+        }
+      ],
+      "techSignals": [
+        "probability",
+        "expected value",
+        "combinatorics",
+        "low-latency"
+      ]
+    },
+    {
+      "id": "startup",
+      "label": "Startup (generalist)",
+      "aliases": [
+        "startup",
+        "early stage",
+        "seed",
+        "series a"
+      ],
+      "values": [
+        "Versatility",
+        "Speed",
+        "Product sense"
+      ],
+      "hiringAxes": [
+        {
+          "id": "build",
+          "label": "Build & ship",
+          "weight": 0.35,
+          "categories": [
+            "coding",
+            "resume-deep-dive"
+          ]
+        },
+        {
+          "id": "product",
+          "label": "Product thinking",
+          "weight": 0.25,
+          "categories": [
+            "behavioral",
+            "system-design"
+          ]
+        },
+        {
+          "id": "coding",
+          "label": "Practical coding",
+          "weight": 0.25,
+          "categories": [
+            "coding",
+            "concepts"
+          ]
+        },
+        {
+          "id": "behavioral",
+          "label": "Autonomy",
+          "weight": 0.15,
+          "categories": [
+            "behavioral"
+          ]
+        }
+      ],
+      "rounds": [
+        {
+          "name": "Build interview",
+          "focus": "Ship a small feature end to end"
+        },
+        {
+          "name": "Founder chat",
+          "focus": "Autonomy, motivation, and product sense"
+        }
+      ],
+      "techSignals": [
+        "full-stack",
+        "shipping",
+        "product trade-offs"
+      ]
+    }
+  ]
+}
