@@ -26,7 +26,9 @@ impl Drop for MutationGuard {
 }
 pub fn lock_mutation(app: &AppState, id: &str) -> Result<MutationGuard, ApiError> {
     let mut active = app.game_mutations.lock().map_err(ApiError::internal)?;
-    if active.len() >= app.config.admitted || active.contains(id) {
+    // Decoded boards and 25 undo snapshots are outside serialized-cache accounting.
+    // Limit their concurrent lifetime, including time waiting on SQLite persistence.
+    if active.len() >= app.config.game_operations.min(app.config.admitted) || active.contains(id) {
         return Err(ApiError::busy());
     }
     active.insert(id.to_owned());

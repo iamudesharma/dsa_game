@@ -142,12 +142,16 @@ fn game_mutation_admission_is_bounded_and_released_on_drop() {
     let dir = tempfile::tempdir().unwrap();
     let mut config = Config::from_env().unwrap();
     config.db_path = dir.path().join("admission.sqlite");
-    config.admitted = 2;
+    config.admitted = 32;
+    config.game_operations = 2;
     let app = AppState::new(config).unwrap();
     let a = games::lock_mutation(&app, "a").unwrap();
     assert!(games::lock_mutation(&app, "a").is_err());
     let b = games::lock_mutation(&app, "b").unwrap();
-    assert!(games::lock_mutation(&app, "c").is_err());
+    let error = games::lock_mutation(&app, "c").err().unwrap();
+    let response = axum::response::IntoResponse::into_response(error);
+    assert_eq!(response.status(), axum::http::StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(response.headers()["retry-after"], "1");
     assert_eq!(app.game_mutations.lock().unwrap().len(), 2);
     drop(a);
     let c = games::lock_mutation(&app, "c").unwrap();

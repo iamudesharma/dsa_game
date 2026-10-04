@@ -300,8 +300,8 @@ async fn health(State(state): State<AppState>) -> Result<Json<Value>, ApiError> 
         "tiers":tiers,"decision":decision,"laya":laya,
         "uptimeSec":state.started.elapsed().as_secs(),
         "memory":{"cachePayloadBytes":cache_bytes,"cacheBudgetBytes":state.config.cache_bytes,"accounting":"serialized payload and key bytes; excludes allocator and process memory"},
-        "concurrency":{"activeRequests":state.config.admitted-state.requests.available_permits(),"activeAiRequests":state.config.ai-state.ai.available_permits(),"activePasswordOperations":state.config.passwords-state.passwords.available_permits()},
-        "limits":{"requestBytes":state.config.body_bytes,"jsonStructuralTokens":state.config.json_tokens,"providerBytes":state.config.provider_bytes,"pendingSseBytes":state.config.sse_bytes,"sqliteCacheKiB":state.config.sqlite_cache_kib,"passwordOperations":state.config.passwords}
+        "concurrency":{"activeRequests":state.config.admitted-state.requests.available_permits(),"activeAiRequests":state.config.ai-state.ai.available_permits(),"activePasswordOperations":state.config.passwords-state.passwords.available_permits(),"activeGameOperations":state.game_mutations.lock().map(|active|active.len()).unwrap_or(0)},
+        "limits":{"requestBytes":state.config.body_bytes,"jsonStructuralTokens":state.config.json_tokens,"providerBytes":state.config.provider_bytes,"pendingSseBytes":state.config.sse_bytes,"sqliteCacheKiB":state.config.sqlite_cache_kib,"passwordOperations":state.config.passwords,"gameOperations":state.config.game_operations.min(state.config.admitted)}
     })))
 }
 

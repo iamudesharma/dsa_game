@@ -42,6 +42,7 @@ SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk cargo test --loc
 | --- | ---: |
 | `DSA_RUNTIME_WORKERS` | 2 |
 | `DSA_MAX_REQUESTS` | 32 |
+| `DSA_MAX_GAME_OPERATIONS` | 4 |
 | `DSA_MAX_AI_REQUESTS` | 2 |
 | `DSA_MAX_PASSWORD_OPERATIONS` | 1 |
 | `DSA_SQLITE_CACHE_KIB` | 8192 |
@@ -332,3 +333,5 @@ The local harness smoke passed 345 gameplay responses, concurrent coach/chat
 operations, saved stream replay, SQL message pagination, and oversized input
 rejection. Browser owned practice also completed in ten moves with zero mistakes
 and one hint; its debrief and scheduled review are visible in dashboard history.
+
+Game read, action, undo, hint, and debrief handlers share a separate immediate-admission limit. It bounds simultaneous decoded board/undo allocations while SQLite persists their changes. Excess operations receive the standard 429 envelope and `Retry-After`; clients should retry the same action ID before advancing. Coach operations remain bounded by the AI limit. Serialized cache accounting excludes these transient decoded objects.

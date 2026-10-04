@@ -291,6 +291,7 @@ def run(image, label, seconds, output, fixtures):
                         memory = diagnostics['memory']
                         if (active['activeRequests'] > 32 or active['activeAiRequests'] > 2
                                 or active['activePasswordOperations'] > 1
+                                or active.get('activeGameOperations', 0) > diagnostics['limits'].get('gameOperations', 32)
                                 or memory['cachePayloadBytes'] > memory['cacheBudgetBytes']):
                             raise RuntimeError('runtime diagnostics exceeded configured limits')
                 time.sleep(min(5, max(0.1, seconds - (time.monotonic() - started))))

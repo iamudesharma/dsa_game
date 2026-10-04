@@ -157,3 +157,11 @@ benchmark now records cgroup anonymous/file/kernel memory, process RSS/high
 water mark, and database disk size. It retries rejected game steps before
 advancing the canonical journey. These changes need a new full container run;
 the 230 MiB peak limit and all acceptance criteria remain unchanged.
+
+The next allocation control separates game-operation admission from total HTTP
+admission: `DSA_MAX_GAME_OPERATIONS=4` limits decoded board/undo lifetimes during
+read and mutation operations, including persistence waits. Coach thread locks
+share this bound. `DSA_MAX_REQUESTS` remains 32. Rejected operations return the
+existing 429 envelope and `Retry-After`; no waiting queue is introduced. Health
+exposes `activeGameOperations` and `gameOperations`. This is an additional
+allocation bound, not a claim that the full memory acceptance has passed.
