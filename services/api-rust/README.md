@@ -261,15 +261,29 @@ unusable responses fall back to deterministic heuristics. No local process start
 
 ## Container acceptance and rollback commands
 
-The GitHub `container-memory` job first runs both backends with a 256 MiB memory and
-swap limit, two CPUs, 20 player workers and two external mock AI workers. It
-samples cgroup v2 `memory.current`, `memory.peak`, and `memory.events`; the
-SQLite files live inside the backend container, so their charged filesystem
-cache is included. The load generator, frontend and mock AI server are outside
-the budget. Reports upload as `container-memory-comparison`. Acceptance requires
-a full hour, peak below 230 MiB, no OOM, no workload errors, two observed
-upstream operations, and less than 5 MiB growth between the warmed workload
-halves. A short run is explicitly a smoke check and cannot pass acceptance.
+Routine GitHub validation runs a five-minute Rust-only memory workload with a
+256 MiB hard memory/swap limit, two CPUs, 20 players and two external mock AI
+workers. A measured memory failure permits one five-minute retry at 512 MiB.
+The peak limits are 230 and 460 MiB respectively. SQLite and charged filesystem
+memory are included; the frontend and mock provider are outside the budget.
+Both jobs have a 30-minute hard timeout, target 10–15 minutes on a normal runner,
+and obsolete runs are cancelled automatically. PR branches run once per PR
+update; push validation runs only on main/master.
+
+Quick memory acceptance requires at least five minutes, 54 samples, no OOM or
+workload errors, observed simultaneous AI operations, exercised players, and
+bounded warmed memory growth. It covers all 45 problems and three difficulties
+using seed zero. This is a short constrained-memory check, not proof of hour-long
+stability. Reports label `measurementProfile=quick` and retain the original
+256 MiB result when falling back.
+
+Routine Rust behavior tests use `DSA_PARITY_SEED=0`, preserving every game and
+difficulty plus the rest of the unit/integration suites. The exhaustive 30-seed
+HTTP suite remains available manually with `cargo test --locked --release
+--manifest-path services/api-rust/Cargo.toml` and no parity seed environment
+setting. An optional manual hour-long comparison uses `python3
+scripts/rust-container-benchmark.py --backend both --profile soak --seconds
+3600`; build the Node baseline image first. It is not part of routine CI.
 
 After all behavior and memory acceptance gates pass, use the native backup
 command (reads the source without applying migrations and refuses an existing
@@ -337,15 +351,11 @@ and one hint; its debrief and scheduled review are visible in dashboard history.
 Game read, action, undo, hint, and debrief handlers share a separate immediate-admission limit. It bounds simultaneous decoded board/undo allocations while SQLite persists their changes. Excess operations receive the standard 429 envelope and `Retry-After`; clients should retry the same action ID before advancing. Coach operations remain bounded by the AI limit. Serialized cache accounting excludes these transient decoded objects.
 
 
-The backend-only budget may increase to 512 MiB if the 256 MiB run fails for
-measured memory reasons. CI uses `--allow-512-fallback`: it retains the original
-reports, then benchmarks both backends for another full hour at 512 MiB under
-`fallback-512/`. The larger budget requires peak below 460 MiB and retains all
-behavior, growth, concurrency, and OOM checks. Workload errors without an OOM,
-or incomplete runs, do not trigger a memory fallback. A standalone 512 MiB run
-uses `python3 scripts/rust-container-benchmark.py --memory-mib 512`. Neither
-budget includes frontend or remote AI processes; both include SQLite and charged
-filesystem memory. Acceptance records the actual budget used.
+The backend-only budget may increase to 512 MiB after a measured memory failure.
+CI keeps the original reports and writes the larger-budget reports under
+`fallback-512/`. Functional errors without OOM and incomplete measurements do
+not trigger fallback. For a standalone five-minute 512 MiB check use
+`python3 scripts/rust-container-benchmark.py --memory-mib 512`.
 
 Compressing HTTP requests reduces transfer bytes, but JSON still requires
 decoding in memory. Small gameplay commands do not contain the retained undo

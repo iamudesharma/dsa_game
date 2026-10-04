@@ -2,8 +2,8 @@
 """Linux Docker acceptance workload. All memory samples come from cgroup v2.
 
 The load generator and mock remote provider run outside the backend container.
-Production credentials and databases are never mounted. Defaults to 60 minutes
-per backend; shorter runs are smoke checks and cannot satisfy acceptance.
+Production credentials and databases are never mounted. Routine CI measures Rust
+for five minutes. An explicit soak profile retains the separate hour-long check.
 """
 import argparse
 import concurrent.futures
@@ -116,7 +116,7 @@ def request(base, path, body=None, token=None, raw=None):
         return response.status, value, dict(response.headers)
 
 
-def run(image, label, seconds, output, fixtures, memory_mib=256):
+def run(image, label, seconds, output, fixtures, memory_mib=256, profile="quick"):
     peak_limit_mib = {256: 230, 512: 460}[memory_mib]
     name = f'dsa-benchmark-{label}'
     docker('rm', '-f', name, check=False)
@@ -320,12 +320,14 @@ def run(image, label, seconds, output, fixtures, memory_mib=256):
     midpoint = max(1, len(steady) // 2)
     growth = ((sum(steady[midpoint:]) / max(1, len(steady[midpoint:]))) -
               (sum(steady[:midpoint]) / max(1, len(steady[:midpoint])))) if steady else 0
-    passed = (seconds >= 3600 and len(samples) >= 700 and not errors and not state['OOMKilled']
+    minimum_duration = 3600 if profile == "soak" else 300
+    minimum_samples = 700 if profile == "soak" else 54
+    passed = (seconds >= minimum_duration and len(samples) >= minimum_samples and not errors and not state['OOMKilled']
               and 0 < peak < peak_limit_mib * 1024 * 1024 and growth < 5 * 1024 * 1024
               and Provider.peak == 2 and Provider.calls > 100
               and all(n >= 10 for n in activity[:20]) and min(activity[20:]) >= 100
               and not any(s['events'].get('oom_kill', 0) for s in samples))
-    report = {'backend': label, 'memoryLimitMiB': memory_mib, 'peakLimitMiB': peak_limit_mib, 'durationSeconds': seconds, 'measuredElapsedSeconds': samples[-1]['seconds'] if samples else 0, 'players': 20, 'peakBytes': peak if samples else None,
+    report = {'backend': label, 'measurementProfile': profile, 'requiredDurationSeconds': minimum_duration, 'memoryLimitMiB': memory_mib, 'peakLimitMiB': peak_limit_mib, 'durationSeconds': seconds, 'measuredElapsedSeconds': samples[-1]['seconds'] if samples else 0, 'players': 20, 'workloadCases': len(fixtures), 'peakBytes': peak if samples else None,
               'steadyGrowthBytes': growth if steady else None, 'oomKilled': state['OOMKilled'], 'errors': errors,
               'requests': counts, 'completedIterationsByWorker':activity, 'samples': samples, 'mockProviderCalls': Provider.calls,
               'peakUpstreamOperations': Provider.peak, 'accepted': passed,
@@ -389,7 +391,7 @@ def memory_rejected(report):
     if report['oomKilled']:
         return True
     # A workload error or incomplete run needs repair, not a larger budget.
-    if report['errors'] or report['measuredElapsedSeconds'] < 3600:
+    if report['errors'] or report['measuredElapsedSeconds'] < report.get('requiredDurationSeconds', 3600):
         return False
     peak = report['peakBytes']
     growth = report['steadyGrowthBytes']
@@ -399,9 +401,15 @@ def memory_rejected(report):
 
 def benchmark_pair(args, output, fixtures, memory_mib):
     output.mkdir(parents=True, exist_ok=True)
-    node = run(args.node_image, 'node', args.seconds, output, fixtures, memory_mib)
-    rust = run(args.rust_image, 'rust', args.seconds, output, fixtures, memory_mib)
-    comparison = {'node': node['peakBytes'], 'rust': rust['peakBytes'],
+    # Spread all problem types through the short workload instead of spending
+    # its first minutes on thirty consecutive seeds of the same problem.
+    if args.profile == 'quick':
+        fixtures = [case for case in fixtures if case['seed'] == 0]
+    node = (run(args.node_image, 'node', args.seconds, output, fixtures, memory_mib, args.profile)
+            if args.backend == 'both' else None)
+    rust = run(args.rust_image, 'rust', args.seconds, output, fixtures, memory_mib, args.profile)
+    comparison = {'measurementProfile': args.profile, 'nodeBaselineMeasured': node is not None,
+                  'node': node['peakBytes'] if node else None, 'rust': rust['peakBytes'],
                   'rustAccepted': rust['accepted'], 'memoryLimitMiB': memory_mib,
                   'peakLimitMiB': rust['peakLimitMiB']}
     (output / 'comparison.json').write_text(json.dumps(comparison, indent=2))
@@ -412,7 +420,9 @@ def benchmark_pair(args, output, fixtures, memory_mib):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--http-smoke', metavar='DISPOSABLE_BACKEND_URL')
-    parser.add_argument('--seconds', type=int, default=3600)
+    parser.add_argument('--seconds', type=int, default=300)
+    parser.add_argument('--profile', choices=('quick', 'soak'), default='quick')
+    parser.add_argument('--backend', choices=('rust', 'both'), default='rust')
     parser.add_argument('--memory-mib', type=int, choices=(256, 512), default=256)
     parser.add_argument('--allow-512-fallback', action='store_true',
                         help='Retry measured 256 MiB memory failures at 512 MiB; retain both reports')

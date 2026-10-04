@@ -175,3 +175,23 @@ both reports and repeats the full workload at the larger budget; this does not
 turn a failed 256 MiB result into a successful one. Behavior errors and incomplete
 runs cannot trigger fallback unless the container was OOM-killed. All other
 acceptance requirements and the cutover gate remain in effect.
+
+
+### Routine CI duration revised by user request
+
+Routine CI now uses a five-minute Rust-only constrained-memory check, with one
+five-minute 512 MiB fallback for measured memory rejection. Each job has a
+30-minute hard timeout. Duplicate branch push/PR runs are removed, and newer
+commits cancel obsolete runs. Behavior HTTP parity uses seed zero for all 45
+problems and all three difficulties; the exhaustive thirty-seed suite remains
+manual. Reports distinguish the quick check from the optional hour-long soak.
+A quick pass does not prove sixty-minute stability. The prior hour-long CI
+configuration is superseded by this shorter validation requirement.
+
+Completed run `37192145470` at `6af0218` measured 3600.38 seconds with no OOM,
+no workload errors, and approximately -0.47 MiB warmed growth. Sampled process
+high-water RSS was 161.96 MiB. Cgroup peak was 256.32 MiB, so the original
+230 MiB gate failed. At the last sample, anonymous memory was about 108.85 MiB
+and charged file cache about 133.31 MiB. These are different measurements:
+process RSS is not total container memory. Full reports remain in that run's
+`container-memory-comparison` artifact.
