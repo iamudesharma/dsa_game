@@ -23,6 +23,37 @@ def docker(*args, check=True):
     return subprocess.run(['docker', *args], check=check, capture_output=True, text=True)
 
 
+MEMORY_COMMAND = (
+    'cat /sys/fs/cgroup/memory.current /sys/fs/cgroup/memory.peak; '
+    'echo EVENTS; cat /sys/fs/cgroup/memory.events; '
+    'echo STAT; cat /sys/fs/cgroup/memory.stat; '
+    'echo PROCESS; cat /proc/1/status; '
+    'echo DATABASE; du -k /data/* 2>/dev/null || true'
+)
+
+
+def parse_memory_sample(stdout, elapsed):
+    """Keep filesystem/kernel charges visible alongside process RSS."""
+    lines = stdout.splitlines()
+    result = {'seconds': elapsed, 'current': int(lines[0]), 'peak': int(lines[1]),
+              'events': {}, 'stat': {}, 'process': {}, 'databaseKiB': {}}
+    section = None
+    for line in lines[2:]:
+        if line in ('EVENTS', 'STAT', 'PROCESS', 'DATABASE'):
+            section = line
+            continue
+        if section in ('EVENTS', 'STAT'):
+            key, value = line.split()
+            result['events' if section == 'EVENTS' else 'stat'][key] = int(value)
+        elif section == 'PROCESS' and line.startswith(('VmRSS:', 'VmHWM:', 'RssAnon:', 'RssFile:', 'RssShmem:', 'Threads:')):
+            key, value, *_ = line.split()
+            result['process'][key.rstrip(':')] = int(value)
+        elif section == 'DATABASE':
+            size, path = line.split(maxsplit=1)
+            result['databaseKiB'][path] = int(size)
+    return result
+
+
 class Provider(http.server.BaseHTTPRequestHandler):
     active = peak = calls = 0
     lock = threading.Lock()
@@ -135,7 +166,12 @@ def run(image, label, seconds, output, fixtures):
                     path = step['path'].replace('fixture-game', game_id)
                     body = dict(step['body'], gameId=game_id) if 'body' in step else None
                     status, _, _ = call(path, body, token)
-                    if status not in (200, 429):
+                    while status == 429 and not stop.is_set():
+                        time.sleep(0.1)
+                        status, _, _ = call(path, body, token)
+                    if stop.is_set():
+                        break
+                    if status != 200:
                         raise RuntimeError(f'game step: {path}: {status}')
                 if iteration % 10 == 0:
                     call('/api/auth/login', credentials)
@@ -245,11 +281,8 @@ def run(image, label, seconds, output, fixtures):
             tasks = [pool.submit(player, i) for i in range(20)] + [pool.submit(ai, i) for i in range(2)]
             while time.monotonic() - started < seconds and not stop.is_set():
                 sample = docker('exec', name, 'sh', '-c',
-                    'cat /sys/fs/cgroup/memory.current /sys/fs/cgroup/memory.peak /sys/fs/cgroup/memory.events')
-                lines = sample.stdout.splitlines()
-                samples.append({'seconds': time.monotonic() - started,
-                                'current': int(lines[0]), 'peak': int(lines[1]),
-                                'events': dict((k, int(v)) for k, v in (line.split() for line in lines[2:]))})
+                    MEMORY_COMMAND)
+                samples.append(parse_memory_sample(sample.stdout, time.monotonic() - started))
                 if label == 'rust':
                     status, diagnostics, _ = call('/api/health')
                     if status == 200:
@@ -271,12 +304,10 @@ def run(image, label, seconds, output, fixtures):
         state = json.loads(docker('inspect', name).stdout)[0]['State']
         if state['Running']:
             final = docker('exec', name, 'sh', '-c',
-                           'cat /sys/fs/cgroup/memory.current /sys/fs/cgroup/memory.peak /sys/fs/cgroup/memory.events', check=False)
+                           MEMORY_COMMAND, check=False)
             lines = final.stdout.splitlines()
             if len(lines) >= 2:
-                samples.append({'seconds': time.monotonic() - started,
-                                'current': int(lines[0]), 'peak': int(lines[1]),
-                                'events': dict((k, int(v)) for k, v in (line.split() for line in lines[2:]))})
+                samples.append(parse_memory_sample(final.stdout, time.monotonic() - started))
         logs = docker('logs', name, check=False)
         (output / f'{label}.log').write_text(logs.stdout + logs.stderr)
         docker('stop', name, check=False)

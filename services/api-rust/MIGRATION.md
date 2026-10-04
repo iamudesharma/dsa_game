@@ -140,3 +140,20 @@ tests pass, including `every_gap_branch_matches_node`. Formatting and all-target
 Clippy with warnings denied pass. This closes the previously reported local
 guidance failure; the GitHub workflow still provides full release and container
 acceptance gates before default cutover.
+
+
+### First GitHub container result and follow-up
+
+The October 4 run at commit `7023d84` passed both behavior jobs. The Rust
+container was OOM-killed after approximately 672 seconds; sampled cgroup peak
+was 256.28125 MiB, despite accounted cache payload staying below 32 MiB. This
+is a failed acceptance result, and does not justify switching defaults. The
+Node baseline ended early with an action validation error and reached 256 MiB;
+it is not a completed sixty-minute comparison.
+
+The follow-up image limits glibc arenas to two and sets mmap/trim thresholds
+to 64 KiB to reduce retained allocator memory under snapshot churn. The
+benchmark now records cgroup anonymous/file/kernel memory, process RSS/high
+water mark, and database disk size. It retries rejected game steps before
+advancing the canonical journey. These changes need a new full container run;
+the 230 MiB peak limit and all acceptance criteria remain unchanged.
