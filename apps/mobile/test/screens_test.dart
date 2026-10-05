@@ -130,7 +130,10 @@ void main() {
 
       // Topic -> problem.
       await _openMission(tester, 'Find the target in a sorted array');
-      await _scrollTo(tester, find.text('The canonical algorithm'.toUpperCase()));
+      await _scrollTo(
+        tester,
+        find.text('The canonical algorithm'.toUpperCase()),
+      );
       expect(
         find.text('The canonical algorithm'.toUpperCase()),
         findsOneWidget,
@@ -297,6 +300,28 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('hint, feedback and expanded history remain usable together', (
+    tester,
+  ) async {
+    await _bootApp(tester);
+    await _openMission(tester, 'Find the target in a sorted array');
+    await tester.tap(find.text('Start mission'));
+    await tester.pumpAndSettle();
+    final controller = _gameController(tester);
+    await controller.dispatch(
+      const ComparePairAction(aId: 'o4', bId: 'o6', relation: Relation.gt),
+    );
+    await controller.requestHint();
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Memory and move history'));
+    await tester.tap(find.text('Memory and move history'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.ensureVisible(find.text('Undo move'));
+    expect(find.text('Undo move'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'a finished game opens the debrief with replay, mapping and code',
     (tester) async {
@@ -325,6 +350,12 @@ void main() {
       await tester.tap(find.text('Explore the algorithm'));
       await tester.pumpAndSettle();
 
+      // Landscape phones must keep results and replay reachable together.
+      tester.view.physicalSize = const Size(844, 390);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      tester.view.physicalSize = _phone;
+      await tester.pumpAndSettle();
       // The debrief arrived on the player's terms.
       expect(find.text('You solved it'), findsOneWidget);
       expect(find.text('index 6'), findsOneWidget);

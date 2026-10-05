@@ -44,7 +44,7 @@ function pickN<T>(rand: () => number, items: readonly T[], n: number): T[] {
   return out
 }
 
-const CODING_BY_AXIS: Record<string, { problemId: string; prompt: string; why: string }[]> = {
+export const CODING_BY_AXIS: Record<string, { problemId: string; prompt: string; why: string }[]> = {
   dsa: [
     { problemId: 'two-sum', prompt: 'Given an array and a target, find two indices whose values sum to the target. Talk through the trade-off between the brute force and the hash-map pass.', why: 'Classic hash-map reasoning under time pressure.' },
     { problemId: 'binary-search', prompt: 'Search for a target in a sorted array. Explain why each comparison lets you discard half of what remains.', why: 'Tests the halve-and-discard invariant, not just the code.' },
@@ -69,18 +69,18 @@ const CODING_BY_AXIS: Record<string, { problemId: string; prompt: string; why: s
   ],
 }
 
-const CONCEPT_QUESTIONS: { prompt: string; why: string; listeningFor: string }[] = [
+export const CONCEPT_QUESTIONS: { prompt: string; why: string; listeningFor: string }[] = [
   { prompt: 'Explain Big-O to a teammate who has never seen it. When does a linear scan beat a logarithmic search in practice?', why: 'Checks calibrated complexity intuition, not recited definitions.', listeningFor: 'Growth with input size, constants, and when the theoretically faster approach loses.' },
   { prompt: 'Hash table vs balanced tree: when do you pick which, and what breaks if you pick wrong?', why: 'Trade-off reasoning over API recall.', listeningFor: 'Ordering needs, worst-case behaviour, and hash quality.' },
   { prompt: 'What is the difference between a process, a thread, and an async task in the stack you use most?', why: 'Concurrency fundamentals behind everyday bugs.', listeningFor: 'Shared memory, scheduling, and where blocking actually happens.' },
 ]
 
-const ML_QUESTIONS: { prompt: string; why: string; listeningFor: string }[] = [
+export const ML_QUESTIONS: { prompt: string; why: string; listeningFor: string }[] = [
   { prompt: 'Explain overfitting and three distinct ways you have actually fought it.', why: 'Grounds regularisation talk in lived experience.', listeningFor: 'A concrete story per technique, plus how they knew it worked.' },
   { prompt: 'How do you evaluate a model when the metric the business cares about is not differentiable?', why: 'Proxy metrics and offline/online gaps.', listeningFor: 'Surrogate metrics, validation design, and shipping criteria.' },
 ]
 
-const SYSTEM_QUESTIONS: { prompt: string; why: string; listeningFor: string }[] = [
+export const SYSTEM_QUESTIONS: { prompt: string; why: string; listeningFor: string }[] = [
   { prompt: 'Design a URL shortener for 100M URLs a day. Where does it break first as traffic grows 10x?', why: 'Standard scale-out walkthrough.', listeningFor: 'Bottleneck-first thinking: storage, cache, and ID generation.' },
   { prompt: 'Design a rate limiter for a public API. How do your choices change between per-user and global limits?', why: 'State, clocks, and distributed trade-offs.', listeningFor: 'Token bucket vs fixed window, and where the state lives.' },
 ]

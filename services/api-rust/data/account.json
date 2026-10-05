@@ -1,0 +1,239 @@
+{
+  "coding": {
+    "dsa": [
+      {
+        "problemId": "two-sum",
+        "prompt": "Given an array and a target, find two indices whose values sum to the target. Talk through the trade-off between the brute force and the hash-map pass.",
+        "why": "Classic hash-map reasoning under time pressure."
+      },
+      {
+        "problemId": "binary-search",
+        "prompt": "Search for a target in a sorted array. Explain why each comparison lets you discard half of what remains.",
+        "why": "Tests the halve-and-discard invariant, not just the code."
+      },
+      {
+        "problemId": "valid-parentheses",
+        "prompt": "Decide whether a string of brackets is valid. What does the stack give you that a counter does not?",
+        "why": "Stack discipline plus a follow-up about generalisation."
+      }
+    ],
+    "coding": [
+      {
+        "problemId": "two-sum",
+        "prompt": "Given an array and a target, find two indices whose values sum to the target. Talk through the trade-off between the brute force and the hash-map pass.",
+        "why": "Classic hash-map reasoning under time pressure."
+      },
+      {
+        "problemId": "sliding-window-max-sum",
+        "prompt": "Find the maximum sum of any window of size k. Why does reusing the previous window sum beat recomputing?",
+        "why": "Sliding-window reuse is the whole insight."
+      },
+      {
+        "problemId": "merge-intervals",
+        "prompt": "Merge overlapping intervals. What does sorting buy you before the scan starts?",
+        "why": "Sort-then-scan is a transferable pattern."
+      }
+    ],
+    "ml": [
+      {
+        "problemId": "kadane-max-subarray",
+        "prompt": "Find the maximum subarray sum. Relate the extend-or-restart decision to an optimisation step you have run in training.",
+        "why": "Connects DP recurrence thinking to optimisation."
+      }
+    ],
+    "math": [
+      {
+        "problemId": "climbing-stairs",
+        "prompt": "Count the ways to climb n stairs taking 1 or 2 steps. Derive the recurrence before writing code.",
+        "why": "Recurrence-first reasoning."
+      }
+    ],
+    "build": [
+      {
+        "problemId": "move-zeroes",
+        "prompt": "Move all zeroes to the end in place. How do you keep the relative order of everything else?",
+        "why": "In-place two-pointer discipline."
+      }
+    ],
+    "system": [
+      {
+        "problemId": "union-find-connect",
+        "prompt": "Count connected components as edges arrive. Why does union-find beat re-running BFS after each edge?",
+        "why": "Incremental connectivity reasoning."
+      }
+    ]
+  },
+  "concepts": [
+    {
+      "prompt": "Explain Big-O to a teammate who has never seen it. When does a linear scan beat a logarithmic search in practice?",
+      "why": "Checks calibrated complexity intuition, not recited definitions.",
+      "listeningFor": "Growth with input size, constants, and when the theoretically faster approach loses."
+    },
+    {
+      "prompt": "Hash table vs balanced tree: when do you pick which, and what breaks if you pick wrong?",
+      "why": "Trade-off reasoning over API recall.",
+      "listeningFor": "Ordering needs, worst-case behaviour, and hash quality."
+    },
+    {
+      "prompt": "What is the difference between a process, a thread, and an async task in the stack you use most?",
+      "why": "Concurrency fundamentals behind everyday bugs.",
+      "listeningFor": "Shared memory, scheduling, and where blocking actually happens."
+    }
+  ],
+  "ml": [
+    {
+      "prompt": "Explain overfitting and three distinct ways you have actually fought it.",
+      "why": "Grounds regularisation talk in lived experience.",
+      "listeningFor": "A concrete story per technique, plus how they knew it worked."
+    },
+    {
+      "prompt": "How do you evaluate a model when the metric the business cares about is not differentiable?",
+      "why": "Proxy metrics and offline/online gaps.",
+      "listeningFor": "Surrogate metrics, validation design, and shipping criteria."
+    }
+  ],
+  "system": [
+    {
+      "prompt": "Design a URL shortener for 100M URLs a day. Where does it break first as traffic grows 10x?",
+      "why": "Standard scale-out walkthrough.",
+      "listeningFor": "Bottleneck-first thinking: storage, cache, and ID generation."
+    },
+    {
+      "prompt": "Design a rate limiter for a public API. How do your choices change between per-user and global limits?",
+      "why": "State, clocks, and distributed trade-offs.",
+      "listeningFor": "Token bucket vs fixed window, and where the state lives."
+    }
+  ],
+  "fabrication": [
+    {
+      "id": "percentage",
+      "source": "\\b\\d{1,3}\\s*%",
+      "flags": "",
+      "reason": "Asserts a specific percentage about the process"
+    },
+    {
+      "id": "always-asks",
+      "source": "\\b(always|never)\\s+(asks?|tests?|requires?)\\b",
+      "flags": "i",
+      "reason": "Asserts an absolute about what the company asks"
+    },
+    {
+      "id": "proprietary-round",
+      "source": "\\b(superday|onsite\\s+loop\\s+[A-Z]|round\\s+[47]\\b|secret\\s+round)\\b",
+      "flags": "i",
+      "reason": "Names a specific proprietary round"
+    },
+    {
+      "id": "interviewer-name",
+      "source": "\\b(interviewer|hiring manager)\\s+[A-Z][a-z]+\\s+[A-Z][a-z]+\\b",
+      "flags": "",
+      "reason": "Names a specific person"
+    },
+    {
+      "id": "guarantee",
+      "source": "\\b(guaranteed|100%\\s+(chance|pass)|will\\s+definitely\\s+ask)\\b",
+      "flags": "i",
+      "reason": "Guarantees an outcome"
+    },
+    {
+      "id": "salary-claim",
+      "source": "\\$\\s?\\d[\\d,]*(k\\b)?|\\b\\d{2,3}k\\s+(salary|comp|offer)\\b",
+      "flags": "i",
+      "reason": "Asserts compensation figures"
+    }
+  ],
+  "customCompany": {
+    "id": "custom",
+    "label": "Custom company",
+    "aliases": [],
+    "values": [
+      "Ownership",
+      "Clear communication"
+    ],
+    "hiringAxes": [
+      {
+        "id": "coding",
+        "label": "Coding & algorithms",
+        "weight": 0.4,
+        "categories": [
+          "coding",
+          "concepts"
+        ]
+      },
+      {
+        "id": "behavioral",
+        "label": "Behavioral",
+        "weight": 0.3,
+        "categories": [
+          "behavioral"
+        ]
+      },
+      {
+        "id": "resume",
+        "label": "Past work depth",
+        "weight": 0.3,
+        "categories": [
+          "resume-deep-dive"
+        ]
+      }
+    ],
+    "rounds": [
+      {
+        "name": "Screen",
+        "focus": "Background and one technical exercise"
+      },
+      {
+        "name": "Onsite",
+        "focus": "Technical depth plus behavioral"
+      }
+    ],
+    "techSignals": []
+  },
+  "playable": [
+    "binary-search",
+    "array-max-min",
+    "two-sum",
+    "move-zeroes",
+    "bubble-sort",
+    "selection-sort",
+    "valid-parentheses",
+    "stack-push-pop",
+    "queue-operations",
+    "linked-list-traversal",
+    "reverse-linked-list",
+    "sliding-window-max-sum",
+    "two-pointers-pair",
+    "prefix-sum-range",
+    "kadane-max-subarray",
+    "merge-intervals",
+    "next-greater-element",
+    "rotated-search",
+    "linked-list-cycle",
+    "frequency-count",
+    "valid-anagram",
+    "valid-palindrome",
+    "tree-traversals",
+    "bst-validate",
+    "tree-level-order",
+    "bst-search",
+    "kth-largest-heap",
+    "num-islands",
+    "max-area-island",
+    "rotting-oranges",
+    "word-search",
+    "union-find-connect",
+    "climbing-stairs",
+    "house-robber",
+    "subsets",
+    "permutations",
+    "jump-game",
+    "single-number",
+    "trie-prefix-search",
+    "network-delay-time",
+    "coin-change",
+    "kruskal-mst",
+    "unique-paths",
+    "lcs-length",
+    "edit-distance"
+  ]
+}

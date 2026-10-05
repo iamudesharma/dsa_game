@@ -1,0 +1,90 @@
+{
+  "topics": [
+    {
+      "id": "arrays",
+      "label": "Arrays"
+    },
+    {
+      "id": "sorting",
+      "label": "Sorting"
+    },
+    {
+      "id": "stack",
+      "label": "Stack"
+    },
+    {
+      "id": "queue",
+      "label": "Queue"
+    },
+    {
+      "id": "binary-search",
+      "label": "Binary Search"
+    },
+    {
+      "id": "linked-list",
+      "label": "Linked List"
+    },
+    {
+      "id": "hash-table",
+      "label": "Hash Table"
+    },
+    {
+      "id": "strings",
+      "label": "Strings"
+    },
+    {
+      "id": "trees",
+      "label": "Trees"
+    },
+    {
+      "id": "heap",
+      "label": "Heap"
+    },
+    {
+      "id": "graphs",
+      "label": "Graphs"
+    },
+    {
+      "id": "dp",
+      "label": "Dynamic Programming"
+    },
+    {
+      "id": "backtracking",
+      "label": "Backtracking"
+    },
+    {
+      "id": "greedy",
+      "label": "Greedy"
+    },
+    {
+      "id": "bit-manip",
+      "label": "Bit Manipulation"
+    },
+    {
+      "id": "trie",
+      "label": "Trie"
+    }
+  ],
+  "tiers": [
+    {
+      "tier": "opencode-go",
+      "available": false
+    },
+    {
+      "tier": "opencode",
+      "available": false
+    },
+    {
+      "tier": "openrouter",
+      "available": false
+    },
+    {
+      "tier": "local-llm",
+      "available": false
+    },
+    {
+      "tier": "template",
+      "available": false
+    }
+  ]
+}
