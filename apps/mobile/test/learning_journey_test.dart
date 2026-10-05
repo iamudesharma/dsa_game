@@ -271,4 +271,22 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets('landscape keyboard keeps the chat composer reachable', (
+    tester,
+  ) async {
+    await boot(tester, JourneyClient());
+    tester.view.physicalSize = const Size(844, 390);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chat'));
+    await tester.pumpAndSettle();
+    tester.view.viewInsets = const FakeViewPadding(bottom: 210);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'Explain this');
+    await tester.pumpAndSettle();
+    expect(
+      tester.getRect(find.byTooltip('Send message')).bottom,
+      lessThan(180),
+    );
+    expect(tester.takeException(), isNull);
+  });
 }

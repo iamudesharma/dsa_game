@@ -323,142 +323,155 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            ExpansionTile(
-              title: Text(
-                'Context: ${c.context['history'] == true ? 'practice history' : 'conversation'}${c.context['resume'] == true ? ', resume' : ''}${c.context['target'] == true ? ', target' : ''}${c.context['reference'] != null ? ', selected item' : ''}',
-              ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxHeight < 240;
+            return Column(
               children: [
-                for (final key in ['history', 'resume', 'target'])
-                  CheckboxListTile(
+                if (!compact)
+                  ExpansionTile(
                     title: Text(
-                      key == 'history'
-                          ? 'Practice history'
-                          : key == 'resume'
-                          ? 'Resume (without contact details)'
-                          : 'Interview target',
+                      'Context: ${c.context['history'] == true ? 'practice history' : 'conversation'}${c.context['resume'] == true ? ', resume' : ''}${c.context['target'] == true ? ', target' : ''}${c.context['reference'] != null ? ', selected item' : ''}',
                     ),
-                    value: c.context[key] == true,
-                    onChanged: c.busy
-                        ? null
-                        : (v) => setState(() => c.context[key] = v),
+                    children: [
+                      for (final key in ['history', 'resume', 'target'])
+                        CheckboxListTile(
+                          title: Text(
+                            key == 'history'
+                                ? 'Practice history'
+                                : key == 'resume'
+                                ? 'Resume (without contact details)'
+                                : 'Interview target',
+                          ),
+                          value: c.context[key] == true,
+                          onChanged: c.busy
+                              ? null
+                              : (v) => setState(() => c.context[key] = v),
+                        ),
+                      if (c.context['reference'] != null)
+                        TextButton(
+                          onPressed: () =>
+                              setState(() => c.context.remove('reference')),
+                          child: const Text('Remove selected item'),
+                        ),
+                    ],
                   ),
-                if (c.context['reference'] != null)
+                Expanded(
+                  child: c.loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView(
+                          controller: _scroll,
+                          padding: const EdgeInsets.all(16),
+                          children: [
+                            if (c.messages.isEmpty && !c.busy) ...[
+                              const Text(
+                                'What would you like to explore?',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              for (final prompt in [
+                                'Explain binary search with an example.',
+                                'Review my practice. What should I study next?',
+                                'Prepare me for a backend interview.',
+                                'Create a 7-day DSA study plan.',
+                              ])
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: OutlinedButton(
+                                    onPressed: () => c.changeDraft(prompt),
+                                    child: Text(prompt),
+                                  ),
+                                ),
+                            ],
+                            for (final m in c.messages) _message(c, m),
+                            if (c.busy)
+                              Card(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: LearningMarkdown(
+                                    text: c.partial.isEmpty
+                                        ? c.status
+                                        : c.partial,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                ),
+                if (!_atBottom && !compact)
                   TextButton(
-                    onPressed: () =>
-                        setState(() => c.context.remove('reference')),
-                    child: const Text('Remove selected item'),
+                    onPressed: () {
+                      _atBottom = true;
+                      if (_scroll.hasClients) {
+                        _scroll.jumpTo(_scroll.position.maxScrollExtent);
+                      }
+                    },
+                    child: const Text('Jump to latest'),
                   ),
-              ],
-            ),
-            Expanded(
-              child: c.loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : ListView(
-                      controller: _scroll,
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        if (c.messages.isEmpty && !c.busy) ...[
-                          const Text(
-                            'What would you like to explore?',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          for (final prompt in [
-                            'Explain binary search with an example.',
-                            'Review my practice. What should I study next?',
-                            'Prepare me for a backend interview.',
-                            'Create a 7-day DSA study plan.',
-                          ])
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: OutlinedButton(
-                                onPressed: () => c.changeDraft(prompt),
-                                child: Text(prompt),
-                              ),
-                            ),
-                        ],
-                        for (final m in c.messages) _message(c, m),
-                        if (c.busy)
-                          Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: LearningMarkdown(
-                                text: c.partial.isEmpty ? c.status : c.partial,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-            ),
-            if (!_atBottom)
-              TextButton(
-                onPressed: () {
-                  _atBottom = true;
-                  if (_scroll.hasClients) {
-                    _scroll.jumpTo(_scroll.position.maxScrollExtent);
-                  }
-                },
-                child: const Text('Jump to latest'),
-              ),
-            if (c.error.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.all(8),
-                child: Text(
-                  c.error,
-                  semanticsLabel: 'Error: ${c.error}',
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ),
-            if (c.messages.any((m) => m.role == 'user') && !c.busy)
-              TextButton(
-                onPressed: () => c.send(regenerate: true),
-                child: Text(
-                  c.messages.last.status == 'failed' ||
-                          c.messages.last.status == 'interrupted'
-                      ? 'Retry last question'
-                      : 'Regenerate',
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _input,
-                      minLines: 1,
-                      maxLines: 5,
-                      maxLength: 8000,
-                      decoration: const InputDecoration(
-                        labelText: 'Your message',
-                        hintText: 'DSA, practice history, or interview prep',
-                        counterText: '',
+                if (c.error.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Text(
+                      c.error,
+                      semanticsLabel: 'Error: ${c.error}',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
                       ),
-                      onChanged: c.changeDraft,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    tooltip: c.busy ? 'Stop response' : 'Send message',
-                    onPressed: c.busy
-                        ? c.stop
-                        : c.loading || c.draft.trim().isEmpty
-                        ? null
-                        : () => c.send(),
-                    icon: Semantics(
-                      label: c.busy ? 'Stop response' : 'Send message',
-                      child: Icon(c.busy ? Icons.stop : Icons.send),
+                if (!compact &&
+                    c.messages.any((m) => m.role == 'user') &&
+                    !c.busy)
+                  TextButton(
+                    onPressed: () => c.send(regenerate: true),
+                    child: Text(
+                      c.messages.last.status == 'failed' ||
+                              c.messages.last.status == 'interrupted'
+                          ? 'Retry last question'
+                          : 'Regenerate',
                     ),
                   ),
-                ],
-              ),
-            ),
-          ],
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _input,
+                          minLines: 1,
+                          maxLines: compact ? 1 : 5,
+                          maxLength: 8000,
+                          decoration: const InputDecoration(
+                            labelText: 'Your message',
+                            hintText:
+                                'DSA, practice history, or interview prep',
+                            counterText: '',
+                          ),
+                          onChanged: c.changeDraft,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.filled(
+                        tooltip: c.busy ? 'Stop response' : 'Send message',
+                        onPressed: c.busy
+                            ? c.stop
+                            : c.loading || c.draft.trim().isEmpty
+                            ? null
+                            : () => c.send(),
+                        icon: Semantics(
+                          label: c.busy ? 'Stop response' : 'Send message',
+                          child: Icon(c.busy ? Icons.stop : Icons.send),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

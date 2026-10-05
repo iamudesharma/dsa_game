@@ -137,19 +137,23 @@ class SlotCell extends StatelessWidget {
         children: [
           SizedBox(
             height: 16,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (final entry in pointerEntries)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 1.5),
-                    child: PointerBadge(
-                      pointer: entry.key,
-                      color: pointerColor(colors, entry.key),
-                      dense: true,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (final entry in pointerEntries)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 1.5),
+                      child: PointerBadge(
+                        pointer: entry.key,
+                        color: pointerColor(colors, entry.key),
+                        dense: true,
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
           if (dimmed) Opacity(opacity: 0.45, child: body) else body,
