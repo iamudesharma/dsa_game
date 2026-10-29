@@ -1,0 +1,25 @@
+{
+  "mode": "profile",
+  "real_native_input": true,
+  "learning_search_empty_state": "passed",
+  "search_clear_and_lessons_restore": "passed",
+  "guest_briefing_and_instant_generation": "passed",
+  "real_select_action": "passed",
+  "real_hint_transport": "passed",
+  "real_undo_and_return_to_map": "passed",
+  "hint_content_issue": {
+    "problem": "array-max-min",
+    "seed": 161905812,
+    "values": [
+      5,
+      58,
+      86,
+      65,
+      26,
+      35
+    ],
+    "text": "Everything in the sunken vault corridor is in order, so order is the tool here. You never need to look at every value to make progress.",
+    "source": "packages/provider-chain/src/providers/template.ts HINT_LADDER.read",
+    "status": "open application content gap; not an Effect runtime gap"
+  }
+}

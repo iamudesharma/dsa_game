@@ -1,0 +1,9 @@
+{
+  "signup_ui_login_ms": 4477,
+  "profile_target_roundtrip_ms": 48,
+  "game_resume_hint_undo_solve_ms": 6609,
+  "live_chat_ms": 45335,
+  "interview_tier": "opencode-go",
+  "live_interview_generate_reopen_ms": 31013,
+  "persistence_isolation_cleanup_ms": 55
+}

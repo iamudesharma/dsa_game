@@ -468,34 +468,34 @@
   },
   "HINT_LADDER": {
     "read": [
-      "Everything in the {place} is in order, so order is the tool here. You never need to look at every value to make progress.",
-      "Do not begin at either end. Begin at the value in the middle of what is left, because that is the one that rules out the most.",
-      "Take whichever {object} sits in the middle of what is still in play. That is the only one this step needs."
+      "Reading a value gives you evidence for the next decision. Check what the current step asks you to inspect.",
+      "Use the current position and the task instructions to decide which {object} to examine. Do not assume the values are sorted.",
+      "Inspect the {object} needed by this step before changing anything."
     ],
     "compare": [
-      "A comparison here does not just answer yes or no — it produces a direction, and the direction is what decides everything after it.",
-      "Hold your {object} next to the {target} and ask which is bigger. Whichever side is bigger, the other side is finished.",
-      "Say which of the two is the {lower} one. That single word is the whole decision."
+      "A comparison tells you how two values relate. What will that relationship tell you about the current task?",
+      "Check which two values this step asks you to compare, and keep their order in mind.",
+      "Decide whether the first value is smaller, equal, or larger than the second."
     ],
     "choose-path": [
-      "Whatever is left is still in order, so a whole side of it can be ruled out at once. Being able to do that is the only reason this is quick.",
-      "Throw away the side that cannot hold the {target}. Keep the side that might, and start it just past the value you looked at.",
-      "Keep the half where the {target} could still be. Do not keep both — making the next step smaller is the entire point."
+      "A path choice should follow the evidence from the current step.",
+      "Check the available branches against the condition you just evaluated.",
+      "Choose the branch whose condition holds."
     ],
     "swap": [
-      "Two values that are the wrong way round cannot both be where they are. Exchanging them puts both right in a single move.",
-      "Exchange only the pair that is out of order. Everything else is already where it belongs.",
-      "Exchange those two and leave the rest alone."
+      "A swap exchanges two positions. It may be one step toward the goal rather than finishing the arrangement.",
+      "Check which pair this step needs to exchange; other positions stay unchanged by this move.",
+      "Exchange the required pair."
     ],
     "push": [
-      "A stack hands values back in the opposite order to the one they went in. Adding to it only ever touches the top.",
-      "Add to the top, never into the middle. A stack has no middle to add to.",
-      "Put it on the top."
+      "Adding an item changes the container. Its ordering rule determines where the item belongs.",
+      "Check whether this container is a stack, queue, or another structure before choosing the insertion point.",
+      "Add the required item at the permitted insertion point."
     ],
     "pop": [
-      "Last in, first out. The newest value is the one you get back, and it is the only one you are allowed to take.",
-      "Take from the top, and only from the top. If the top is empty there is nothing to take, whatever is still in the {place}.",
-      "Take the one on top."
+      "Removing an item follows the container’s ordering rule.",
+      "Check which end or position this structure permits you to remove from.",
+      "Remove the item permitted by that rule."
     ],
     "move": [
       "Moving a value is not the same as copying it. After the move the {place} has to still be usable for whatever comes next.",
@@ -513,9 +513,9 @@
       "Write the value into the slot."
     ],
     "traverse": [
-      "There is no counting along a chain of links — you can only follow one. Each step forward is exactly one link followed.",
-      "Move one link at a time. You cannot skip ahead and you cannot look back without starting over.",
-      "Follow the next link."
+      "Traversal follows the connections allowed by this structure and the current algorithm.",
+      "Check the available links and any visited-state information before choosing the next step.",
+      "Follow the connection required by this step."
     ],
     "link": [
       "A link decides where the traversal goes next. Rewiring one changes the route without rebuilding anything.",

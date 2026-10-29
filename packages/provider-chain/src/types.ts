@@ -38,8 +38,8 @@ export interface GenerateSpecResult {
 
 export interface SpecProvider {
   readonly tier: ProviderTier
-  /** Cheap, no-I/O availability probe. Must not throw. */
-  isAvailable(): Promise<boolean>
+  /** Cheap availability probe. Network probes must honor the optional signal. */
+  isAvailable(signal?: AbortSignal): Promise<boolean>
   generate(input: GenerateSpecInput): Promise<GameSpec>
   /**
    * Optional single-shot repair after a schema violation. When absent the
@@ -56,8 +56,10 @@ export interface ChainOptions {
   /** Total repair round-trips allowed. Default 1. */
   maxRepairsPerTier?: number
   onAttempt?: (a: ProviderAttempt) => void
-  /** Per-tier wall clock budget for `generate()`. Default 60_000. */
+  /** Per-tier wall clock budget for `generate()`. Default 200_000. */
   timeoutMs?: number
+  /** Availability deadline. Default 5_000; CHAIN_PROBE_TIMEOUT_MS overrides it. */
+  probeTimeoutMs?: number
 }
 
 /**

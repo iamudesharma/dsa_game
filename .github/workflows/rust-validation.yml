@@ -40,6 +40,7 @@ jobs:
       - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-account-data.ts --check
       - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-decision-data.ts --check
       - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-template-data.ts --check
+      - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-debrief-fixtures.ts --check
       - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-oracle-data.ts --check
       - run: pnpm typecheck
       - run: pnpm test

@@ -1,0 +1,28 @@
+{
+  "before": {
+    "captured_seconds": 1.598904,
+    "events": 32662,
+    "builds": {
+      "TopicScreen": 1,
+      "PlayScreen": 2,
+      "GameBoard": 3,
+      "Text": 337,
+      "Semantics": 865,
+      "BUILD": 49,
+      "LAYOUT": 7
+    }
+  },
+  "after": {
+    "captured_seconds": 1.545724,
+    "events": 32671,
+    "builds": {
+      "TopicScreen": 0,
+      "PlayScreen": 2,
+      "GameBoard": 3,
+      "Text": 347,
+      "Semantics": 889,
+      "BUILD": 47,
+      "LAYOUT": 7
+    }
+  }
+}

@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
   clearAuthToken,
+  DsaApiError,
   getAuthToken,
   getMe,
   postLogin,
@@ -53,6 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [sessionError, setSessionError] = useState<string | null>(null)
+  const [sessionAttempt, setSessionAttempt] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -63,11 +66,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     void getMe()
       .then((me) => {
-        if (!cancelled) setUser(me.user)
+        if (!cancelled) { setUser(me.user); setSessionError(null) }
       })
-      .catch(() => {
+      .catch((cause: unknown) => {
         if (!cancelled) {
-          clearAuthToken()
+          if (cause instanceof DsaApiError && cause.status === 401) clearAuthToken()
+          else setSessionError(messageOf(cause))
           setUser(null)
         }
       })
@@ -77,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [sessionAttempt])
 
   const signup = useCallback(async (email: string, password: string) => {
     setBusy(true)
@@ -85,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await postSignup(email, password)
       setAuthToken(res.token)
+      setSessionError(null)
       setUser(res.user)
       return true
     } catch (cause) {
@@ -101,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await postLogin(email, password)
       setAuthToken(res.token)
+      setSessionError(null)
       setUser(res.user)
       return true
     } catch (cause) {
@@ -119,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Server already forgot us or unreachable; clear locally regardless.
     } finally {
       clearAuthToken()
+      setSessionError(null)
       setUser(null)
       setBusy(false)
     }
@@ -130,5 +137,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({ user, ready, busy, error, signup, login, logout, clearError }),
     [user, ready, busy, error, signup, login, logout, clearError],
   )
-  return <Context.Provider value={value}>{children}</Context.Provider>
+  return <Context.Provider value={value}>
+    {sessionError && <div role="alert" className="panel m-3 p-4">
+      <p>Could not verify your account: {sessionError} Your saved session is preserved.</p>
+      <button className="btn mt-2" onClick={() => { setSessionError(null); setReady(false); setSessionAttempt(n => n + 1) }}>Retry account connection</button>
+    </div>}
+    {children}
+  </Context.Provider>
 }

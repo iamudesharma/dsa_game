@@ -7,6 +7,8 @@
 /// recovery affordance without string matching.
 library;
 
+import 'package:effect_core/effect_core.dart' as fx;
+
 sealed class ApiException implements Exception {
   const ApiException(this.message);
 
@@ -22,8 +24,11 @@ sealed class ApiException implements Exception {
 
 /// The API answered with a non-2xx status and a parseable `ApiError` body.
 final class ApiServerException extends ApiException {
-  const ApiServerException({required this.statusCode, required this.code, required String message})
-    : super(message);
+  const ApiServerException({
+    required this.statusCode,
+    required this.code,
+    required String message,
+  }) : super(message);
 
   final int statusCode;
 
@@ -74,4 +79,21 @@ final class ApiTimeoutException extends ApiException {
 
   @override
   bool get isRetryable => true;
+}
+
+/// User cancellation is a separate, non-retryable outcome.
+final class ApiCancelledException extends ApiException {
+  const ApiCancelledException(super.message);
+  @override
+  bool get isRetryable => false;
+}
+
+/// Composite failures retain typed timeout/cleanup diagnostics for reporting.
+/// The user-facing message never includes transport credentials or raw causes.
+final class ApiCleanupException extends ApiException {
+  const ApiCleanupException(this.cause)
+    : super('The request could not finish. Please try again.');
+  final fx.Cause<ApiException> cause;
+  @override
+  bool get isRetryable => false;
 }
