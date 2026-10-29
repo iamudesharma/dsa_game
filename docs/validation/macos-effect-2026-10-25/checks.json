@@ -1,0 +1,29 @@
+{
+  "automated_validation_date": "2026-10-25",
+  "manual_closeout_date": "2026-10-27",
+  "flutter_full_suite_passed": 418,
+  "additional_stream_cleanup_tests_passed": 2,
+  "affected_ui_tests_passed": 24,
+  "typescript_passed": 870,
+  "typescript_skipped": 2,
+  "canonical_winning_runs": 13500,
+  "native_boards_passed": 135,
+  "native_journey": "passed",
+  "native_soak": "passed",
+  "voiceover_enabled_state_smoke": "passed",
+  "voiceover_cursor_and_speech": "unverified",
+  "voiceover_restored": "off",
+  "frame_budget_60hz": "not_met_at_p95",
+  "git_head": "98e2af950fce39a85d9270f5f2c3ba171af18fa3",
+  "dirty_checkout": true,
+  "source_sha256": {
+    "apps/mobile/lib/services/api_client.dart": "44e78bd76a3cda1d3198af8e9dd4e707638aa941c3d5805dc570cb85b4096302",
+    "apps/mobile/lib/services/api_exception.dart": "081b671b05c15fb201efdbe25f1f48430d5a9abe979ab2b4179973aee1c27294",
+    "apps/mobile/lib/services/api_policy.dart": "37716af43b4c1691432bd1a41dcc838c40261681401132a2e917fa9365e70c62",
+    "apps/mobile/lib/screens/topic_screen.dart": "c266bdc0936d2472205870341d79fb10692855bf27d427a2ec4cde64c0c2beb7",
+    "apps/mobile/lib/widgets/common.dart": "8c23df5709e6c7f347a1b407ed3bcbe50394f310e786a6d46cdd3036fd93dc7c",
+    "apps/mobile/pubspec.lock": "abba4fbe6ed155ca40d26d372e58d2c1cbbd4deea01d499becf9eb1b7335ee77",
+    "packages/provider-chain/src/providers/template.ts": "a6025d91088521691f15e3868690a9391862915acefbc89e37996d5a91e0cc23",
+    "packages/dsa-oracles/src/playability.test.ts": "c7046f445e5b661d6f571c21538db96209e84249cff72608cc4cd4d86681f516"
+  }
+}

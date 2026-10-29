@@ -218,19 +218,19 @@ export class OpencodeProvider implements SpecProvider {
     this.cfg = { ...opencodeConfigFromEnv(), ...cfg }
   }
 
-  async isAvailable(): Promise<boolean> {
+  async isAvailable(signal?: AbortSignal): Promise<boolean> {
     if (!this.cfg.enabled) return false
     // Any HTTP status counts: a 401 still proves a server is listening, and the
     // subprocess path may be able to authenticate where we cannot.
-    if (await this.serverResponds()) return true
+    if (await this.serverResponds(signal)) return true
     return this.binaryOnPath()
   }
 
-  private async serverResponds(): Promise<boolean> {
+  private async serverResponds(signal?: AbortSignal): Promise<boolean> {
     try {
       const res = await fetch(`${this.cfg.baseUrl}/api/health`, {
         headers: authHeaders(this.cfg),
-        signal: AbortSignal.timeout(1200),
+        signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(1200)]) : AbortSignal.timeout(1200),
       })
       // Drain so the socket is released.
       await res.text().catch(() => '')

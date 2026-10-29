@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { DsaApiError, deleteCoachThread, getCoachThreads, isCoachUnavailable, postCoachAsk } from '@/lib/api'
 import type { CoachThreadSummary } from '@/lib/api'
 import { cn } from '@/lib/format'
-import { API_BASE_URL, getAuthToken } from '@/lib/api'
+import { request } from '@/lib/api'
 
 type Availability = 'checking' | 'ready' | 'unavailable' | 'broken'
 
@@ -82,8 +82,7 @@ export function CoachPanel({ gameId, progress, onClose }: CoachPanelProps) {
   useEffect(() => {
     const controller = new AbortController()
     setTurns([])
-    if (threadId) fetch(`${API_BASE_URL}/api/coach/threads/${threadId}`, { credentials: 'include', signal: controller.signal, headers: getAuthToken() ? { authorization: `Bearer ${getAuthToken()}` } : {} })
-      .then(async res => { if (!res.ok) throw new Error('Could not load this conversation.'); return res.json() })
+    if (threadId) request<{ thread: { turns: CoachTurn[] } }>(`/api/coach/threads/${threadId}`, { signal: controller.signal })
       .then(data => setTurns(data.thread.turns))
       .catch(error => { if (!controller.signal.aborted) setProblem(error.message) })
     return () => controller.abort()

@@ -8,7 +8,9 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:effect_core/effect_core.dart' as fx;
 import 'package:http/http.dart' as http;
 
 import '../models/action.dart';
@@ -19,6 +21,7 @@ import '../models/json.dart';
 import '../models/problem.dart';
 import '../models/state.dart';
 import 'api_exception.dart';
+import 'api_policy.dart';
 
 /// Base URL for every call.
 ///
@@ -32,9 +35,16 @@ import 'api_exception.dart';
 class ApiConfig {
   const ApiConfig({
     this.baseUrl = defaultBaseUrl,
-    this.generateTimeout = const Duration(seconds: 90),
-    this.actionTimeout = const Duration(seconds: 20),
-    this.requestTimeout = const Duration(seconds: 10),
+    this.generateTimeout = const Duration(
+      milliseconds: ApiPolicy.defaultGenerateTimeoutMs,
+    ),
+    this.actionTimeout = const Duration(
+      milliseconds: ApiPolicy.defaultActionTimeoutMs,
+    ),
+    this.requestTimeout = const Duration(
+      milliseconds: ApiPolicy.defaultRequestTimeoutMs,
+    ),
+    this.policy = const ApiPolicy(),
   });
 
   static const defaultBaseUrl = String.fromEnvironment(
@@ -48,6 +58,7 @@ class ApiConfig {
   final Duration generateTimeout;
   final Duration actionTimeout;
   final Duration requestTimeout;
+  final ApiPolicy policy;
 
   static const defaults = ApiConfig();
 
@@ -55,12 +66,29 @@ class ApiConfig {
 }
 
 class ApiClient {
-  ApiClient({ApiConfig? config, http.Client? httpClient})
-    : config = config ?? ApiConfig.defaults,
-      _http = httpClient ?? http.Client();
+  ApiClient({
+    ApiConfig? config,
+    http.Client? httpClient,
+    this.lifecycle,
+    this.metrics,
+  }) : config = config ?? ApiConfig.defaults,
+       _http = httpClient ?? http.Client() {
+    this.config.policy.validate();
+    if (this.config.requestTimeout <= Duration.zero ||
+        this.config.actionTimeout <= Duration.zero ||
+        this.config.generateTimeout <= Duration.zero) {
+      throw ArgumentError("API timeouts must be positive");
+    }
+  }
 
+  final fx.LifecycleSink? lifecycle;
+  final fx.RuntimeMetrics? metrics;
   final ApiConfig config;
   final http.Client _http;
+  final _runtimes = <fx.Runtime<fx.Unit>>{};
+  bool _closed = false;
+  final _streamStops = <Future<void> Function()>{};
+  Future<void>? _closing;
 
   /// Bearer fallback for loopback hosts. The server also sets an httpOnly
   /// cookie, but `localhost` vs `127.0.0.1` are different hosts to the
@@ -71,7 +99,24 @@ class ApiClient {
   void setAuthToken(String? token) =>
       _authToken = (token == null || token.isEmpty) ? null : token;
 
-  void close() => _http.close();
+  /// Flutter disposal starts shutdown; service owners can await [closeAsync].
+  void close() => unawaited(closeAsync());
+
+  /// Stop requests and readers before disposing their borrowed transport.
+  /// Repeated calls share the same completion.
+  Future<void> closeAsync() => _closing ??= _close();
+
+  Future<void> _close() async {
+    _closed = true;
+    try {
+      await Future.wait([
+        for (final stop in _streamStops.toList()) stop(),
+        for (final runtime in _runtimes.toList()) runtime.shutdown(),
+      ]);
+    } finally {
+      _http.close();
+    }
+  }
 
   // ------------------------------------------------------------- endpoints
 
@@ -268,7 +313,7 @@ class ApiClient {
     final body = await _post('/api/interview/generate', {
       'newAngle': newAngle,
       'seed': ?seed,
-    }, timeout: const Duration(seconds: 120));
+    }, timeout: config.generateTimeout);
     return InterviewKit.from(body);
   }
 
@@ -327,14 +372,7 @@ class ApiClient {
   }
 
   Future<void> deleteLearningThread(String id) async {
-    await _send(
-      () => _http.delete(
-        config.endpoint('/api/learning/threads/$id'),
-        headers: _headers,
-      ),
-      '/api/learning/threads/$id',
-      config.requestTimeout,
-    );
+    await _request('DELETE', '/api/learning/threads/$id');
   }
 
   Future<void> cancelLearning(String id) async {
@@ -348,12 +386,17 @@ class ApiClient {
     bool instant = false,
     Future<void>? abortTrigger,
   }) async => Json.map(
-    await _post('/api/learning/threads/$id/actions', {
-      'messageId': messageId,
-      'index': index,
-      'requestId': 'action-$messageId-$index',
-      'forceTemplate': instant,
-    }, timeout: const Duration(seconds: 240),abortTrigger:abortTrigger),
+    await _post(
+      '/api/learning/threads/$id/actions',
+      {
+        'messageId': messageId,
+        'index': index,
+        'requestId': 'action-$messageId-$index',
+        'forceTemplate': instant,
+      },
+      timeout: config.generateTimeout,
+      abortTrigger: abortTrigger,
+    ),
   );
   Future<LearningPage<PracticeRecord>> learningHistory({
     String? topic,
@@ -403,66 +446,179 @@ class ApiClient {
     Map<String, Object?> payload,
     Future<void> abort,
   ) async* {
-    final request =
-        http.AbortableRequest(
-            'POST',
-            config.endpoint('/api/learning/threads/$id/messages'),
-            abortTrigger: abort,
-          )
-          ..headers.addAll({..._headers, 'accept': 'text/event-stream'})
-          ..body = jsonEncode(payload);
-    final response = await _http
-        .send(request)
-        .timeout(const Duration(seconds: 30));
-    if (response.statusCode != 200) {
-      final data = Json.map(jsonDecode(await response.stream.bytesToString()));
-      throw ApiServerException(
-        statusCode: response.statusCode,
-        code: 'CHAT_FAILED',
-        message: Json.str(
-          Json.map(data['error'])['message'],
-          fallback: 'Could not send this message.',
+    if (_closed) throw const ApiCancelledException('The API client is closed.');
+    final runtime = fx.Runtime(
+      fx.Unit.value,
+      lifecycle: lifecycle,
+      metrics: metrics,
+    );
+    _runtimes.add(runtime);
+    final cancel = Completer<void>();
+    StreamIterator<String>? iterator;
+    Future<void> stop() async {
+      if (!cancel.isCompleted) cancel.complete();
+      await iterator?.cancel();
+    }
+
+    Future<T> run<T>(fx.Effect<T, ApiException, fx.Unit> program) {
+      if (_closed || cancel.isCompleted) {
+        return Future.error(
+          const ApiCancelledException('The request was cancelled.'),
+        );
+      }
+      return _runEffect(runtime, program);
+    }
+
+    _streamStops.add(stop);
+    var finished = false;
+    unawaited(
+      abort.then((_) async {
+        if (finished) return;
+        await stop();
+        await runtime.shutdown();
+      }),
+    );
+    try {
+      final connectTimeout = Duration(
+        milliseconds: config.policy.streamConnectTimeoutMs,
+      );
+      final response = await run(
+        fx.Effect.fromFuture<http.StreamedResponse, ApiException, fx.Unit>(
+          () async {
+            final request =
+                http.AbortableRequest(
+                    'POST',
+                    config.endpoint('/api/learning/threads/$id/messages'),
+                    abortTrigger: cancel.future,
+                  )
+                  ..headers.addAll({..._headers, 'accept': 'text/event-stream'})
+                  ..body = jsonEncode(payload);
+            final response = await _http.send(request);
+            if (response.statusCode != 200) {
+              final raw = (await _boundedResponse(response)).body;
+              Map<String, Object?> data = {};
+              try {
+                data = Json.map(jsonDecode(raw));
+              } on FormatException {
+                /* retain HTTP error */
+              }
+              throw ApiServerException(
+                statusCode: response.statusCode,
+                code: 'CHAT_FAILED',
+                message: response.statusCode == 401
+                    ? 'Your session expired. Sign in again to continue.'
+                    : Json.str(
+                        Json.map(data['error'])['message'],
+                        fallback: 'Could not send this message.',
+                      ),
+              );
+            }
+            return response;
+          },
+          onError: _streamError,
+          onCancel: stop,
+        ).timeout(
+          connectTimeout,
+          () => ApiTimeoutException(
+            'The tutor connection timed out.',
+            timeout: connectTimeout,
+          ),
         ),
       );
-    }
-    var buffer = '', complete = false;
-    await for (final chunk
-        in response.stream
-            .transform(utf8.decoder)
-            .timeout(const Duration(seconds: 190))) {
-      buffer += chunk;
-      buffer = buffer.replaceAll('\r\n', '\n');
-      var boundary = buffer.indexOf('\n\n');
-      while (boundary >= 0) {
-        final frame = buffer.substring(0, boundary);
-        buffer = buffer.substring(boundary + 2);
-        final data = frame
-            .split('\n')
-            .where((l) => l.startsWith('data:'))
-            .map((l) => l.substring(5).trimLeft())
-            .join('\n');
-        if (data.isNotEmpty) {
-          final event = Json.map(jsonDecode(data));
-          if (event['type'] == 'complete') complete = true;
-          yield event;
-        }
-        boundary = buffer.indexOf('\n\n');
-      }
-    }
-    if (!complete) {
-      throw const MalformedResponse(
-        'The connection ended before the response finished.',
+      final chunks = StreamIterator(response.stream.transform(utf8.decoder));
+      iterator = chunks;
+      final idleTimeout = Duration(
+        milliseconds: config.policy.streamIdleTimeoutMs,
       );
+      var buffer = '';
+      var previousCr = false;
+      while (await run(
+        fx.Effect.fromFuture<bool, ApiException, fx.Unit>(
+          chunks.moveNext,
+          onError: _streamError,
+          onCancel: () async {
+            await stop();
+          },
+        ).timeout(
+          idleTimeout,
+          () => ApiTimeoutException(
+            'The tutor response timed out. Your question is saved.',
+            timeout: idleTimeout,
+          ),
+        ),
+      )) {
+        var chunk = chunks.current;
+        if (chunk.isNotEmpty) {
+          if (previousCr && chunk.startsWith('\n')) chunk = chunk.substring(1);
+          previousCr = chunks.current.endsWith('\r');
+          buffer += chunk.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+        }
+        var boundary = buffer.indexOf('\n\n');
+        while (boundary >= 0) {
+          if (boundary > config.policy.maxStreamFrameCharacters) {
+            throw const MalformedResponse(
+              'The tutor response exceeded the frame limit.',
+            );
+          }
+          final frame = buffer.substring(0, boundary);
+          buffer = buffer.substring(boundary + 2);
+          final data = frame
+              .split('\n')
+              .where((line) => line.startsWith('data:'))
+              .map((line) => line.substring(5).trimLeft())
+              .join('\n');
+          if (data.isNotEmpty) {
+            Map<String, Object?> event;
+            try {
+              event = Json.map(jsonDecode(data));
+            } on FormatException {
+              throw const MalformedResponse(
+                'The tutor sent an invalid response.',
+              );
+            }
+            yield event;
+            if (event['type'] == 'complete') return;
+          }
+          boundary = buffer.indexOf('\n\n');
+        }
+        if (buffer.length > config.policy.maxStreamFrameCharacters) {
+          throw const MalformedResponse(
+            'The tutor response exceeded the frame limit.',
+          );
+        }
+      }
+      throw const MalformedResponse(
+        'The connection ended before the response finished. Your question is saved.',
+      );
+    } finally {
+      finished = true;
+      _streamStops.remove(stop);
+      await stop();
+      await runtime.shutdown();
+      await iterator?.cancel();
+      _runtimes.remove(runtime);
     }
+  }
+
+  static ApiException _streamError(Object error, StackTrace stack) {
+    if (error is ApiException) {
+      return error;
+    }
+    if (error is http.RequestAbortedException) {
+      return const ApiCancelledException('The request was cancelled.');
+    }
+    if (error is FormatException) {
+      return const MalformedResponse('The tutor sent an invalid response.');
+    }
+    return ApiUnreachableException(
+      'The tutor connection was interrupted. Your question is saved. ($error)',
+    );
   }
 
   // ------------------------------------------------------------- transport
 
-  Future<Object?> _get(String path, {Duration? timeout}) => _send(
-    () => _http.get(config.endpoint(path), headers: _headers),
-    path,
-    timeout ?? config.requestTimeout,
-  );
+  Future<Object?> _get(String path, {Duration? timeout}) =>
+      _request('GET', path, timeout: timeout);
 
   Future<Object?> _post(
     String path,
@@ -470,36 +626,153 @@ class ApiClient {
     Duration? timeout,
     Set<String> semanticCodes = const {},
     Future<void>? abortTrigger,
-  }) => _send(
-    () async {
-      final request =
-          http.AbortableRequest(
-              'POST',
-              config.endpoint(path),
-              abortTrigger: abortTrigger,
-            )
-            ..headers.addAll(_headers)
-            ..body = jsonEncode(payload);
-      return http.Response.fromStream(await _http.send(request));
-    },
+  }) => _request(
+    'POST',
     path,
-    timeout ?? config.requestTimeout,
+    payload: payload,
+    timeout: timeout,
     semanticCodes: semanticCodes,
+    abortTrigger: abortTrigger,
   );
 
   Future<Object?> _put(
     String path,
     Map<String, Object?> payload, {
     Duration? timeout,
+  }) => _request('PUT', path, payload: payload, timeout: timeout);
+
+  Future<Object?> _request(
+    String method,
+    String path, {
+    Map<String, Object?>? payload,
+    Duration? timeout,
+    Set<String> semanticCodes = const {},
+    Future<void>? abortTrigger,
   }) => _send(
-    () => _http.put(
-      config.endpoint(path),
-      headers: _headers,
-      body: jsonEncode(payload),
-    ),
+    (cancel) async {
+      final request = http.AbortableRequest(
+        method,
+        config.endpoint(path),
+        abortTrigger: abortTrigger == null
+            ? cancel
+            : Future.any([cancel, abortTrigger]),
+      )..headers.addAll(_headers);
+      if (payload != null) request.body = jsonEncode(payload);
+      return _boundedResponse(await _http.send(request));
+    },
     path,
     timeout ?? config.requestTimeout,
+    semanticCodes: semanticCodes,
+    retryRead: method == 'GET',
   );
+
+  Future<http.Response> _boundedResponse(http.StreamedResponse response) async {
+    final bytes = BytesBuilder(copy: false);
+    await for (final chunk in response.stream) {
+      if (bytes.length + chunk.length > config.policy.maxResponseBytes) {
+        throw const MalformedResponse(
+          'The server response exceeded the size limit.',
+        );
+      }
+      bytes.add(chunk);
+    }
+    return http.Response.bytes(
+      bytes.takeBytes(),
+      response.statusCode,
+      headers: response.headers,
+      request: response.request,
+    );
+  }
+
+  Future<Object?> _send(
+    Future<http.Response> Function(Future<void>) send,
+    String path,
+    Duration timeout, {
+    Set<String> semanticCodes = const {},
+    bool retryRead = false,
+  }) async {
+    if (_closed) throw const ApiCancelledException('The API client is closed.');
+    final runtime = fx.Runtime(
+      fx.Unit.value,
+      lifecycle: lifecycle,
+      metrics: metrics,
+    );
+    _runtimes.add(runtime);
+    final attempt = fx.Effect.defer<Object?, ApiException, fx.Unit>(() {
+      final cancel = Completer<void>();
+      return fx.Effect.fromFuture<Object?, ApiException, fx.Unit>(
+        () => _sendOnce(
+          () => send(cancel.future),
+          path,
+          timeout,
+          semanticCodes: semanticCodes,
+        ),
+        onError: (error, stack) => error is ApiException
+            ? error
+            : ApiUnreachableException('$error', baseUrl: config.baseUrl),
+        onCancel: () {
+          if (!cancel.isCompleted) cancel.complete();
+        },
+      ).timeout(
+        timeout,
+        () => ApiTimeoutException(
+          'The server did not answer $path within ${timeout.inSeconds}s.',
+          timeout: timeout,
+        ),
+      );
+    });
+    var program = attempt.retry(
+      fx.Schedule(
+        recurrences: retryRead ? config.policy.readRetries : 0,
+        initialDelay: Duration(milliseconds: config.policy.retryDelayMs),
+        factor: 2,
+        maxDelay: const Duration(seconds: 10),
+      ),
+      whileError: (error) => retryRead && _transient(error),
+    );
+    if (retryRead) {
+      final budget = Duration(milliseconds: config.policy.readBudgetMs);
+      program = program.timeout(
+        budget,
+        () => ApiTimeoutException(
+          'The read operation timed out.',
+          timeout: budget,
+        ),
+      );
+    }
+    try {
+      return await _runEffect(runtime, program);
+    } finally {
+      await runtime.shutdown();
+      _runtimes.remove(runtime);
+    }
+  }
+
+  Future<T> _runEffect<T>(
+    fx.Runtime<fx.Unit> runtime,
+    fx.Effect<T, ApiException, fx.Unit> program,
+  ) async {
+    final result = await runtime.runExit(program);
+    switch (result) {
+      case fx.Success(:final value):
+        return value;
+      case fx.Failure(cause: fx.Expected(:final error)):
+        throw error;
+      case fx.Failure(cause: fx.Defect(:final error, :final stackTrace)):
+        Error.throwWithStackTrace(error, stackTrace);
+      case fx.Failure(cause: fx.Interrupted()):
+        throw const ApiCancelledException('The request was cancelled.');
+      case fx.Failure(:final cause):
+        throw ApiCleanupException(cause);
+    }
+  }
+
+  static bool _transient(ApiException error) =>
+      error is ApiUnreachableException ||
+      error is ApiTimeoutException ||
+      (error is ApiServerException &&
+          error.code != 'PROBLEM_NOT_PLAYABLE' &&
+          const [502, 503, 504].contains(error.statusCode));
 
   Map<String, String> get _headers => {
     'content-type': 'application/json',
@@ -510,7 +783,7 @@ class ApiClient {
   /// Runs [send] and normalises every outcome into a model or an
   /// [ApiException]. `semanticCodes` are 4xx-ish domain failures that the server
   /// reports with an error body worth showing as-is.
-  Future<Object?> _send(
+  Future<Object?> _sendOnce(
     Future<http.Response> Function() send,
     String path,
     Duration timeout, {
@@ -518,13 +791,17 @@ class ApiClient {
   }) async {
     final http.Response response;
     try {
-      response = await send().timeout(timeout);
+      response = await send();
+    } on ApiException {
+      rethrow;
     } on TimeoutException {
       throw ApiTimeoutException(
         'The server did not answer $path within ${timeout.inSeconds}s. It may still be '
         'generating — try again, or use a lower provider tier.',
         timeout: timeout,
       );
+    } on http.RequestAbortedException {
+      throw const ApiCancelledException('The request was cancelled.');
     } on http.ClientException catch (e) {
       throw ApiUnreachableException(
         'Could not reach the API at ${config.baseUrl}. Is the server running?',
