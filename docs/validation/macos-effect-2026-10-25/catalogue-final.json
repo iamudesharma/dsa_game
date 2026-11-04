@@ -1,0 +1,828 @@
+{
+  "boards": [
+    {
+      "problem": "array-max-min",
+      "difficulty": "easy",
+      "generate_ms": 13,
+      "generate_and_render_ms": 561
+    },
+    {
+      "problem": "array-max-min",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "array-max-min",
+      "difficulty": "hard",
+      "generate_ms": 4,
+      "generate_and_render_ms": 496
+    },
+    {
+      "problem": "two-sum",
+      "difficulty": "easy",
+      "generate_ms": 13,
+      "generate_and_render_ms": 421
+    },
+    {
+      "problem": "two-sum",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 499
+    },
+    {
+      "problem": "two-sum",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "move-zeroes",
+      "difficulty": "easy",
+      "generate_ms": 7,
+      "generate_and_render_ms": 405
+    },
+    {
+      "problem": "move-zeroes",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "move-zeroes",
+      "difficulty": "hard",
+      "generate_ms": 7,
+      "generate_and_render_ms": 404
+    },
+    {
+      "problem": "sliding-window-max-sum",
+      "difficulty": "easy",
+      "generate_ms": 10,
+      "generate_and_render_ms": 404
+    },
+    {
+      "problem": "sliding-window-max-sum",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "sliding-window-max-sum",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 409
+    },
+    {
+      "problem": "two-pointers-pair",
+      "difficulty": "easy",
+      "generate_ms": 6,
+      "generate_and_render_ms": 405
+    },
+    {
+      "problem": "two-pointers-pair",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 498
+    },
+    {
+      "problem": "two-pointers-pair",
+      "difficulty": "hard",
+      "generate_ms": 6,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "prefix-sum-range",
+      "difficulty": "easy",
+      "generate_ms": 6,
+      "generate_and_render_ms": 405
+    },
+    {
+      "problem": "prefix-sum-range",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "prefix-sum-range",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "kadane-max-subarray",
+      "difficulty": "easy",
+      "generate_ms": 5,
+      "generate_and_render_ms": 406
+    },
+    {
+      "problem": "kadane-max-subarray",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 499
+    },
+    {
+      "problem": "kadane-max-subarray",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "merge-intervals",
+      "difficulty": "easy",
+      "generate_ms": 10,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "merge-intervals",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 515
+    },
+    {
+      "problem": "merge-intervals",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 406
+    },
+    {
+      "problem": "bubble-sort",
+      "difficulty": "easy",
+      "generate_ms": 6,
+      "generate_and_render_ms": 496
+    },
+    {
+      "problem": "bubble-sort",
+      "difficulty": "medium",
+      "generate_ms": 7,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "bubble-sort",
+      "difficulty": "hard",
+      "generate_ms": 4,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "selection-sort",
+      "difficulty": "easy",
+      "generate_ms": 4,
+      "generate_and_render_ms": 499
+    },
+    {
+      "problem": "selection-sort",
+      "difficulty": "medium",
+      "generate_ms": 6,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "selection-sort",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 515
+    },
+    {
+      "problem": "valid-parentheses",
+      "difficulty": "easy",
+      "generate_ms": 3,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "valid-parentheses",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "valid-parentheses",
+      "difficulty": "hard",
+      "generate_ms": 12,
+      "generate_and_render_ms": 514
+    },
+    {
+      "problem": "stack-push-pop",
+      "difficulty": "easy",
+      "generate_ms": 5,
+      "generate_and_render_ms": 406
+    },
+    {
+      "problem": "stack-push-pop",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "stack-push-pop",
+      "difficulty": "hard",
+      "generate_ms": 4,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "next-greater-element",
+      "difficulty": "easy",
+      "generate_ms": 4,
+      "generate_and_render_ms": 406
+    },
+    {
+      "problem": "next-greater-element",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "next-greater-element",
+      "difficulty": "hard",
+      "generate_ms": 4,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "queue-operations",
+      "difficulty": "easy",
+      "generate_ms": 4,
+      "generate_and_render_ms": 406
+    },
+    {
+      "problem": "queue-operations",
+      "difficulty": "medium",
+      "generate_ms": 4,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "queue-operations",
+      "difficulty": "hard",
+      "generate_ms": 12,
+      "generate_and_render_ms": 514
+    },
+    {
+      "problem": "binary-search",
+      "difficulty": "easy",
+      "generate_ms": 5,
+      "generate_and_render_ms": 424
+    },
+    {
+      "problem": "binary-search",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "binary-search",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "rotated-search",
+      "difficulty": "easy",
+      "generate_ms": 5,
+      "generate_and_render_ms": 404
+    },
+    {
+      "problem": "rotated-search",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "rotated-search",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "linked-list-traversal",
+      "difficulty": "easy",
+      "generate_ms": 5,
+      "generate_and_render_ms": 403
+    },
+    {
+      "problem": "linked-list-traversal",
+      "difficulty": "medium",
+      "generate_ms": 6,
+      "generate_and_render_ms": 405
+    },
+    {
+      "problem": "linked-list-traversal",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 406
+    },
+    {
+      "problem": "reverse-linked-list",
+      "difficulty": "easy",
+      "generate_ms": 5,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "reverse-linked-list",
+      "difficulty": "medium",
+      "generate_ms": 12,
+      "generate_and_render_ms": 383
+    },
+    {
+      "problem": "reverse-linked-list",
+      "difficulty": "hard",
+      "generate_ms": 4,
+      "generate_and_render_ms": 498
+    },
+    {
+      "problem": "linked-list-cycle",
+      "difficulty": "easy",
+      "generate_ms": 6,
+      "generate_and_render_ms": 406
+    },
+    {
+      "problem": "linked-list-cycle",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "linked-list-cycle",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "frequency-count",
+      "difficulty": "easy",
+      "generate_ms": 4,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "frequency-count",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "frequency-count",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "valid-anagram",
+      "difficulty": "easy",
+      "generate_ms": 5,
+      "generate_and_render_ms": 406
+    },
+    {
+      "problem": "valid-anagram",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 409
+    },
+    {
+      "problem": "valid-anagram",
+      "difficulty": "hard",
+      "generate_ms": 4,
+      "generate_and_render_ms": 409
+    },
+    {
+      "problem": "valid-palindrome",
+      "difficulty": "easy",
+      "generate_ms": 5,
+      "generate_and_render_ms": 403
+    },
+    {
+      "problem": "valid-palindrome",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 406
+    },
+    {
+      "problem": "valid-palindrome",
+      "difficulty": "hard",
+      "generate_ms": 6,
+      "generate_and_render_ms": 406
+    },
+    {
+      "problem": "tree-traversals",
+      "difficulty": "easy",
+      "generate_ms": 7,
+      "generate_and_render_ms": 390
+    },
+    {
+      "problem": "tree-traversals",
+      "difficulty": "medium",
+      "generate_ms": 4,
+      "generate_and_render_ms": 498
+    },
+    {
+      "problem": "tree-traversals",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "bst-validate",
+      "difficulty": "easy",
+      "generate_ms": 4,
+      "generate_and_render_ms": 389
+    },
+    {
+      "problem": "bst-validate",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 500
+    },
+    {
+      "problem": "bst-validate",
+      "difficulty": "hard",
+      "generate_ms": 4,
+      "generate_and_render_ms": 405
+    },
+    {
+      "problem": "tree-level-order",
+      "difficulty": "easy",
+      "generate_ms": 4,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "tree-level-order",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "tree-level-order",
+      "difficulty": "hard",
+      "generate_ms": 10,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "bst-search",
+      "difficulty": "easy",
+      "generate_ms": 5,
+      "generate_and_render_ms": 405
+    },
+    {
+      "problem": "bst-search",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 405
+    },
+    {
+      "problem": "bst-search",
+      "difficulty": "hard",
+      "generate_ms": 15,
+      "generate_and_render_ms": 516
+    },
+    {
+      "problem": "kth-largest-heap",
+      "difficulty": "easy",
+      "generate_ms": 6,
+      "generate_and_render_ms": 405
+    },
+    {
+      "problem": "kth-largest-heap",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "kth-largest-heap",
+      "difficulty": "hard",
+      "generate_ms": 4,
+      "generate_and_render_ms": 389
+    },
+    {
+      "problem": "num-islands",
+      "difficulty": "easy",
+      "generate_ms": 4,
+      "generate_and_render_ms": 516
+    },
+    {
+      "problem": "num-islands",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 410
+    },
+    {
+      "problem": "num-islands",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 428
+    },
+    {
+      "problem": "max-area-island",
+      "difficulty": "easy",
+      "generate_ms": 3,
+      "generate_and_render_ms": 404
+    },
+    {
+      "problem": "max-area-island",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 427
+    },
+    {
+      "problem": "max-area-island",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 429
+    },
+    {
+      "problem": "rotting-oranges",
+      "difficulty": "easy",
+      "generate_ms": 6,
+      "generate_and_render_ms": 405
+    },
+    {
+      "problem": "rotting-oranges",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 426
+    },
+    {
+      "problem": "rotting-oranges",
+      "difficulty": "hard",
+      "generate_ms": 6,
+      "generate_and_render_ms": 409
+    },
+    {
+      "problem": "word-search",
+      "difficulty": "easy",
+      "generate_ms": 5,
+      "generate_and_render_ms": 405
+    },
+    {
+      "problem": "word-search",
+      "difficulty": "medium",
+      "generate_ms": 6,
+      "generate_and_render_ms": 427
+    },
+    {
+      "problem": "word-search",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 420
+    },
+    {
+      "problem": "union-find-connect",
+      "difficulty": "easy",
+      "generate_ms": 2,
+      "generate_and_render_ms": 387
+    },
+    {
+      "problem": "union-find-connect",
+      "difficulty": "medium",
+      "generate_ms": 7,
+      "generate_and_render_ms": 498
+    },
+    {
+      "problem": "union-find-connect",
+      "difficulty": "hard",
+      "generate_ms": 6,
+      "generate_and_render_ms": 389
+    },
+    {
+      "problem": "network-delay-time",
+      "difficulty": "easy",
+      "generate_ms": 5,
+      "generate_and_render_ms": 496
+    },
+    {
+      "problem": "network-delay-time",
+      "difficulty": "medium",
+      "generate_ms": 6,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "network-delay-time",
+      "difficulty": "hard",
+      "generate_ms": 6,
+      "generate_and_render_ms": 405
+    },
+    {
+      "problem": "kruskal-mst",
+      "difficulty": "easy",
+      "generate_ms": 5,
+      "generate_and_render_ms": 387
+    },
+    {
+      "problem": "kruskal-mst",
+      "difficulty": "medium",
+      "generate_ms": 11,
+      "generate_and_render_ms": 498
+    },
+    {
+      "problem": "kruskal-mst",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "climbing-stairs",
+      "difficulty": "easy",
+      "generate_ms": 5,
+      "generate_and_render_ms": 406
+    },
+    {
+      "problem": "climbing-stairs",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "climbing-stairs",
+      "difficulty": "hard",
+      "generate_ms": 2,
+      "generate_and_render_ms": 394
+    },
+    {
+      "problem": "house-robber",
+      "difficulty": "easy",
+      "generate_ms": 4,
+      "generate_and_render_ms": 497
+    },
+    {
+      "problem": "house-robber",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "house-robber",
+      "difficulty": "hard",
+      "generate_ms": 3,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "coin-change",
+      "difficulty": "easy",
+      "generate_ms": 6,
+      "generate_and_render_ms": 406
+    },
+    {
+      "problem": "coin-change",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "coin-change",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "unique-paths",
+      "difficulty": "easy",
+      "generate_ms": 5,
+      "generate_and_render_ms": 409
+    },
+    {
+      "problem": "unique-paths",
+      "difficulty": "medium",
+      "generate_ms": 6,
+      "generate_and_render_ms": 513
+    },
+    {
+      "problem": "unique-paths",
+      "difficulty": "hard",
+      "generate_ms": 4,
+      "generate_and_render_ms": 426
+    },
+    {
+      "problem": "lcs-length",
+      "difficulty": "easy",
+      "generate_ms": 5,
+      "generate_and_render_ms": 405
+    },
+    {
+      "problem": "lcs-length",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "lcs-length",
+      "difficulty": "hard",
+      "generate_ms": 4,
+      "generate_and_render_ms": 411
+    },
+    {
+      "problem": "edit-distance",
+      "difficulty": "easy",
+      "generate_ms": 4,
+      "generate_and_render_ms": 405
+    },
+    {
+      "problem": "edit-distance",
+      "difficulty": "medium",
+      "generate_ms": 4,
+      "generate_and_render_ms": 409
+    },
+    {
+      "problem": "edit-distance",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 403
+    },
+    {
+      "problem": "subsets",
+      "difficulty": "easy",
+      "generate_ms": 4,
+      "generate_and_render_ms": 400
+    },
+    {
+      "problem": "subsets",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 389
+    },
+    {
+      "problem": "subsets",
+      "difficulty": "hard",
+      "generate_ms": 3,
+      "generate_and_render_ms": 499
+    },
+    {
+      "problem": "permutations",
+      "difficulty": "easy",
+      "generate_ms": 6,
+      "generate_and_render_ms": 388
+    },
+    {
+      "problem": "permutations",
+      "difficulty": "medium",
+      "generate_ms": 3,
+      "generate_and_render_ms": 500
+    },
+    {
+      "problem": "permutations",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 405
+    },
+    {
+      "problem": "jump-game",
+      "difficulty": "easy",
+      "generate_ms": 7,
+      "generate_and_render_ms": 389
+    },
+    {
+      "problem": "jump-game",
+      "difficulty": "medium",
+      "generate_ms": 5,
+      "generate_and_render_ms": 498
+    },
+    {
+      "problem": "jump-game",
+      "difficulty": "hard",
+      "generate_ms": 6,
+      "generate_and_render_ms": 406
+    },
+    {
+      "problem": "single-number",
+      "difficulty": "easy",
+      "generate_ms": 5,
+      "generate_and_render_ms": 404
+    },
+    {
+      "problem": "single-number",
+      "difficulty": "medium",
+      "generate_ms": 4,
+      "generate_and_render_ms": 406
+    },
+    {
+      "problem": "single-number",
+      "difficulty": "hard",
+      "generate_ms": 4,
+      "generate_and_render_ms": 408
+    },
+    {
+      "problem": "trie-prefix-search",
+      "difficulty": "easy",
+      "generate_ms": 3,
+      "generate_and_render_ms": 501
+    },
+    {
+      "problem": "trie-prefix-search",
+      "difficulty": "medium",
+      "generate_ms": 6,
+      "generate_and_render_ms": 407
+    },
+    {
+      "problem": "trie-prefix-search",
+      "difficulty": "hard",
+      "generate_ms": 5,
+      "generate_and_render_ms": 406
+    }
+  ],
+  "build": {
+    "n": 572,
+    "p50_ms": 4.221,
+    "p95_ms": 19.759,
+    "max_ms": 73.497,
+    "over_16_67_ms": 44
+  },
+  "raster": {
+    "n": 572,
+    "p50_ms": 3.645,
+    "p95_ms": 7.62,
+    "max_ms": 35.769,
+    "over_16_67_ms": 3
+  }
+}

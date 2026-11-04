@@ -231,11 +231,11 @@ export class LocalLlmProvider implements SpecProvider {
     this.cfg = { ...localLlmConfigFromEnv(), ...cfg }
   }
 
-  async isAvailable(): Promise<boolean> {
+  async isAvailable(signal?: AbortSignal): Promise<boolean> {
     if (!this.cfg.enabled) return false
     try {
       const res = await fetch(`${this.cfg.baseUrl}/health`, {
-        signal: AbortSignal.timeout(this.cfg.healthTimeoutMs),
+        signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(this.cfg.healthTimeoutMs)]) : AbortSignal.timeout(this.cfg.healthTimeoutMs),
       })
       await res.text().catch(() => '')
       return res.ok

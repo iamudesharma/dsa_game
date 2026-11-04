@@ -25,6 +25,8 @@ class ApiErrorCard extends StatelessWidget {
     final (icon, title) = switch (error) {
       ApiUnreachableException() => (Icons.wifi_off_rounded, 'Cannot reach the API'),
       ApiTimeoutException() => (Icons.hourglass_disabled_rounded, 'The API timed out'),
+      ApiCleanupException() => (Icons.report_problem_outlined, 'Request could not finish'),
+      ApiCancelledException() => (Icons.cancel_outlined, 'Request cancelled'),
       MalformedResponse() => (Icons.broken_image_rounded, 'Unexpected response'),
       ApiServerException(isUnknownGame: true) => (Icons.search_off_rounded, 'That game is gone'),
       ApiServerException(isUnknownProblem: true) => (Icons.search_off_rounded, 'Unknown problem'),

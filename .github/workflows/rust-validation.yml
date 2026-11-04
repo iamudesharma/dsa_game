@@ -40,6 +40,13 @@ jobs:
       - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-account-data.ts --check
       - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-decision-data.ts --check
       - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-template-data.ts --check
+      - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-debrief-fixtures.ts --check
+      - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-game-chain-fixtures.ts --check
+      - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-local-provider-fixtures.ts --check
+      - name: Check HTTP fixture freshness across every game and difficulty
+        env:
+          DSA_PARITY_SEED: "0"
+        run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-game-http-fixtures.ts --check
       - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-oracle-data.ts --check
       - run: pnpm typecheck
       - run: pnpm test
