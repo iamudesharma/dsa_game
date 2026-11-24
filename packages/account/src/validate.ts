@@ -22,7 +22,7 @@ export interface GroundingResult {
   issues: string[]
 }
 
-const FABRICATION_PATTERNS: { id: string; re: RegExp; reason: string }[] = [
+export const FABRICATION_PATTERNS: { id: string; re: RegExp; reason: string }[] = [
   { id: 'percentage', re: /\b\d{1,3}\s*%/, reason: 'Asserts a specific percentage about the process' },
   { id: 'always-asks', re: /\b(always|never)\s+(asks?|tests?|requires?)\b/i, reason: 'Asserts an absolute about what the company asks' },
   { id: 'proprietary-round', re: /\b(superday|onsite\s+loop\s+[A-Z]|round\s+[47]\b|secret\s+round)\b/i, reason: 'Names a specific proprietary round' },

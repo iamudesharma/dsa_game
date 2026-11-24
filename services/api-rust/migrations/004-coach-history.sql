@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS coach_history (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, game_id TEXT NOT NULL, data_json TEXT NOT NULL); CREATE INDEX IF NOT EXISTS idx_coach_game ON coach_history(game_id);

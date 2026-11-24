@@ -122,6 +122,8 @@ class _AppShellState extends State<AppShell> {
       ],
     );
     return Scaffold(
+      // Each tab owns a Scaffold that already accommodates the keyboard.
+      resizeToAvoidBottomInset: false,
       body: desktop
           ? Row(
               children: [

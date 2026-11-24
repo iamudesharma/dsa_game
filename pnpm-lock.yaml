@@ -60,6 +60,12 @@ importers:
         specifier: ^5.0.2
         version: 5.0.15(@types/react@19.3.0)(react@19.3.0)
     devDependencies:
+      '@dsa/dsa-oracles':
+        specifier: workspace:*
+        version: link:../../packages/dsa-oracles
+      '@dsa/game-engine':
+        specifier: workspace:*
+        version: link:../../packages/game-engine
       '@tailwindcss/postcss':
         specifier: ^4.0.0
         version: 4.3.3

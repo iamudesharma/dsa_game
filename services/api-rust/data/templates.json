@@ -1,0 +1,536 @@
+{
+  "themes": [
+    {
+      "key": "treasure-vault",
+      "titleTemplate": "The {target} of the {place}",
+      "storyTemplate": "A band of {objectPlural} has been laid out along the {place}, and only one of them opens the {target}. The trap resets itself the moment you touch it in the wrong order, so work strictly in order and never guess. This is {problem}, and it has to be done by the book.",
+      "genre": "fantasy",
+      "tone": "tense",
+      "palette": {
+        "background": "#150f0b",
+        "primary": "#e8c37a",
+        "accent": "#c2410c",
+        "success": "#65a30d",
+        "danger": "#b91c1c"
+      },
+      "object": "lantern",
+      "objectPlural": "lanterns",
+      "place": "sunken vault corridor",
+      "actionVerb": "inspect",
+      "target": "obsidian vault",
+      "lowerWord": "dimmer",
+      "equalWord": "identical",
+      "higherWord": "brighter",
+      "boardLabel": "the lantern row",
+      "titleTails": [
+        "Sealed",
+        "First Light",
+        "The Long Count"
+      ],
+      "glyphs": {
+        "lantern": "🏮",
+        "vault": "💎",
+        "corridor": "🕯️"
+      },
+      "successNoun": "vault"
+    },
+    {
+      "key": "space-station",
+      "titleTemplate": "Signal Lost in the {place}",
+      "storyTemplate": "The {place} is a ring of {objectPlural}, each one a telemetry frame from a different part of the station. Somewhere in that ring is the {target} — the frame that tells you which antenna is dead. Scramble it and the station goes dark. This is {problem}; the hardware does not care how clever you are, only in what order you read the frames.",
+      "genre": "space",
+      "tone": "calm",
+      "palette": {
+        "background": "#050914",
+        "primary": "#93c5fd",
+        "accent": "#22d3ee",
+        "success": "#34d399",
+        "danger": "#fb7185"
+      },
+      "object": "satellite",
+      "objectPlural": "satellites",
+      "place": "station telemetry ring",
+      "actionVerb": "poll",
+      "target": "carrier lock",
+      "lowerWord": "weaker",
+      "equalWord": "duplicate",
+      "higherWord": "stronger",
+      "boardLabel": "the telemetry ring",
+      "titleTails": [
+        "Drift",
+        "Cold Start",
+        "Signal Loss"
+      ],
+      "glyphs": {
+        "satellite": "🛰️",
+        "station": "📡",
+        "antenna": "📶"
+      },
+      "successNoun": "lock"
+    },
+    {
+      "key": "detective-case",
+      "titleTemplate": "Case File: the {place}",
+      "storyTemplate": "Twelve {objectPlural} are booked into the {place} of the {target} case, and the filing drawer will only open for the one that matches. Every {object} you turn over is logged, and logged {objectPlural} cannot be re-examined. This is {problem}: do the paperwork the way the manual says, in the order the manual says.",
+      "genre": "detective",
+      "tone": "mysterious",
+      "palette": {
+        "background": "#1a1613",
+        "primary": "#d6c9a8",
+        "accent": "#a16207",
+        "success": "#4d7c0f",
+        "danger": "#9f1239"
+      },
+      "object": "suspect",
+      "objectPlural": "suspects",
+      "place": "archive annexe",
+      "actionVerb": "cross-examine",
+      "target": "sealed confession",
+      "lowerWord": "weaker",
+      "equalWord": "identical",
+      "higherWord": "stronger",
+      "boardLabel": "the suspect line-up",
+      "titleTails": [
+        "Cold Trail",
+        "Missing Hours",
+        "The Late Edition"
+      ],
+      "glyphs": {
+        "suspect": "🕵️",
+        "file": "🗂️",
+        "drawer": "🗄️"
+      },
+      "successNoun": "file"
+    },
+    {
+      "key": "kitchen-brigade",
+      "titleTemplate": "Service at the {place}",
+      "storyTemplate": "Dinner service is live and the {place} is stacked with {objectPlural}, each stamped with a heat level. The pass only lifts the {target} when the plates go out in the right order, and the chef will not wait. This is {problem} — mise en place, then execute, then send.",
+      "genre": "cooking",
+      "tone": "playful",
+      "palette": {
+        "background": "#1f1109",
+        "primary": "#fed7aa",
+        "accent": "#ea580c",
+        "success": "#84cc16",
+        "danger": "#dc2626"
+      },
+      "object": "plate",
+      "objectPlural": "plates",
+      "place": "cold pass",
+      "actionVerb": "plate up",
+      "target": "fire order",
+      "lowerWord": "cooler",
+      "equalWord": "identical",
+      "higherWord": "hotter",
+      "boardLabel": "the pass shelf",
+      "titleTails": [
+        "Lunch Rush",
+        "Two Seatings",
+        "Closing Service"
+      ],
+      "glyphs": {
+        "plate": "🍽️",
+        "pass": "🍳",
+        "tray": "🍱"
+      },
+      "successNoun": "ticket"
+    },
+    {
+      "key": "deep-sea-salvage",
+      "titleTemplate": "Salvage of the {place}",
+      "storyTemplate": "Two thousand metres down, the {place} is a line of {objectPlural} lashed to the winch. One of them is rigged to the {target}, and the rig goes off if you cut in the wrong sequence. The surface is not watching. This is {problem} — check the gauge, decide, move once.",
+      "genre": "nature",
+      "tone": "calm",
+      "palette": {
+        "background": "#04131f",
+        "primary": "#a5f3fc",
+        "accent": "#0e7490",
+        "success": "#22c55e",
+        "danger": "#ef4444"
+      },
+      "object": "pressure pod",
+      "objectPlural": "pressure pods",
+      "place": "salvage line",
+      "actionVerb": "sound",
+      "target": "pressure hull",
+      "lowerWord": "shallower",
+      "equalWord": "matched",
+      "higherWord": "deeper",
+      "boardLabel": "the salvage line",
+      "titleTails": [
+        "Low Tide",
+        "The Second Descent",
+        "Hull Breach"
+      ],
+      "glyphs": {
+        "pod": "🫧",
+        "hull": "🛟",
+        "line": "⚓"
+      },
+      "successNoun": "hull"
+    },
+    {
+      "key": "mountain-expedition",
+      "titleTemplate": "The {place} Crossing",
+      "storyTemplate": "The {place} runs for {n} pitches of loose rock, and each pitch is a survey {object} with a grade. You must find the grade that marks the {target} before the weather turns. A wrong turn costs you the whole party. This is {problem}: read the grade, then commit.",
+      "genre": "nature",
+      "tone": "tense",
+      "palette": {
+        "background": "#111827",
+        "primary": "#e5e7eb",
+        "accent": "#f59e0b",
+        "success": "#10b981",
+        "danger": "#ef4444"
+      },
+      "object": "pitch",
+      "objectPlural": "pitches",
+      "place": "north ridge",
+      "actionVerb": "survey",
+      "target": "high camp",
+      "lowerWord": "easier",
+      "equalWord": "level",
+      "higherWord": "steeper",
+      "boardLabel": "the ridge",
+      "titleTails": [
+        "Col",
+        "Whiteout",
+        "Last Light"
+      ],
+      "glyphs": {
+        "pitch": "🧗",
+        "camp": "⛺",
+        "ridge": "🏔️"
+      },
+      "successNoun": "camp"
+    },
+    {
+      "key": "robot-factory",
+      "titleTemplate": "Assembly Line {n}",
+      "storyTemplate": "Line {n} of the factory has {n} unprogrammed {objectPlural} queued on the rail. One of them must be flagged for the {target} unit; flag the wrong one and the rail jams for a week. The line does not slow down. This is {problem}: read each unit, then route it.",
+      "genre": "sci-fi",
+      "tone": "tense",
+      "palette": {
+        "background": "#0c0a09",
+        "primary": "#d6d3d1",
+        "accent": "#0891b2",
+        "success": "#16a34a",
+        "danger": "#dc2626"
+      },
+      "object": "actuator",
+      "objectPlural": "actuators",
+      "place": "assembly line",
+      "actionVerb": "test",
+      "target": "chassis slot",
+      "lowerWord": "under",
+      "equalWord": "twin",
+      "higherWord": "over",
+      "boardLabel": "the rail",
+      "titleTails": [
+        "Night Shift",
+        "Line Halt",
+        "Recalibration"
+      ],
+      "glyphs": {
+        "actuator": "🤖",
+        "rail": "🛤️",
+        "chassis": "⚙️"
+      },
+      "successNoun": "slot"
+    },
+    {
+      "key": "library-archive",
+      "titleTemplate": "The {place} Concordance",
+      "storyTemplate": "The {place} holds {n} catalogue {objectPlural}, each stamped with a call number. The concordance that names the {target} is written in one of them, and the reading room closes at nine. Take the wrong folio and you lose the night. This is {problem}, by the book.",
+      "genre": "everyday",
+      "tone": "calm",
+      "palette": {
+        "background": "#131110",
+        "primary": "#e7e5e4",
+        "accent": "#78716c",
+        "success": "#4ade80",
+        "danger": "#f87171"
+      },
+      "object": "folio",
+      "objectPlural": "folios",
+      "place": "card catalogue",
+      "actionVerb": "consult",
+      "target": "concordance",
+      "lowerWord": "earlier",
+      "equalWord": "same",
+      "higherWord": "later",
+      "boardLabel": "the card catalogue",
+      "titleTails": [
+        "Closing Time",
+        "The Lost Call Number",
+        "Card Order"
+      ],
+      "glyphs": {
+        "folio": "📜",
+        "catalogue": "🗃️",
+        "concordance": "📖"
+      },
+      "successNoun": "concordance"
+    }
+  ],
+  "mechanics": {
+    "selectObject": {
+      "id": "selectObject",
+      "op": "read",
+      "description": "Click/tap a single object to read it, pick it as the current item, or make it the mid/target.",
+      "twoParty": false,
+      "objectKinds": [
+        "item",
+        "number",
+        "node",
+        "door",
+        "room",
+        "target"
+      ],
+      "containerKinds": []
+    },
+    "moveObject": {
+      "id": "moveObject",
+      "op": "move",
+      "description": "Drag an object onto a slot or position to relocate it without destroying order guarantees.",
+      "twoParty": false,
+      "objectKinds": [
+        "item",
+        "number",
+        "token"
+      ],
+      "containerKinds": []
+    },
+    "comparePair": {
+      "id": "comparePair",
+      "op": "compare",
+      "description": "Select two objects and declare lt / eq / gt between their values.",
+      "twoParty": true,
+      "objectKinds": [
+        "item",
+        "number",
+        "node",
+        "token",
+        "room"
+      ],
+      "containerKinds": []
+    },
+    "swapPair": {
+      "id": "swapPair",
+      "op": "swap",
+      "description": "Exchange the positions of two objects.",
+      "twoParty": true,
+      "objectKinds": [
+        "item",
+        "number",
+        "token",
+        "node"
+      ],
+      "containerKinds": []
+    },
+    "pushPop": {
+      "id": "pushPop",
+      "op": "push",
+      "description": "Push an object into or pop an object from a stack/queue container.",
+      "twoParty": false,
+      "objectKinds": [
+        "item",
+        "number",
+        "node",
+        "token"
+      ],
+      "containerKinds": [
+        "stack",
+        "queue"
+      ]
+    },
+    "choosePath": {
+      "id": "choosePath",
+      "op": "choose-path",
+      "description": "Pick one branch (e.g. left / right) to narrow the remaining search space.",
+      "twoParty": false,
+      "objectKinds": [
+        "path",
+        "room",
+        "door",
+        "item"
+      ],
+      "containerKinds": []
+    },
+    "traverseNode": {
+      "id": "traverseNode",
+      "op": "traverse",
+      "description": "Advance a cursor from one node to the next linked node.",
+      "twoParty": false,
+      "objectKinds": [
+        "node"
+      ],
+      "containerKinds": []
+    },
+    "connectNodes": {
+      "id": "connectNodes",
+      "op": "link",
+      "description": "Draw or rewire a next/prev pointer between two nodes.",
+      "twoParty": false,
+      "objectKinds": [
+        "node"
+      ],
+      "containerKinds": []
+    },
+    "assignValue": {
+      "id": "assignValue",
+      "op": "assign",
+      "description": "Set a value into a slot, container or variable (e.g. running max, complement, sum).",
+      "twoParty": false,
+      "objectKinds": [
+        "item",
+        "number",
+        "node",
+        "token"
+      ],
+      "containerKinds": [
+        "array"
+      ]
+    },
+    "submitAnswer": {
+      "id": "submitAnswer",
+      "op": "terminate",
+      "description": "Commit the final answer: declare the result index, value, or outcome.",
+      "twoParty": false,
+      "objectKinds": [
+        "item",
+        "number",
+        "node",
+        "room",
+        "target"
+      ],
+      "containerKinds": []
+    }
+  },
+  "topicLabels": {
+    "arrays": "Arrays",
+    "sorting": "Sorting",
+    "stack": "Stack",
+    "queue": "Queue",
+    "binary-search": "Binary Search",
+    "linked-list": "Linked List",
+    "hash-table": "Hash Table",
+    "strings": "Strings",
+    "trees": "Trees",
+    "heap": "Heap",
+    "graphs": "Graphs",
+    "dp": "Dynamic Programming",
+    "backtracking": "Backtracking",
+    "greedy": "Greedy",
+    "bit-manip": "Bit Manipulation",
+    "trie": "Trie"
+  },
+  "MECHANICS_WANTED": {
+    "easy": 3,
+    "medium": 4,
+    "hard": 4
+  },
+  "CONTAINER_TERM": {
+    "arrays": "the array",
+    "sorting": "the array",
+    "binary-search": "the sorted array",
+    "stack": "the stack",
+    "queue": "the queue",
+    "linked-list": "the linked list",
+    "hash-table": "the frequency table",
+    "strings": "the string",
+    "trees": "the level-order array",
+    "heap": "the array with its heap zone",
+    "graphs": "the grid",
+    "dp": "the table of smaller answers",
+    "backtracking": "the decision tree",
+    "greedy": "the reachable frontier",
+    "bit-manip": "the accumulator",
+    "trie": "the shared prefixes"
+  },
+  "SCOPE_TERM": {
+    "arrays": "the part of the array still under consideration",
+    "sorting": "the range that is not sorted yet",
+    "binary-search": "the half of the range still under consideration",
+    "stack": "the top of the stack, where every push and pop happens",
+    "queue": "the ends of the queue, front and rear",
+    "linked-list": "the position the cursor has reached so far",
+    "hash-table": "the counts recorded so far",
+    "strings": "the pair of positions still unchecked",
+    "trees": "the subtree still under consideration",
+    "heap": "the heap zone at the front of the array",
+    "graphs": "the cells not visited yet",
+    "dp": "the subproblems already solved",
+    "backtracking": "the branch currently explored",
+    "greedy": "how far can be reached so far",
+    "bit-manip": "the bits folded so far",
+    "trie": "the letters matched so far"
+  },
+  "HINT_LADDER": {
+    "read": [
+      "Everything in the {place} is in order, so order is the tool here. You never need to look at every value to make progress.",
+      "Do not begin at either end. Begin at the value in the middle of what is left, because that is the one that rules out the most.",
+      "Take whichever {object} sits in the middle of what is still in play. That is the only one this step needs."
+    ],
+    "compare": [
+      "A comparison here does not just answer yes or no — it produces a direction, and the direction is what decides everything after it.",
+      "Hold your {object} next to the {target} and ask which is bigger. Whichever side is bigger, the other side is finished.",
+      "Say which of the two is the {lower} one. That single word is the whole decision."
+    ],
+    "choose-path": [
+      "Whatever is left is still in order, so a whole side of it can be ruled out at once. Being able to do that is the only reason this is quick.",
+      "Throw away the side that cannot hold the {target}. Keep the side that might, and start it just past the value you looked at.",
+      "Keep the half where the {target} could still be. Do not keep both — making the next step smaller is the entire point."
+    ],
+    "swap": [
+      "Two values that are the wrong way round cannot both be where they are. Exchanging them puts both right in a single move.",
+      "Exchange only the pair that is out of order. Everything else is already where it belongs.",
+      "Exchange those two and leave the rest alone."
+    ],
+    "push": [
+      "A stack hands values back in the opposite order to the one they went in. Adding to it only ever touches the top.",
+      "Add to the top, never into the middle. A stack has no middle to add to.",
+      "Put it on the top."
+    ],
+    "pop": [
+      "Last in, first out. The newest value is the one you get back, and it is the only one you are allowed to take.",
+      "Take from the top, and only from the top. If the top is empty there is nothing to take, whatever is still in the {place}.",
+      "Take the one on top."
+    ],
+    "move": [
+      "Moving a value is not the same as copying it. After the move the {place} has to still be usable for whatever comes next.",
+      "Put it where the algorithm expects to find it next, not merely somewhere nearby.",
+      "Move it to its next place in the {place}."
+    ],
+    "insert": [
+      "Keeping what you have already worked out is cheaper than working it out again, so the program saves it.",
+      "Save it once, so the next step can read it rather than recompute it.",
+      "Record the value."
+    ],
+    "assign": [
+      "A named value is how the program remembers something without carrying it around. It is the cheapest kind of storage there is.",
+      "Write it down in one place, and read it from there rather than working it out again.",
+      "Write the value into the slot."
+    ],
+    "traverse": [
+      "There is no counting along a chain of links — you can only follow one. Each step forward is exactly one link followed.",
+      "Move one link at a time. You cannot skip ahead and you cannot look back without starting over.",
+      "Follow the next link."
+    ],
+    "link": [
+      "A link decides where the traversal goes next. Rewiring one changes the route without rebuilding anything.",
+      "Point the link where the algorithm needs to go next, and the rest of the route follows on its own.",
+      "Rewire the pointer."
+    ],
+    "unlink": [
+      "Cutting a link is how a route stops being available. Nothing else has to move for that to be true.",
+      "Cut it so the traversal can no longer reach that way.",
+      "Cut that link."
+    ],
+    "terminate": [
+      "Finishing is a result, not a guess. The program stops when the rule allows it to stop, and reports what it found.",
+      "Commit only once the rule has actually been satisfied — not when it merely feels right.",
+      "Commit your answer."
+    ]
+  }
+}

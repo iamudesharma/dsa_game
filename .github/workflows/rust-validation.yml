@@ -1,0 +1,61 @@
+name: Rust migration validation
+on:
+  push:
+    branches: [main, master]
+    paths: ['services/api-rust/**', 'scripts/rust-**', 'apps/web/**', 'packages/**', 'services/api/**', 'package.json', 'pnpm-workspace.yaml', '.github/workflows/rust-validation.yml', 'pnpm-lock.yaml', '.dockerignore']
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: rust-validation-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  behavior:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.88.0'
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: services/api-rust
+      - run: cargo fmt --manifest-path services/api-rust/Cargo.toml --check
+      - run: cargo clippy --locked --manifest-path services/api-rust/Cargo.toml --all-targets -- -D warnings
+      - name: Behavior checks and one seed across every game and difficulty
+        env:
+          DSA_PARITY_SEED: "0"
+        run: cargo test --locked --release --manifest-path services/api-rust/Cargo.toml
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-contracts.ts --check
+      - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-game-provider-data.ts --check
+      - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-account-data.ts --check
+      - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-decision-data.ts --check
+      - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-template-data.ts --check
+      - run: node --import ./services/api/node_modules/tsx/dist/loader.mjs scripts/rust-oracle-data.ts --check
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm --filter @dsa/web build
+  container-memory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/rust-container-benchmark-test.py
+      - run: docker build -f services/api-rust/Dockerfile -t dsa-rust-benchmark .
+      - name: Five-minute Rust memory check, optional five-minute 512 MiB fallback
+        run: python3 scripts/rust-container-benchmark.py --backend rust --profile quick --seconds 300 --allow-512-fallback
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: container-memory-comparison
+          path: run/container-benchmark/
+          if-no-files-found: error

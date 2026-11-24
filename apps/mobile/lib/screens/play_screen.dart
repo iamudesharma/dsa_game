@@ -152,7 +152,7 @@ class _PlayScreenState extends State<PlayScreen> {
         ? (outcome.expected?.objectIds ?? const <String>{})
         : const <String>{};
 
-    final focusIds=controller.turnPrompt?.objectIds ?? expectedIds;
+    final focusIds = controller.turnPrompt?.objectIds ?? expectedIds;
     final board = MechanicRegistry.build(
       activeMechanic,
       controller: controller,
@@ -196,70 +196,128 @@ class _PlayScreenState extends State<PlayScreen> {
       );
     }
 
-    return Column(
-      children: [
-        if (controller.isRewound) _RewindBanner(controller: controller),
-        _ArenaCaption(controller: controller, spec: spec),
-        if(controller.turnPrompt!=null&&!controller.isRewound) Padding(padding:const EdgeInsets.symmetric(horizontal:12,vertical:6),child:Semantics(liveRegion:true,child:Text('Your turn: ${controller.turnPrompt!.instruction}',style:TextStyle(fontSize:15,fontWeight:FontWeight.w800,color:colors.onSurface)))),
-        if(!controller.isRewound) Align(alignment:Alignment.centerRight,child:Padding(padding:const EdgeInsets.only(right:12),child:HintButton(hint:controller.hint,source:controller.hintSource,used:controller.hintsUsed,busy:controller.hintInFlight,onPressed:()=>controller.requestHint()))),
-        if (controller.error != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-            child: ApiErrorCard(
-              error: controller.error!,
-              onRetry: controller.dismissOutcome,
-              retryLabel: 'Dismiss',
+    // Scroll the whole arena when feedback, hints or expanded history reduce
+    // the available height; mechanic controls must keep a usable board height.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return ListView(
+          children: [
+            if (controller.isRewound) _RewindBanner(controller: controller),
+            _ArenaCaption(controller: controller, spec: spec),
+            if (controller.turnPrompt != null && !controller.isRewound)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                child: Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    'Your turn: ${controller.turnPrompt!.instruction}',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: colors.onSurface,
+                    ),
+                  ),
+                ),
+              ),
+            if (!controller.isRewound)
+              Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: HintButton(
+                    hint: controller.hint,
+                    source: controller.hintSource,
+                    used: controller.hintsUsed,
+                    busy: controller.hintInFlight,
+                    onPressed: () => controller.requestHint(),
+                  ),
+                ),
+              ),
+            if (controller.error != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                child: ApiErrorCard(
+                  error: controller.error!,
+                  onRetry: controller.dismissOutcome,
+                  retryLabel: 'Dismiss',
+                ),
+              ),
+            if (outcome != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                child: _OutcomeBanner(
+                  controller: controller,
+                  outcome: outcome,
+                  expectedIds: expectedIds,
+                ),
+              ),
+            SizedBox(
+              height: (constraints.maxHeight * .65)
+                  .clamp(420.0, 640.0)
+                  .toDouble(),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: board,
+              ),
             ),
-          ),
-        if (outcome != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-            child: _OutcomeBanner(
-              controller: controller,
-              outcome: outcome,
-              expectedIds: expectedIds,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ExpansionTile(
+                    title: const Text('Memory and move history'),
+                    children: [
+                      SizedBox(
+                        height: 120,
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              AlgorithmStrip(state: state, dense: true),
+                              _InfoRow(
+                                controller: controller,
+                                spec: spec,
+                                state: state,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: board,
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ExpansionTile(title:const Text('Memory and move history'),children:[SizedBox(height:120,child:SingleChildScrollView(child:Column(children:[AlgorithmStrip(state:state,dense:true),_InfoRow(controller:controller,spec:spec,state:state)])))])
-            ],
-          ),
-        ),
-        if (spec.mechanics.length > 1)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
-            child: _MechanicSwitcher(
-              spec: spec,
-              active: activeMechanic,
-              enabled: !controller.isRewound,
-              onSelect: (id) => setState(() => _activeMechanic = id),
-            ),
-          ),
-        if (controller.hint != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
-            child: HintCard(
-              hint: controller.hint!,
-              source: controller.hintSource,
-              onDismiss: () => context.read<GameController>().dismissHint(),
-            ),
-          ),
-        if (controller.isFinished && controller.debrief == null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-            child: _NoDebriefNote(colors: colors),
-          ),
-      ],
+            if (spec.mechanics.length > 1)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                child: _MechanicSwitcher(
+                  spec: spec,
+                  active: activeMechanic,
+                  enabled: !controller.isRewound,
+                  onSelect: (id) => setState(() => _activeMechanic = id),
+                ),
+              ),
+            if (controller.hint != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                child: HintCard(
+                  hint: controller.hint!,
+                  source: controller.hintSource,
+                  onDismiss: () => context.read<GameController>().dismissHint(),
+                ),
+              ),
+            if (controller.isFinished && controller.debrief == null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                child: _NoDebriefNote(colors: colors),
+              ),
+          ],
+        );
+      },
     );
   }
 

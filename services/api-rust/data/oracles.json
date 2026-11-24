@@ -1,0 +1,3503 @@
+{
+  "array-max-min": {
+    "pseudocode": [
+      "FUNCTION findExtreme(a, wantMax)",
+      "    best <- 0",
+      "    FOR i FROM 1 TO LENGTH(a) - 1",
+      "        isBetter <- wantMax ? a[i] > a[best] : a[i] < a[best]",
+      "        IF isBetter THEN",
+      "            best <- i",
+      "        END IF",
+      "    END FOR",
+      "    RETURN best",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(1)",
+      "best": "O(n)",
+      "average": "O(n)",
+      "worst": "O(n)"
+    },
+    "code": {
+      "javascript": [
+        "function findExtreme(a, wantMax) {",
+        "  let best = 0",
+        "  for (let i = 1; i < a.length; i++) {",
+        "    const isBetter = wantMax ? a[i] > a[best] : a[i] < a[best]",
+        "    if (isBetter) {",
+        "      best = i",
+        "    }",
+        "  }",
+        "  return best",
+        "}"
+      ],
+      "typescript": [
+        "function findExtreme(a: number[], wantMax: boolean): number {",
+        "  let best = 0",
+        "  for (let i = 1; i < a.length; i++) {",
+        "    const isBetter = wantMax ? a[i]! > a[best]! : a[i]! < a[best]!",
+        "    if (isBetter) {",
+        "      best = i",
+        "    }",
+        "  }",
+        "  return best",
+        "}"
+      ],
+      "python": [
+        "def find_extreme(a, want_max):",
+        "    best = 0",
+        "    for i in range(1, len(a)):",
+        "        is_better = a[i] > a[best] if want_max else a[i] < a[best]",
+        "        if is_better:",
+        "            best = i",
+        "        # END IF",
+        "    # END FOR",
+        "    return best",
+        "# END FUNCTION"
+      ],
+      "java": [
+        "int findExtreme(int[] a, boolean wantMax) {",
+        "  int best = 0;",
+        "  for (int i = 1; i < a.length; i++) {",
+        "    boolean isBetter = wantMax ? a[i] > a[best] : a[i] < a[best];",
+        "    if (isBetter) {",
+        "      best = i;",
+        "    }",
+        "  }",
+        "  return best;",
+        "}"
+      ],
+      "cpp": [
+        "int findExtreme(const std::vector<int>& a, bool wantMax) {",
+        "  int best = 0;",
+        "  for (int i = 1; i < (int)a.size(); i++) {",
+        "    bool isBetter = wantMax ? a[i] > a[best] : a[i] < a[best];",
+        "    if (isBetter) {",
+        "      best = i;",
+        "    }",
+        "  }",
+        "  return best;",
+        "}"
+      ]
+    }
+  },
+  "binary-search": {
+    "pseudocode": [
+      "FUNCTION binarySearch(a, target)",
+      "    lo <- 0",
+      "    hi <- LENGTH(a) - 1",
+      "    WHILE lo <= hi",
+      "        mid <- FLOOR((lo + hi) / 2)",
+      "        IF a[mid] = target THEN RETURN mid",
+      "        IF a[mid] < target THEN",
+      "            lo <- mid + 1",
+      "        ELSE",
+      "            hi <- mid - 1",
+      "        END IF",
+      "    END WHILE",
+      "    RETURN -1",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(log n)",
+      "space": "O(1)",
+      "best": "O(1)",
+      "worst": "O(log n)",
+      "average": "O(log n)",
+      "note": "Every comparison halves the search space."
+    },
+    "code": {
+      "javascript": [
+        "function binarySearch(a, target) {",
+        "  let lo = 0",
+        "  let hi = a.length - 1",
+        "  while (lo <= hi) {",
+        "    const mid = Math.floor((lo + hi) / 2)",
+        "    if (a[mid] === target) return mid",
+        "    if (a[mid] < target) {",
+        "      lo = mid + 1",
+        "    } else {",
+        "      hi = mid - 1",
+        "    }",
+        "  }",
+        "  return -1",
+        "}"
+      ],
+      "typescript": [
+        "function binarySearch(a, target) {",
+        "  let lo = 0",
+        "  let hi = a.length - 1",
+        "  while (lo <= hi) {",
+        "    const mid = Math.floor((lo + hi) / 2)",
+        "    if (a[mid] === target) return mid",
+        "    if (a[mid] < target) {",
+        "      lo = mid + 1",
+        "    } else {",
+        "      hi = mid - 1",
+        "    }",
+        "  }",
+        "  return -1",
+        "}"
+      ],
+      "python": [
+        "def binary_search(a, target):",
+        "    lo = 0",
+        "    hi = len(a) - 1",
+        "    while lo <= hi:",
+        "        mid = (lo + hi) // 2",
+        "        if a[mid] == target: return mid",
+        "        if a[mid] < target:",
+        "            lo = mid + 1",
+        "        else:",
+        "            hi = mid - 1",
+        "    # end while: the window is empty and no hit was recorded",
+        "    # a sentinel that can never be a real index",
+        "    return -1",
+        "    # end of function"
+      ],
+      "java": [
+        "function binarySearch(a, target) {",
+        "  let lo = 0",
+        "  let hi = a.length - 1",
+        "  while (lo <= hi) {",
+        "    const mid = Math.floor((lo + hi) / 2)",
+        "    if (a[mid] === target) return mid",
+        "    if (a[mid] < target) {",
+        "      lo = mid + 1",
+        "    } else {",
+        "      hi = mid - 1",
+        "    }",
+        "  }",
+        "  return -1",
+        "}"
+      ],
+      "cpp": [
+        "function binarySearch(a, target) {",
+        "  let lo = 0",
+        "  let hi = a.length - 1",
+        "  while (lo <= hi) {",
+        "    const mid = Math.floor((lo + hi) / 2)",
+        "    if (a[mid] === target) return mid",
+        "    if (a[mid] < target) {",
+        "      lo = mid + 1",
+        "    } else {",
+        "      hi = mid - 1",
+        "    }",
+        "  }",
+        "  return -1",
+        "}"
+      ]
+    }
+  },
+  "bubble-sort": {
+    "pseudocode": [
+      "FUNCTION sort(a)",
+      "    FOR pass FROM 0 TO LENGTH(a) - 2",
+      "        FOR j FROM 0 TO LENGTH(a) - 2 - pass",
+      "            IF a[j] > a[j + 1] THEN",
+      "                SWAP a[j], a[j + 1]",
+      "            END IF",
+      "        END FOR",
+      "    END FOR",
+      "    RETURN a",
+      "END FUNCTION",
+      ""
+    ],
+    "complexity": {
+      "time": "O(n^2)",
+      "space": "O(1)",
+      "best": "O(n)",
+      "average": "O(n^2)",
+      "worst": "O(n^2)"
+    },
+    "code": {
+      "javascript": [
+        "function sort(a) {",
+        "  for (let pass = 0; pass < n - 1; pass++) {",
+        "    for (let j = 0; j < n - 1 - pass; j++) {",
+        "      if (a[j] > a[j + 1]) {",
+        "        // out of order",
+        "        swap(a, j, j + 1)",
+        "      }",
+        "    }",
+        "  }",
+        "  return a",
+        "}"
+      ],
+      "typescript": [
+        "function sort(a: number[]): number[] {",
+        "  for (let pass = 0; pass < a.length - 1; pass++) {",
+        "    for (let j = 0; j < a.length - 1 - pass; j++) {",
+        "      if (a[j]! > a[j + 1]!) {",
+        "        // out of order",
+        "        [a[j], a[j + 1]] = [a[j + 1]!, a[j]!]",
+        "      }",
+        "    }",
+        "  }",
+        "  return a",
+        "}"
+      ],
+      "python": [
+        "def sort(a):",
+        "    for pass_ in range(len(a) - 1):",
+        "        for j in range(len(a) - 1 - pass_):",
+        "            if a[j] > a[j + 1]:",
+        "                # out of order",
+        "                a[j], a[j + 1] = a[j + 1], a[j]",
+        "            # END IF",
+        "        # END FOR",
+        "    # END FOR",
+        "    return a",
+        "# END FUNCTION"
+      ],
+      "java": [
+        "int[] sort(int[] a) {",
+        "  int n = a.length;",
+        "  for (int pass = 0; pass < n - 1; pass++) {",
+        "    for (int j = 0; j < n - 1 - pass; j++) {",
+        "      if (a[j] > a[j + 1]) {",
+        "        int t = a[j]; a[j] = a[j + 1]; a[j + 1] = t;",
+        "      }",
+        "    }",
+        "  }",
+        "  return a;",
+        "}"
+      ],
+      "cpp": [
+        "std::vector<int> sort(std::vector<int> a) {",
+        "  int n = (int)a.size();",
+        "  for (int pass = 0; pass < n - 1; pass++) {",
+        "    for (int j = 0; j < n - 1 - pass; j++) {",
+        "      if (a[j] > a[j + 1]) {",
+        "        std::swap(a[j], a[j + 1]);",
+        "      }",
+        "    }",
+        "  }",
+        "  return a;",
+        "}"
+      ]
+    }
+  },
+  "selection-sort": {
+    "pseudocode": [
+      "FUNCTION sort(a)",
+      "    FOR pass FROM 0 TO LENGTH(a) - 2",
+      "        FOR j FROM 0 TO LENGTH(a) - 2 - pass",
+      "            IF a[j] < a[min] THEN",
+      "                SWAP a[i], a[min]",
+      "            END IF",
+      "        END FOR",
+      "    END FOR",
+      "    RETURN a",
+      "END FUNCTION",
+      ""
+    ],
+    "complexity": {
+      "time": "O(n^2)",
+      "space": "O(1)",
+      "best": "O(n)",
+      "average": "O(n^2)",
+      "worst": "O(n^2)"
+    },
+    "code": {
+      "javascript": [
+        "function sort(a) {",
+        "  for (let pass = 0; pass < n - 1; pass++) {",
+        "    for (let j = 0; j < n - 1 - pass; j++) {",
+        "      if (a[j] > a[j + 1]) {",
+        "        // out of order",
+        "        swap(a, j, j + 1)",
+        "      }",
+        "    }",
+        "  }",
+        "  return a",
+        "}"
+      ],
+      "typescript": [
+        "function sort(a: number[]): number[] {",
+        "  for (let pass = 0; pass < a.length - 1; pass++) {",
+        "    for (let j = 0; j < a.length - 1 - pass; j++) {",
+        "      if (a[j]! > a[j + 1]!) {",
+        "        // out of order",
+        "        [a[j], a[j + 1]] = [a[j + 1]!, a[j]!]",
+        "      }",
+        "    }",
+        "  }",
+        "  return a",
+        "}"
+      ],
+      "python": [
+        "def sort(a):",
+        "    for pass_ in range(len(a) - 1):",
+        "        for j in range(len(a) - 1 - pass_):",
+        "            if a[j] > a[j + 1]:",
+        "                # out of order",
+        "                a[j], a[j + 1] = a[j + 1], a[j]",
+        "            # END IF",
+        "        # END FOR",
+        "    # END FOR",
+        "    return a",
+        "# END FUNCTION"
+      ],
+      "java": [
+        "int[] sort(int[] a) {",
+        "  int n = a.length;",
+        "  for (int pass = 0; pass < n - 1; pass++) {",
+        "    for (int j = 0; j < n - 1 - pass; j++) {",
+        "      if (a[j] > a[j + 1]) {",
+        "        int t = a[j]; a[j] = a[j + 1]; a[j + 1] = t;",
+        "      }",
+        "    }",
+        "  }",
+        "  return a;",
+        "}"
+      ],
+      "cpp": [
+        "std::vector<int> sort(std::vector<int> a) {",
+        "  int n = (int)a.size();",
+        "  for (int pass = 0; pass < n - 1; pass++) {",
+        "    for (int j = 0; j < n - 1 - pass; j++) {",
+        "      if (a[j] > a[j + 1]) {",
+        "        std::swap(a[j], a[j + 1]);",
+        "      }",
+        "    }",
+        "  }",
+        "  return a;",
+        "}"
+      ]
+    }
+  },
+  "two-sum": {
+    "pseudocode": [
+      "FUNCTION twoSum(a, target)",
+      "    seen <- empty map",
+      "    FOR each value at index i",
+      "        need <- target - value",
+      "        IF seen contains need: RETURN its index and i",
+      "        store value with index i",
+      "    END FOR",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(n)"
+    },
+    "code": {
+      "javascript": [
+        "function twoSum(a, target) {",
+        "  const seen = new Map()",
+        "  for (let i = 0; i < a.length; i++) {",
+        "    const need = target - a[i]",
+        "    if (seen.has(need)) return [seen.get(need), i]",
+        "    seen.set(a[i], i)",
+        "  }",
+        "}"
+      ],
+      "typescript": [
+        "function twoSum(a, target) {",
+        "  const seen = new Map()",
+        "  for (let i = 0; i < a.length; i++) {",
+        "    const need = target - a[i]",
+        "    if (seen.has(need)) return [seen.get(need), i]",
+        "    seen.set(a[i], i)",
+        "  }",
+        "}"
+      ],
+      "python": [
+        "function twoSum(a, target) {",
+        "  const seen = new Map()",
+        "  for (let i = 0; i < a.length; i++) {",
+        "    const need = target - a[i]",
+        "    if (seen.has(need)) return [seen.get(need), i]",
+        "    seen.set(a[i], i)",
+        "  }",
+        "}"
+      ],
+      "java": [
+        "function twoSum(a, target) {",
+        "  const seen = new Map()",
+        "  for (let i = 0; i < a.length; i++) {",
+        "    const need = target - a[i]",
+        "    if (seen.has(need)) return [seen.get(need), i]",
+        "    seen.set(a[i], i)",
+        "  }",
+        "}"
+      ],
+      "cpp": [
+        "function twoSum(a, target) {",
+        "  const seen = new Map()",
+        "  for (let i = 0; i < a.length; i++) {",
+        "    const need = target - a[i]",
+        "    if (seen.has(need)) return [seen.get(need), i]",
+        "    seen.set(a[i], i)",
+        "  }",
+        "}"
+      ]
+    }
+  },
+  "move-zeroes": {
+    "pseudocode": [
+      "FUNCTION moveZeroes(a)",
+      "    write <- 0",
+      "    FOR read FROM 0 TO LENGTH(a) - 1",
+      "        IF a[read] is nonzero",
+      "            swap a[write] and a[read]",
+      "            write <- write + 1",
+      "        END IF",
+      "    END FOR",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(1)"
+    },
+    "code": {
+      "javascript": [
+        "function moveZeroes(a) {",
+        "  let write = 0",
+        "  for (let read = 0; read < a.length; read++) {",
+        "    if (a[read] !== 0) {",
+        "      ;[a[write], a[read]] = [a[read], a[write]]",
+        "      write++",
+        "    }",
+        "  }",
+        "  return a",
+        "}"
+      ],
+      "typescript": [
+        "function moveZeroes(a) {",
+        "  let write = 0",
+        "  for (let read = 0; read < a.length; read++) {",
+        "    if (a[read] !== 0) {",
+        "      ;[a[write], a[read]] = [a[read], a[write]]",
+        "      write++",
+        "    }",
+        "  }",
+        "  return a",
+        "}"
+      ],
+      "python": [
+        "function moveZeroes(a) {",
+        "  let write = 0",
+        "  for (let read = 0; read < a.length; read++) {",
+        "    if (a[read] !== 0) {",
+        "      ;[a[write], a[read]] = [a[read], a[write]]",
+        "      write++",
+        "    }",
+        "  }",
+        "  return a",
+        "}"
+      ],
+      "java": [
+        "function moveZeroes(a) {",
+        "  let write = 0",
+        "  for (let read = 0; read < a.length; read++) {",
+        "    if (a[read] !== 0) {",
+        "      ;[a[write], a[read]] = [a[read], a[write]]",
+        "      write++",
+        "    }",
+        "  }",
+        "  return a",
+        "}"
+      ],
+      "cpp": [
+        "function moveZeroes(a) {",
+        "  let write = 0",
+        "  for (let read = 0; read < a.length; read++) {",
+        "    if (a[read] !== 0) {",
+        "      ;[a[write], a[read]] = [a[read], a[write]]",
+        "      write++",
+        "    }",
+        "  }",
+        "  return a",
+        "}"
+      ]
+    }
+  },
+  "valid-parentheses": {
+    "pseudocode": [
+      "FUNCTION isValid(tokens)",
+      "    stack <- empty",
+      "    FOR each token",
+      "        IF token opens: PUSH it",
+      "        ELSE compare it with the top and POP the match",
+      "        IF the pair does not match: RETURN false",
+      "    END FOR",
+      "    RETURN stack is empty"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(n)"
+    },
+    "code": {
+      "javascript": [
+        "function isValid(tokens) {",
+        "  const stack = []",
+        "  for (const token of tokens) {",
+        "    if (isOpening(token)) stack.push(token)",
+        "    else if (!matches(stack.pop(), token)) return false",
+        "  }",
+        "  return stack.length === 0",
+        "}"
+      ],
+      "typescript": [
+        "function isValid(tokens) {",
+        "  const stack = []",
+        "  for (const token of tokens) {",
+        "    if (isOpening(token)) stack.push(token)",
+        "    else if (!matches(stack.pop(), token)) return false",
+        "  }",
+        "  return stack.length === 0",
+        "}"
+      ],
+      "python": [
+        "function isValid(tokens) {",
+        "  const stack = []",
+        "  for (const token of tokens) {",
+        "    if (isOpening(token)) stack.push(token)",
+        "    else if (!matches(stack.pop(), token)) return false",
+        "  }",
+        "  return stack.length === 0",
+        "}"
+      ],
+      "java": [
+        "function isValid(tokens) {",
+        "  const stack = []",
+        "  for (const token of tokens) {",
+        "    if (isOpening(token)) stack.push(token)",
+        "    else if (!matches(stack.pop(), token)) return false",
+        "  }",
+        "  return stack.length === 0",
+        "}"
+      ],
+      "cpp": [
+        "function isValid(tokens) {",
+        "  const stack = []",
+        "  for (const token of tokens) {",
+        "    if (isOpening(token)) stack.push(token)",
+        "    else if (!matches(stack.pop(), token)) return false",
+        "  }",
+        "  return stack.length === 0",
+        "}"
+      ]
+    }
+  },
+  "stack-push-pop": {
+    "pseudocode": [
+      "FUNCTION reverseWithStack(values)",
+      "    stack <- empty",
+      "    PUSH each value in order",
+      "    output <- empty",
+      "    POP each value into output",
+      "    RETURN output"
+    ],
+    "complexity": {
+      "time": "O(1) per op",
+      "space": "O(n)"
+    },
+    "code": {
+      "javascript": [
+        "function reverseWithStack(values) {",
+        "  const stack = []",
+        "  for (const value of values) stack.push(value)",
+        "  const output = []",
+        "  while (stack.length) output.push(stack.pop())",
+        "  return output",
+        "}"
+      ],
+      "typescript": [
+        "function reverseWithStack(values) {",
+        "  const stack = []",
+        "  for (const value of values) stack.push(value)",
+        "  const output = []",
+        "  while (stack.length) output.push(stack.pop())",
+        "  return output",
+        "}"
+      ],
+      "python": [
+        "function reverseWithStack(values) {",
+        "  const stack = []",
+        "  for (const value of values) stack.push(value)",
+        "  const output = []",
+        "  while (stack.length) output.push(stack.pop())",
+        "  return output",
+        "}"
+      ],
+      "java": [
+        "function reverseWithStack(values) {",
+        "  const stack = []",
+        "  for (const value of values) stack.push(value)",
+        "  const output = []",
+        "  while (stack.length) output.push(stack.pop())",
+        "  return output",
+        "}"
+      ],
+      "cpp": [
+        "function reverseWithStack(values) {",
+        "  const stack = []",
+        "  for (const value of values) stack.push(value)",
+        "  const output = []",
+        "  while (stack.length) output.push(stack.pop())",
+        "  return output",
+        "}"
+      ]
+    }
+  },
+  "queue-operations": {
+    "pseudocode": [
+      "FUNCTION drainQueue(values)",
+      "    queue <- empty",
+      "    ENQUEUE each value in order",
+      "    output <- empty",
+      "    DEQUEUE each value into output",
+      "    RETURN output"
+    ],
+    "complexity": {
+      "time": "O(1) per op",
+      "space": "O(n)"
+    },
+    "code": {
+      "javascript": [
+        "function drainQueue(values) {",
+        "  const queue = []",
+        "  for (const value of values) queue.push(value)",
+        "  const output = []",
+        "  while (queue.length) output.push(queue.shift())",
+        "  return output",
+        "}"
+      ],
+      "typescript": [
+        "function drainQueue(values) {",
+        "  const queue = []",
+        "  for (const value of values) queue.push(value)",
+        "  const output = []",
+        "  while (queue.length) output.push(queue.shift())",
+        "  return output",
+        "}"
+      ],
+      "python": [
+        "function drainQueue(values) {",
+        "  const queue = []",
+        "  for (const value of values) queue.push(value)",
+        "  const output = []",
+        "  while (queue.length) output.push(queue.shift())",
+        "  return output",
+        "}"
+      ],
+      "java": [
+        "function drainQueue(values) {",
+        "  const queue = []",
+        "  for (const value of values) queue.push(value)",
+        "  const output = []",
+        "  while (queue.length) output.push(queue.shift())",
+        "  return output",
+        "}"
+      ],
+      "cpp": [
+        "function drainQueue(values) {",
+        "  const queue = []",
+        "  for (const value of values) queue.push(value)",
+        "  const output = []",
+        "  while (queue.length) output.push(queue.shift())",
+        "  return output",
+        "}"
+      ]
+    }
+  },
+  "linked-list-traversal": {
+    "pseudocode": [
+      "FUNCTION length(head)",
+      "    count <- 0",
+      "    current <- head",
+      "    WHILE current is not null",
+      "        count <- count + 1",
+      "        current <- current.next",
+      "    END WHILE",
+      "    RETURN count"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(1)"
+    },
+    "code": {
+      "javascript": [
+        "function length(head) {",
+        "  let count = 0",
+        "  let current = head",
+        "  while (current !== null) {",
+        "    count++",
+        "    current = current.next",
+        "  }",
+        "  return count",
+        "}"
+      ],
+      "typescript": [
+        "function length<T>(head: Node<T> | null): number {",
+        "  let count = 0",
+        "  let current = head",
+        "  while (current !== null) {",
+        "    count++",
+        "    current = current.next",
+        "  }",
+        "  return count",
+        "}"
+      ],
+      "python": [
+        "def length(head):",
+        "    count = 0",
+        "    current = head",
+        "    while current is not None:",
+        "        count += 1",
+        "        current = current.next",
+        "        # continue until the cursor reaches None",
+        "    return count",
+        "# the function returns one count"
+      ],
+      "java": [
+        "int length(Node head) {",
+        "  int count = 0;",
+        "  Node current = head;",
+        "  while (current != null) {",
+        "    count++;",
+        "    current = current.next;",
+        "  }",
+        "  return count;",
+        "}"
+      ],
+      "cpp": [
+        "int length(Node* head) {",
+        "  int count = 0;",
+        "  Node* current = head;",
+        "  while (current != nullptr) {",
+        "    ++count;",
+        "    current = current->next;",
+        "  }",
+        "  return count;",
+        "}"
+      ]
+    }
+  },
+  "reverse-linked-list": {
+    "pseudocode": [
+      "FUNCTION reverseList(head)",
+      "    previous <- null",
+      "    current <- head",
+      "    WHILE current is not null",
+      "        next <- current.next",
+      "        current.next <- previous",
+      "        previous <- current",
+      "        current <- next",
+      "    END WHILE",
+      "    RETURN previous"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(1)"
+    },
+    "code": {
+      "javascript": [
+        "function reverseList(head) {",
+        "  let previous = null",
+        "  let current = head",
+        "  while (current !== null) {",
+        "    const next = current.next",
+        "    current.next = previous",
+        "    previous = current",
+        "    current = next",
+        "  }",
+        "  return previous",
+        "}"
+      ],
+      "typescript": [
+        "function reverseList<T>(head: Node<T> | null): Node<T> | null {",
+        "  let previous: Node<T> | null = null",
+        "  let current = head",
+        "  while (current !== null) {",
+        "    const next = current.next",
+        "    current.next = previous",
+        "    previous = current",
+        "    current = next",
+        "  }",
+        "  return previous",
+        "}"
+      ],
+      "python": [
+        "def reverse_list(head):",
+        "    previous = None",
+        "    current = head",
+        "    while current is not None:",
+        "        next_node = current.next",
+        "        current.next = previous",
+        "        previous = current",
+        "        current = next_node",
+        "        # keep walking through the unvisited suffix",
+        "    return previous",
+        "# previous is the new head"
+      ],
+      "java": [
+        "Node reverseList(Node head) {",
+        "  Node previous = null;",
+        "  Node current = head;",
+        "  while (current != null) {",
+        "    Node next = current.next;",
+        "    current.next = previous;",
+        "    previous = current;",
+        "    current = next;",
+        "  }",
+        "  return previous;",
+        "}"
+      ],
+      "cpp": [
+        "Node* reverseList(Node* head) {",
+        "  Node* previous = nullptr;",
+        "  Node* current = head;",
+        "  while (current != nullptr) {",
+        "    Node* next = current->next;",
+        "    current->next = previous;",
+        "    previous = current;",
+        "    current = next;",
+        "  }",
+        "  return previous;",
+        "}"
+      ]
+    }
+  },
+  "sliding-window-max-sum": {
+    "pseudocode": [
+      "FUNCTION maxWindowSum(a, k)",
+      "    best <- -INFINITY",
+      "    FOR s FROM 0 WHILE s + k <= LENGTH(a)",
+      "        sum <- a[s] + ... + a[s+k-1]",
+      "        best <- max(best, sum)",
+      "    END FOR",
+      "    RETURN best",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(1)"
+    },
+    "code": {
+      "javascript": [
+        "function maxWindowSum(a, k) {",
+        "  let best = -Infinity",
+        "  for (let s = 0; s + k <= a.length; s++) {",
+        "    let sum = 0",
+        "    for (let t = s; t < s + k; t++) sum += a[t]",
+        "    if (sum > best) best = sum",
+        "  }",
+        "  return best",
+        "}"
+      ],
+      "typescript": [
+        "function maxWindowSum(a, k) {",
+        "  let best = -Infinity",
+        "  for (let s = 0; s + k <= a.length; s++) {",
+        "    let sum = 0",
+        "    for (let t = s; t < s + k; t++) sum += a[t]",
+        "    if (sum > best) best = sum",
+        "  }",
+        "  return best",
+        "}"
+      ],
+      "python": [
+        "function maxWindowSum(a, k) {",
+        "  let best = -Infinity",
+        "  for (let s = 0; s + k <= a.length; s++) {",
+        "    let sum = 0",
+        "    for (let t = s; t < s + k; t++) sum += a[t]",
+        "    if (sum > best) best = sum",
+        "  }",
+        "  return best",
+        "}"
+      ],
+      "java": [
+        "function maxWindowSum(a, k) {",
+        "  let best = -Infinity",
+        "  for (let s = 0; s + k <= a.length; s++) {",
+        "    let sum = 0",
+        "    for (let t = s; t < s + k; t++) sum += a[t]",
+        "    if (sum > best) best = sum",
+        "  }",
+        "  return best",
+        "}"
+      ],
+      "cpp": [
+        "function maxWindowSum(a, k) {",
+        "  let best = -Infinity",
+        "  for (let s = 0; s + k <= a.length; s++) {",
+        "    let sum = 0",
+        "    for (let t = s; t < s + k; t++) sum += a[t]",
+        "    if (sum > best) best = sum",
+        "  }",
+        "  return best",
+        "}"
+      ]
+    }
+  },
+  "two-pointers-pair": {
+    "pseudocode": [
+      "FUNCTION twoSumSorted(a, target)",
+      "    L <- 0, R <- LENGTH(a) - 1",
+      "    WHILE L < R",
+      "        sum <- a[L] + a[R]",
+      "        IF sum = target: RETURN [L, R]",
+      "        IF sum < target: L <- L + 1 ELSE R <- R - 1",
+      "    END WHILE",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(1)"
+    },
+    "code": {
+      "javascript": [
+        "function twoSumSorted(a, target) {",
+        "  let L = 0, R = a.length - 1",
+        "  while (L < R) {",
+        "    const sum = a[L] + a[R]",
+        "    if (sum === target) return [L, R]",
+        "    if (sum < target) L++",
+        "    else R--",
+        "  }",
+        "}"
+      ],
+      "typescript": [
+        "function twoSumSorted(a, target) {",
+        "  let L = 0, R = a.length - 1",
+        "  while (L < R) {",
+        "    const sum = a[L] + a[R]",
+        "    if (sum === target) return [L, R]",
+        "    if (sum < target) L++",
+        "    else R--",
+        "  }",
+        "}"
+      ],
+      "python": [
+        "function twoSumSorted(a, target) {",
+        "  let L = 0, R = a.length - 1",
+        "  while (L < R) {",
+        "    const sum = a[L] + a[R]",
+        "    if (sum === target) return [L, R]",
+        "    if (sum < target) L++",
+        "    else R--",
+        "  }",
+        "}"
+      ],
+      "java": [
+        "function twoSumSorted(a, target) {",
+        "  let L = 0, R = a.length - 1",
+        "  while (L < R) {",
+        "    const sum = a[L] + a[R]",
+        "    if (sum === target) return [L, R]",
+        "    if (sum < target) L++",
+        "    else R--",
+        "  }",
+        "}"
+      ],
+      "cpp": [
+        "function twoSumSorted(a, target) {",
+        "  let L = 0, R = a.length - 1",
+        "  while (L < R) {",
+        "    const sum = a[L] + a[R]",
+        "    if (sum === target) return [L, R]",
+        "    if (sum < target) L++",
+        "    else R--",
+        "  }",
+        "}"
+      ]
+    }
+  },
+  "prefix-sum-range": {
+    "pseudocode": [
+      "FUNCTION rangeSum(a, l, r)",
+      "    prefix[0] <- 0",
+      "    FOR i FROM 0 TO LENGTH(a) - 1",
+      "        prefix[i+1] <- prefix[i] + a[i]",
+      "    END FOR",
+      "    RETURN prefix[r+1] - prefix[l]",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n) build, O(1) query",
+      "space": "O(n)"
+    },
+    "code": {
+      "javascript": [
+        "function rangeSum(a, l, r) {",
+        "  const prefix = [0]",
+        "  for (let i = 0; i < a.length; i++) prefix.push(prefix[i] + a[i])",
+        "  return prefix[r + 1] - prefix[l]",
+        "}"
+      ],
+      "typescript": [
+        "function rangeSum(a, l, r) {",
+        "  const prefix = [0]",
+        "  for (let i = 0; i < a.length; i++) prefix.push(prefix[i] + a[i])",
+        "  return prefix[r + 1] - prefix[l]",
+        "}"
+      ],
+      "python": [
+        "function rangeSum(a, l, r) {",
+        "  const prefix = [0]",
+        "  for (let i = 0; i < a.length; i++) prefix.push(prefix[i] + a[i])",
+        "  return prefix[r + 1] - prefix[l]",
+        "}"
+      ],
+      "java": [
+        "function rangeSum(a, l, r) {",
+        "  const prefix = [0]",
+        "  for (let i = 0; i < a.length; i++) prefix.push(prefix[i] + a[i])",
+        "  return prefix[r + 1] - prefix[l]",
+        "}"
+      ],
+      "cpp": [
+        "function rangeSum(a, l, r) {",
+        "  const prefix = [0]",
+        "  for (let i = 0; i < a.length; i++) prefix.push(prefix[i] + a[i])",
+        "  return prefix[r + 1] - prefix[l]",
+        "}"
+      ]
+    }
+  },
+  "kadane-max-subarray": {
+    "pseudocode": [
+      "FUNCTION maxSubarray(a)",
+      "    cur <- a[0], best <- a[0]",
+      "    FOR i FROM 1 TO LENGTH(a) - 1",
+      "        extend <- cur + a[i]",
+      "        cur <- max(extend, a[i])",
+      "        best <- max(best, cur)",
+      "    END FOR",
+      "    RETURN best"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(1)"
+    },
+    "code": {
+      "javascript": [
+        "function maxSubarray(a) {",
+        "  let cur = a[0], best = a[0]",
+        "  for (let i = 1; i < a.length; i++) {",
+        "    const extend = cur + a[i]",
+        "    cur = extend > a[i] ? extend : a[i]",
+        "    if (cur > best) best = cur",
+        "  }",
+        "  return best",
+        "}"
+      ],
+      "typescript": [
+        "function maxSubarray(a) {",
+        "  let cur = a[0], best = a[0]",
+        "  for (let i = 1; i < a.length; i++) {",
+        "    const extend = cur + a[i]",
+        "    cur = extend > a[i] ? extend : a[i]",
+        "    if (cur > best) best = cur",
+        "  }",
+        "  return best",
+        "}"
+      ],
+      "python": [
+        "function maxSubarray(a) {",
+        "  let cur = a[0], best = a[0]",
+        "  for (let i = 1; i < a.length; i++) {",
+        "    const extend = cur + a[i]",
+        "    cur = extend > a[i] ? extend : a[i]",
+        "    if (cur > best) best = cur",
+        "  }",
+        "  return best",
+        "}"
+      ],
+      "java": [
+        "function maxSubarray(a) {",
+        "  let cur = a[0], best = a[0]",
+        "  for (let i = 1; i < a.length; i++) {",
+        "    const extend = cur + a[i]",
+        "    cur = extend > a[i] ? extend : a[i]",
+        "    if (cur > best) best = cur",
+        "  }",
+        "  return best",
+        "}"
+      ],
+      "cpp": [
+        "function maxSubarray(a) {",
+        "  let cur = a[0], best = a[0]",
+        "  for (let i = 1; i < a.length; i++) {",
+        "    const extend = cur + a[i]",
+        "    cur = extend > a[i] ? extend : a[i]",
+        "    if (cur > best) best = cur",
+        "  }",
+        "  return best",
+        "}"
+      ]
+    }
+  },
+  "merge-intervals": {
+    "pseudocode": [
+      "FUNCTION merge(intervals)",
+      "    SORT by start",
+      "    cur <- intervals[0], out <- empty",
+      "    FOR each next interval",
+      "        IF start <= curEnd: curEnd <- max(curEnd, end)",
+      "        ELSE emit cur and start the next one",
+      "    END FOR",
+      "    RETURN out + cur"
+    ],
+    "complexity": {
+      "time": "O(n log n)",
+      "space": "O(n)"
+    },
+    "code": {
+      "javascript": [
+        "function merge(intervals) {",
+        "  intervals.sort((x, y) => x[0] - y[0])",
+        "  const out = []",
+        "  let [curS, curE] = intervals[0]",
+        "  for (let i = 1; i < intervals.length; i++) {",
+        "    if (intervals[i][0] <= curE) curE = Math.max(curE, intervals[i][1])",
+        "    else { out.push([curS, curE]); [curS, curE] = intervals[i] }",
+        "  }",
+        "  out.push([curS, curE])",
+        "  return out",
+        "}"
+      ],
+      "typescript": [
+        "function merge(intervals) {",
+        "  intervals.sort((x, y) => x[0] - y[0])",
+        "  const out = []",
+        "  let [curS, curE] = intervals[0]",
+        "  for (let i = 1; i < intervals.length; i++) {",
+        "    if (intervals[i][0] <= curE) curE = Math.max(curE, intervals[i][1])",
+        "    else { out.push([curS, curE]); [curS, curE] = intervals[i] }",
+        "  }",
+        "  out.push([curS, curE])",
+        "  return out",
+        "}"
+      ],
+      "python": [
+        "function merge(intervals) {",
+        "  intervals.sort((x, y) => x[0] - y[0])",
+        "  const out = []",
+        "  let [curS, curE] = intervals[0]",
+        "  for (let i = 1; i < intervals.length; i++) {",
+        "    if (intervals[i][0] <= curE) curE = Math.max(curE, intervals[i][1])",
+        "    else { out.push([curS, curE]); [curS, curE] = intervals[i] }",
+        "  }",
+        "  out.push([curS, curE])",
+        "  return out",
+        "}"
+      ],
+      "java": [
+        "function merge(intervals) {",
+        "  intervals.sort((x, y) => x[0] - y[0])",
+        "  const out = []",
+        "  let [curS, curE] = intervals[0]",
+        "  for (let i = 1; i < intervals.length; i++) {",
+        "    if (intervals[i][0] <= curE) curE = Math.max(curE, intervals[i][1])",
+        "    else { out.push([curS, curE]); [curS, curE] = intervals[i] }",
+        "  }",
+        "  out.push([curS, curE])",
+        "  return out",
+        "}"
+      ],
+      "cpp": [
+        "function merge(intervals) {",
+        "  intervals.sort((x, y) => x[0] - y[0])",
+        "  const out = []",
+        "  let [curS, curE] = intervals[0]",
+        "  for (let i = 1; i < intervals.length; i++) {",
+        "    if (intervals[i][0] <= curE) curE = Math.max(curE, intervals[i][1])",
+        "    else { out.push([curS, curE]); [curS, curE] = intervals[i] }",
+        "  }",
+        "  out.push([curS, curE])",
+        "  return out",
+        "}"
+      ]
+    }
+  },
+  "next-greater-element": {
+    "pseudocode": [
+      "FUNCTION nextGreater(a)",
+      "    ans <- [-1, ...], stack <- empty",
+      "    FOR i FROM 0 TO LENGTH(a) - 1",
+      "        WHILE stack top holds a smaller value",
+      "            POP it and record a[i] as its answer",
+      "        PUSH i",
+      "    END FOR",
+      "    RETURN ans"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(n)"
+    },
+    "code": {
+      "javascript": [
+        "function nextGreater(a) {",
+        "  const ans = new Array(a.length).fill(-1)",
+        "  const stack = []",
+        "  for (let i = 0; i < a.length; i++) {",
+        "    while (stack.length && a[stack.at(-1)] < a[i]) ans[stack.pop()] = a[i]",
+        "    stack.push(i)",
+        "  }",
+        "  return ans",
+        "}"
+      ],
+      "typescript": [
+        "function nextGreater(a) {",
+        "  const ans = new Array(a.length).fill(-1)",
+        "  const stack = []",
+        "  for (let i = 0; i < a.length; i++) {",
+        "    while (stack.length && a[stack.at(-1)] < a[i]) ans[stack.pop()] = a[i]",
+        "    stack.push(i)",
+        "  }",
+        "  return ans",
+        "}"
+      ],
+      "python": [
+        "function nextGreater(a) {",
+        "  const ans = new Array(a.length).fill(-1)",
+        "  const stack = []",
+        "  for (let i = 0; i < a.length; i++) {",
+        "    while (stack.length && a[stack.at(-1)] < a[i]) ans[stack.pop()] = a[i]",
+        "    stack.push(i)",
+        "  }",
+        "  return ans",
+        "}"
+      ],
+      "java": [
+        "function nextGreater(a) {",
+        "  const ans = new Array(a.length).fill(-1)",
+        "  const stack = []",
+        "  for (let i = 0; i < a.length; i++) {",
+        "    while (stack.length && a[stack.at(-1)] < a[i]) ans[stack.pop()] = a[i]",
+        "    stack.push(i)",
+        "  }",
+        "  return ans",
+        "}"
+      ],
+      "cpp": [
+        "function nextGreater(a) {",
+        "  const ans = new Array(a.length).fill(-1)",
+        "  const stack = []",
+        "  for (let i = 0; i < a.length; i++) {",
+        "    while (stack.length && a[stack.at(-1)] < a[i]) ans[stack.pop()] = a[i]",
+        "    stack.push(i)",
+        "  }",
+        "  return ans",
+        "}"
+      ]
+    }
+  },
+  "rotated-search": {
+    "pseudocode": [
+      "FUNCTION rotatedSearch(a, target)",
+      "    lo <- 0, hi <- LENGTH(a) - 1",
+      "    WHILE lo <= hi",
+      "        mid <- (lo + hi) / 2",
+      "        IF a[mid] = target: RETURN mid",
+      "        IF one half is sorted AND holds target: search it",
+      "        ELSE search the other half",
+      "    END WHILE",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(log n)",
+      "space": "O(1)"
+    },
+    "code": {
+      "javascript": [
+        "function rotatedSearch(a, target) {",
+        "  let lo = 0, hi = a.length - 1",
+        "  while (lo <= hi) {",
+        "    const mid = (lo + hi) >> 1",
+        "    if (a[mid] === target) return mid",
+        "    if (a[lo] <= a[mid]) {",
+        "      if (a[lo] <= target && target < a[mid]) hi = mid - 1",
+        "      else lo = mid + 1",
+        "    } else {",
+        "      if (a[mid] < target && target <= a[hi]) lo = mid + 1",
+        "      else hi = mid - 1",
+        "    }",
+        "  }",
+        "  return -1",
+        "}"
+      ],
+      "typescript": [
+        "function rotatedSearch(a, target) {",
+        "  let lo = 0, hi = a.length - 1",
+        "  while (lo <= hi) {",
+        "    const mid = (lo + hi) >> 1",
+        "    if (a[mid] === target) return mid",
+        "    if (a[lo] <= a[mid]) {",
+        "      if (a[lo] <= target && target < a[mid]) hi = mid - 1",
+        "      else lo = mid + 1",
+        "    } else {",
+        "      if (a[mid] < target && target <= a[hi]) lo = mid + 1",
+        "      else hi = mid - 1",
+        "    }",
+        "  }",
+        "  return -1",
+        "}"
+      ],
+      "python": [
+        "function rotatedSearch(a, target) {",
+        "  let lo = 0, hi = a.length - 1",
+        "  while (lo <= hi) {",
+        "    const mid = (lo + hi) >> 1",
+        "    if (a[mid] === target) return mid",
+        "    if (a[lo] <= a[mid]) {",
+        "      if (a[lo] <= target && target < a[mid]) hi = mid - 1",
+        "      else lo = mid + 1",
+        "    } else {",
+        "      if (a[mid] < target && target <= a[hi]) lo = mid + 1",
+        "      else hi = mid - 1",
+        "    }",
+        "  }",
+        "  return -1",
+        "}"
+      ],
+      "java": [
+        "function rotatedSearch(a, target) {",
+        "  let lo = 0, hi = a.length - 1",
+        "  while (lo <= hi) {",
+        "    const mid = (lo + hi) >> 1",
+        "    if (a[mid] === target) return mid",
+        "    if (a[lo] <= a[mid]) {",
+        "      if (a[lo] <= target && target < a[mid]) hi = mid - 1",
+        "      else lo = mid + 1",
+        "    } else {",
+        "      if (a[mid] < target && target <= a[hi]) lo = mid + 1",
+        "      else hi = mid - 1",
+        "    }",
+        "  }",
+        "  return -1",
+        "}"
+      ],
+      "cpp": [
+        "function rotatedSearch(a, target) {",
+        "  let lo = 0, hi = a.length - 1",
+        "  while (lo <= hi) {",
+        "    const mid = (lo + hi) >> 1",
+        "    if (a[mid] === target) return mid",
+        "    if (a[lo] <= a[mid]) {",
+        "      if (a[lo] <= target && target < a[mid]) hi = mid - 1",
+        "      else lo = mid + 1",
+        "    } else {",
+        "      if (a[mid] < target && target <= a[hi]) lo = mid + 1",
+        "      else hi = mid - 1",
+        "    }",
+        "  }",
+        "  return -1",
+        "}"
+      ]
+    }
+  },
+  "linked-list-cycle": {
+    "pseudocode": [
+      "FUNCTION hasCycle(head)",
+      "    slow <- head, fast <- head",
+      "    WHILE fast AND fast.next exist",
+      "        slow <- slow.next",
+      "        fast <- fast.next.next",
+      "        IF slow = fast: RETURN true",
+      "    END WHILE",
+      "    RETURN false"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(1)"
+    },
+    "code": {
+      "javascript": [
+        "function hasCycle(head) {",
+        "  let slow = head, fast = head",
+        "  while (fast !== null && fast.next !== null) {",
+        "    slow = slow.next",
+        "    fast = fast.next.next",
+        "    if (slow === fast) return true",
+        "  }",
+        "  return false",
+        "}"
+      ],
+      "typescript": [
+        "function hasCycle(head) {",
+        "  let slow = head, fast = head",
+        "  while (fast !== null && fast.next !== null) {",
+        "    slow = slow.next",
+        "    fast = fast.next.next",
+        "    if (slow === fast) return true",
+        "  }",
+        "  return false",
+        "}"
+      ],
+      "python": [
+        "function hasCycle(head) {",
+        "  let slow = head, fast = head",
+        "  while (fast !== null && fast.next !== null) {",
+        "    slow = slow.next",
+        "    fast = fast.next.next",
+        "    if (slow === fast) return true",
+        "  }",
+        "  return false",
+        "}"
+      ],
+      "java": [
+        "function hasCycle(head) {",
+        "  let slow = head, fast = head",
+        "  while (fast !== null && fast.next !== null) {",
+        "    slow = slow.next",
+        "    fast = fast.next.next",
+        "    if (slow === fast) return true",
+        "  }",
+        "  return false",
+        "}"
+      ],
+      "cpp": [
+        "function hasCycle(head) {",
+        "  let slow = head, fast = head",
+        "  while (fast !== null && fast.next !== null) {",
+        "    slow = slow.next",
+        "    fast = fast.next.next",
+        "    if (slow === fast) return true",
+        "  }",
+        "  return false",
+        "}"
+      ]
+    }
+  },
+  "frequency-count": {
+    "pseudocode": [
+      "FUNCTION mostFrequent(a)",
+      "    count <- empty map",
+      "    FOR each value: count[value] <- count[value] + 1",
+      "    RETURN the value with the largest count",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(n)"
+    },
+    "code": {
+      "javascript": [
+        "function mostFrequent(a) {",
+        "  const count = new Map()",
+        "  for (const v of a) count.set(v, (count.get(v) ?? 0) + 1)",
+        "  let best = a[0], bestN = 0",
+        "  for (const [v, n] of count) if (n > bestN) { best = v; bestN = n }",
+        "  return best",
+        "}"
+      ],
+      "typescript": [
+        "function mostFrequent(a) {",
+        "  const count = new Map()",
+        "  for (const v of a) count.set(v, (count.get(v) ?? 0) + 1)",
+        "  let best = a[0], bestN = 0",
+        "  for (const [v, n] of count) if (n > bestN) { best = v; bestN = n }",
+        "  return best",
+        "}"
+      ],
+      "python": [
+        "function mostFrequent(a) {",
+        "  const count = new Map()",
+        "  for (const v of a) count.set(v, (count.get(v) ?? 0) + 1)",
+        "  let best = a[0], bestN = 0",
+        "  for (const [v, n] of count) if (n > bestN) { best = v; bestN = n }",
+        "  return best",
+        "}"
+      ],
+      "java": [
+        "function mostFrequent(a) {",
+        "  const count = new Map()",
+        "  for (const v of a) count.set(v, (count.get(v) ?? 0) + 1)",
+        "  let best = a[0], bestN = 0",
+        "  for (const [v, n] of count) if (n > bestN) { best = v; bestN = n }",
+        "  return best",
+        "}"
+      ],
+      "cpp": [
+        "function mostFrequent(a) {",
+        "  const count = new Map()",
+        "  for (const v of a) count.set(v, (count.get(v) ?? 0) + 1)",
+        "  let best = a[0], bestN = 0",
+        "  for (const [v, n] of count) if (n > bestN) { best = v; bestN = n }",
+        "  return best",
+        "}"
+      ]
+    }
+  },
+  "valid-anagram": {
+    "pseudocode": [
+      "FUNCTION isAnagram(s, t)",
+      "    count <- empty map",
+      "    FOR each letter of s: count[letter] + 1",
+      "    FOR each letter of t: count[letter] - 1",
+      "    RETURN every count is zero",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(1)"
+    },
+    "code": {
+      "javascript": [
+        "function isAnagram(s, t) {",
+        "  if (s.length !== t.length) return false",
+        "  const count = {}",
+        "  for (const c of s) count[c] = (count[c] ?? 0) + 1",
+        "  for (const c of t) {",
+        "    count[c]--",
+        "    if (count[c] < 0) return false",
+        "  }",
+        "  return true",
+        "}"
+      ],
+      "typescript": [
+        "function isAnagram(s, t) {",
+        "  if (s.length !== t.length) return false",
+        "  const count = {}",
+        "  for (const c of s) count[c] = (count[c] ?? 0) + 1",
+        "  for (const c of t) {",
+        "    count[c]--",
+        "    if (count[c] < 0) return false",
+        "  }",
+        "  return true",
+        "}"
+      ],
+      "python": [
+        "function isAnagram(s, t) {",
+        "  if (s.length !== t.length) return false",
+        "  const count = {}",
+        "  for (const c of s) count[c] = (count[c] ?? 0) + 1",
+        "  for (const c of t) {",
+        "    count[c]--",
+        "    if (count[c] < 0) return false",
+        "  }",
+        "  return true",
+        "}"
+      ],
+      "java": [
+        "function isAnagram(s, t) {",
+        "  if (s.length !== t.length) return false",
+        "  const count = {}",
+        "  for (const c of s) count[c] = (count[c] ?? 0) + 1",
+        "  for (const c of t) {",
+        "    count[c]--",
+        "    if (count[c] < 0) return false",
+        "  }",
+        "  return true",
+        "}"
+      ],
+      "cpp": [
+        "function isAnagram(s, t) {",
+        "  if (s.length !== t.length) return false",
+        "  const count = {}",
+        "  for (const c of s) count[c] = (count[c] ?? 0) + 1",
+        "  for (const c of t) {",
+        "    count[c]--",
+        "    if (count[c] < 0) return false",
+        "  }",
+        "  return true",
+        "}"
+      ]
+    }
+  },
+  "valid-palindrome": {
+    "pseudocode": [
+      "FUNCTION isPalindrome(s)",
+      "    l <- 0, r <- LENGTH(s) - 1",
+      "    WHILE l < r",
+      "        IF s[l] != s[r]: RETURN false",
+      "        l <- l + 1, r <- r - 1",
+      "    END WHILE",
+      "    RETURN true"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(1)"
+    },
+    "code": {
+      "javascript": [
+        "function isPalindrome(s) {",
+        "  let l = 0, r = s.length - 1",
+        "  while (l < r) {",
+        "    if (s[l] !== s[r]) return false",
+        "    l++; r--",
+        "  }",
+        "  return true",
+        "}"
+      ],
+      "typescript": [
+        "function isPalindrome(s) {",
+        "  let l = 0, r = s.length - 1",
+        "  while (l < r) {",
+        "    if (s[l] !== s[r]) return false",
+        "    l++; r--",
+        "  }",
+        "  return true",
+        "}"
+      ],
+      "python": [
+        "function isPalindrome(s) {",
+        "  let l = 0, r = s.length - 1",
+        "  while (l < r) {",
+        "    if (s[l] !== s[r]) return false",
+        "    l++; r--",
+        "  }",
+        "  return true",
+        "}"
+      ],
+      "java": [
+        "function isPalindrome(s) {",
+        "  let l = 0, r = s.length - 1",
+        "  while (l < r) {",
+        "    if (s[l] !== s[r]) return false",
+        "    l++; r--",
+        "  }",
+        "  return true",
+        "}"
+      ],
+      "cpp": [
+        "function isPalindrome(s) {",
+        "  let l = 0, r = s.length - 1",
+        "  while (l < r) {",
+        "    if (s[l] !== s[r]) return false",
+        "    l++; r--",
+        "  }",
+        "  return true",
+        "}"
+      ]
+    }
+  },
+  "tree-traversals": {
+    "pseudocode": [
+      "FUNCTION traverse(node, order)",
+      "    IF node is null: RETURN",
+      "    IF order is pre: VISIT node",
+      "    traverse(node.left)",
+      "    IF order is in: VISIT node",
+      "    traverse(node.right)",
+      "    IF order is post: VISIT node",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(h)"
+    },
+    "code": {
+      "javascript": [
+        "function traverse(node, order) {",
+        "  if (node === null) return",
+        "  if (order === \"pre\") visit(node)",
+        "  traverse(node.left, order)",
+        "  if (order === \"in\") visit(node)",
+        "  traverse(node.right, order)",
+        "  if (order === \"post\") visit(node)",
+        "}"
+      ],
+      "typescript": [
+        "function traverse(node, order) {",
+        "  if (node === null) return",
+        "  if (order === \"pre\") visit(node)",
+        "  traverse(node.left, order)",
+        "  if (order === \"in\") visit(node)",
+        "  traverse(node.right, order)",
+        "  if (order === \"post\") visit(node)",
+        "}"
+      ],
+      "python": [
+        "function traverse(node, order) {",
+        "  if (node === null) return",
+        "  if (order === \"pre\") visit(node)",
+        "  traverse(node.left, order)",
+        "  if (order === \"in\") visit(node)",
+        "  traverse(node.right, order)",
+        "  if (order === \"post\") visit(node)",
+        "}"
+      ],
+      "java": [
+        "function traverse(node, order) {",
+        "  if (node === null) return",
+        "  if (order === \"pre\") visit(node)",
+        "  traverse(node.left, order)",
+        "  if (order === \"in\") visit(node)",
+        "  traverse(node.right, order)",
+        "  if (order === \"post\") visit(node)",
+        "}"
+      ],
+      "cpp": [
+        "function traverse(node, order) {",
+        "  if (node === null) return",
+        "  if (order === \"pre\") visit(node)",
+        "  traverse(node.left, order)",
+        "  if (order === \"in\") visit(node)",
+        "  traverse(node.right, order)",
+        "  if (order === \"post\") visit(node)",
+        "}"
+      ]
+    }
+  },
+  "bst-validate": {
+    "pseudocode": [
+      "FUNCTION isBST(root)",
+      "    seq <- inorder walk of the tree",
+      "    FOR i FROM 1 TO LENGTH(seq) - 1",
+      "        IF seq[i] < seq[i-1]: RETURN false",
+      "    END FOR",
+      "    RETURN true",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(h)"
+    },
+    "code": {
+      "javascript": [
+        "function isBST(root) {",
+        "  const seq = []",
+        "  inorder(root, seq)",
+        "  for (let i = 1; i < seq.length; i++) {",
+        "    if (seq[i] < seq[i - 1]) return false",
+        "  }",
+        "  return true",
+        "}"
+      ],
+      "typescript": [
+        "function isBST(root) {",
+        "  const seq = []",
+        "  inorder(root, seq)",
+        "  for (let i = 1; i < seq.length; i++) {",
+        "    if (seq[i] < seq[i - 1]) return false",
+        "  }",
+        "  return true",
+        "}"
+      ],
+      "python": [
+        "function isBST(root) {",
+        "  const seq = []",
+        "  inorder(root, seq)",
+        "  for (let i = 1; i < seq.length; i++) {",
+        "    if (seq[i] < seq[i - 1]) return false",
+        "  }",
+        "  return true",
+        "}"
+      ],
+      "java": [
+        "function isBST(root) {",
+        "  const seq = []",
+        "  inorder(root, seq)",
+        "  for (let i = 1; i < seq.length; i++) {",
+        "    if (seq[i] < seq[i - 1]) return false",
+        "  }",
+        "  return true",
+        "}"
+      ],
+      "cpp": [
+        "function isBST(root) {",
+        "  const seq = []",
+        "  inorder(root, seq)",
+        "  for (let i = 1; i < seq.length; i++) {",
+        "    if (seq[i] < seq[i - 1]) return false",
+        "  }",
+        "  return true",
+        "}"
+      ]
+    }
+  },
+  "tree-level-order": {
+    "pseudocode": [
+      "FUNCTION levelOrder(root)",
+      "    queue <- [root]",
+      "    WHILE queue is nonempty",
+      "        node <- DEQUEUE the front",
+      "        VISIT node",
+      "        ENQUEUE its left child, then its right child",
+      "    END WHILE",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(w)"
+    },
+    "code": {
+      "javascript": [
+        "function levelOrder(root) {",
+        "  const out = []",
+        "  const queue = [root]",
+        "  while (queue.length) {",
+        "    const node = queue.shift()",
+        "    out.push(node.value)",
+        "    if (node.left) queue.push(node.left)",
+        "    if (node.right) queue.push(node.right)",
+        "  }",
+        "  return out",
+        "}"
+      ],
+      "typescript": [
+        "function levelOrder(root) {",
+        "  const out = []",
+        "  const queue = [root]",
+        "  while (queue.length) {",
+        "    const node = queue.shift()",
+        "    out.push(node.value)",
+        "    if (node.left) queue.push(node.left)",
+        "    if (node.right) queue.push(node.right)",
+        "  }",
+        "  return out",
+        "}"
+      ],
+      "python": [
+        "function levelOrder(root) {",
+        "  const out = []",
+        "  const queue = [root]",
+        "  while (queue.length) {",
+        "    const node = queue.shift()",
+        "    out.push(node.value)",
+        "    if (node.left) queue.push(node.left)",
+        "    if (node.right) queue.push(node.right)",
+        "  }",
+        "  return out",
+        "}"
+      ],
+      "java": [
+        "function levelOrder(root) {",
+        "  const out = []",
+        "  const queue = [root]",
+        "  while (queue.length) {",
+        "    const node = queue.shift()",
+        "    out.push(node.value)",
+        "    if (node.left) queue.push(node.left)",
+        "    if (node.right) queue.push(node.right)",
+        "  }",
+        "  return out",
+        "}"
+      ],
+      "cpp": [
+        "function levelOrder(root) {",
+        "  const out = []",
+        "  const queue = [root]",
+        "  while (queue.length) {",
+        "    const node = queue.shift()",
+        "    out.push(node.value)",
+        "    if (node.left) queue.push(node.left)",
+        "    if (node.right) queue.push(node.right)",
+        "  }",
+        "  return out",
+        "}"
+      ]
+    }
+  },
+  "bst-search": {
+    "pseudocode": [
+      "FUNCTION bstSearch(root, target)",
+      "    node <- root",
+      "    WHILE node is not null",
+      "        IF node.value = target: RETURN node",
+      "        IF target < node.value: node <- left child",
+      "        ELSE node <- right child",
+      "    END WHILE",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(h)",
+      "space": "O(1)"
+    },
+    "code": {
+      "javascript": [
+        "function bstSearch(root, target) {",
+        "  let node = root",
+        "  while (node !== null) {",
+        "    if (node.value === target) return node",
+        "    if (target < node.value) node = node.left",
+        "    else node = node.right",
+        "  }",
+        "  return null",
+        "}"
+      ],
+      "typescript": [
+        "function bstSearch(root, target) {",
+        "  let node = root",
+        "  while (node !== null) {",
+        "    if (node.value === target) return node",
+        "    if (target < node.value) node = node.left",
+        "    else node = node.right",
+        "  }",
+        "  return null",
+        "}"
+      ],
+      "python": [
+        "function bstSearch(root, target) {",
+        "  let node = root",
+        "  while (node !== null) {",
+        "    if (node.value === target) return node",
+        "    if (target < node.value) node = node.left",
+        "    else node = node.right",
+        "  }",
+        "  return null",
+        "}"
+      ],
+      "java": [
+        "function bstSearch(root, target) {",
+        "  let node = root",
+        "  while (node !== null) {",
+        "    if (node.value === target) return node",
+        "    if (target < node.value) node = node.left",
+        "    else node = node.right",
+        "  }",
+        "  return null",
+        "}"
+      ],
+      "cpp": [
+        "function bstSearch(root, target) {",
+        "  let node = root",
+        "  while (node !== null) {",
+        "    if (node.value === target) return node",
+        "    if (target < node.value) node = node.left",
+        "    else node = node.right",
+        "  }",
+        "  return null",
+        "}"
+      ]
+    }
+  },
+  "kth-largest-heap": {
+    "pseudocode": [
+      "FUNCTION kthLargest(a, k)",
+      "    heap <- first k values, heapified (minimum at the root)",
+      "    FOR i FROM k TO LENGTH(a) - 1",
+      "        IF a[i] > heap minimum",
+      "            REPLACE the root with a[i] and SIFT DOWN",
+      "    END FOR",
+      "    RETURN the heap root",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n log k)",
+      "space": "O(k)"
+    },
+    "code": {
+      "javascript": [
+        "function kthLargest(a, k) {",
+        "  const heap = a.slice(0, k)",
+        "  heapify(heap)",
+        "  for (let i = k; i < a.length; i++) {",
+        "    if (a[i] > heap[0]) {",
+        "      heap[0] = a[i]",
+        "      siftDown(heap, 0)",
+        "    }",
+        "  }",
+        "  return heap[0]",
+        "}"
+      ],
+      "typescript": [
+        "function kthLargest(a, k) {",
+        "  const heap = a.slice(0, k)",
+        "  heapify(heap)",
+        "  for (let i = k; i < a.length; i++) {",
+        "    if (a[i] > heap[0]) {",
+        "      heap[0] = a[i]",
+        "      siftDown(heap, 0)",
+        "    }",
+        "  }",
+        "  return heap[0]",
+        "}"
+      ],
+      "python": [
+        "function kthLargest(a, k) {",
+        "  const heap = a.slice(0, k)",
+        "  heapify(heap)",
+        "  for (let i = k; i < a.length; i++) {",
+        "    if (a[i] > heap[0]) {",
+        "      heap[0] = a[i]",
+        "      siftDown(heap, 0)",
+        "    }",
+        "  }",
+        "  return heap[0]",
+        "}"
+      ],
+      "java": [
+        "function kthLargest(a, k) {",
+        "  const heap = a.slice(0, k)",
+        "  heapify(heap)",
+        "  for (let i = k; i < a.length; i++) {",
+        "    if (a[i] > heap[0]) {",
+        "      heap[0] = a[i]",
+        "      siftDown(heap, 0)",
+        "    }",
+        "  }",
+        "  return heap[0]",
+        "}"
+      ],
+      "cpp": [
+        "function kthLargest(a, k) {",
+        "  const heap = a.slice(0, k)",
+        "  heapify(heap)",
+        "  for (let i = k; i < a.length; i++) {",
+        "    if (a[i] > heap[0]) {",
+        "      heap[0] = a[i]",
+        "      siftDown(heap, 0)",
+        "    }",
+        "  }",
+        "  return heap[0]",
+        "}"
+      ]
+    }
+  },
+  "num-islands": {
+    "pseudocode": [
+      "FUNCTION numIslands(grid)",
+      "    count <- 0",
+      "    FOR each cell row by row",
+      "        IF land AND unvisited",
+      "            FLOOD through land neighbours",
+      "            count <- count + 1",
+      "    END FOR",
+      "    RETURN count",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(rows × cols)",
+      "space": "O(rows × cols)"
+    },
+    "code": {
+      "javascript": [
+        "function numIslands(grid) {",
+        "  let count = 0",
+        "  for (let r = 0; r < rows; r++) {",
+        "    for (let c = 0; c < cols; c++) {",
+        "      if (grid[r][c] === 1 && !seen) {",
+        "        flood(r, c)",
+        "        count++",
+        "      }",
+        "    }",
+        "  }",
+        "  return count",
+        "}"
+      ],
+      "typescript": [
+        "function numIslands(grid) {",
+        "  let count = 0",
+        "  for (let r = 0; r < rows; r++) {",
+        "    for (let c = 0; c < cols; c++) {",
+        "      if (grid[r][c] === 1 && !seen) {",
+        "        flood(r, c)",
+        "        count++",
+        "      }",
+        "    }",
+        "  }",
+        "  return count",
+        "}"
+      ],
+      "python": [
+        "function numIslands(grid) {",
+        "  let count = 0",
+        "  for (let r = 0; r < rows; r++) {",
+        "    for (let c = 0; c < cols; c++) {",
+        "      if (grid[r][c] === 1 && !seen) {",
+        "        flood(r, c)",
+        "        count++",
+        "      }",
+        "    }",
+        "  }",
+        "  return count",
+        "}"
+      ],
+      "java": [
+        "function numIslands(grid) {",
+        "  let count = 0",
+        "  for (let r = 0; r < rows; r++) {",
+        "    for (let c = 0; c < cols; c++) {",
+        "      if (grid[r][c] === 1 && !seen) {",
+        "        flood(r, c)",
+        "        count++",
+        "      }",
+        "    }",
+        "  }",
+        "  return count",
+        "}"
+      ],
+      "cpp": [
+        "function numIslands(grid) {",
+        "  let count = 0",
+        "  for (let r = 0; r < rows; r++) {",
+        "    for (let c = 0; c < cols; c++) {",
+        "      if (grid[r][c] === 1 && !seen) {",
+        "        flood(r, c)",
+        "        count++",
+        "      }",
+        "    }",
+        "  }",
+        "  return count",
+        "}"
+      ]
+    }
+  },
+  "max-area-island": {
+    "pseudocode": [
+      "FUNCTION maxArea(grid)",
+      "    best <- 0",
+      "    FOR each cell row by row",
+      "        IF land AND unvisited",
+      "            area <- FLOOD through land neighbours",
+      "            best <- max(best, area)",
+      "    END FOR",
+      "    RETURN best",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(rows × cols)",
+      "space": "O(rows × cols)"
+    },
+    "code": {
+      "javascript": [
+        "function maxArea(grid) {",
+        "  let best = 0",
+        "  for (let r = 0; r < rows; r++) {",
+        "    for (let c = 0; c < cols; c++) {",
+        "      if (grid[r][c] === 1 && !seen) {",
+        "        area = flood(r, c)",
+        "        best = Math.max(best, area)",
+        "      }",
+        "    }",
+        "  }",
+        "  return best",
+        "}"
+      ],
+      "typescript": [
+        "function maxArea(grid) {",
+        "  let best = 0",
+        "  for (let r = 0; r < rows; r++) {",
+        "    for (let c = 0; c < cols; c++) {",
+        "      if (grid[r][c] === 1 && !seen) {",
+        "        area = flood(r, c)",
+        "        best = Math.max(best, area)",
+        "      }",
+        "    }",
+        "  }",
+        "  return best",
+        "}"
+      ],
+      "python": [
+        "function maxArea(grid) {",
+        "  let best = 0",
+        "  for (let r = 0; r < rows; r++) {",
+        "    for (let c = 0; c < cols; c++) {",
+        "      if (grid[r][c] === 1 && !seen) {",
+        "        area = flood(r, c)",
+        "        best = Math.max(best, area)",
+        "      }",
+        "    }",
+        "  }",
+        "  return best",
+        "}"
+      ],
+      "java": [
+        "function maxArea(grid) {",
+        "  let best = 0",
+        "  for (let r = 0; r < rows; r++) {",
+        "    for (let c = 0; c < cols; c++) {",
+        "      if (grid[r][c] === 1 && !seen) {",
+        "        area = flood(r, c)",
+        "        best = Math.max(best, area)",
+        "      }",
+        "    }",
+        "  }",
+        "  return best",
+        "}"
+      ],
+      "cpp": [
+        "function maxArea(grid) {",
+        "  let best = 0",
+        "  for (let r = 0; r < rows; r++) {",
+        "    for (let c = 0; c < cols; c++) {",
+        "      if (grid[r][c] === 1 && !seen) {",
+        "        area = flood(r, c)",
+        "        best = Math.max(best, area)",
+        "      }",
+        "    }",
+        "  }",
+        "  return best",
+        "}"
+      ]
+    }
+  },
+  "rotting-oranges": {
+    "pseudocode": [
+      "FUNCTION rottingOranges(grid)",
+      "    QUEUE every rotten cell at minute 0",
+      "    WHILE queue is nonempty",
+      "        cell <- DEQUEUE",
+      "        ROT each fresh neighbour at minute + 1",
+      "    END WHILE",
+      "    RETURN fresh remain ? -1 : last minute",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(rows × cols)",
+      "space": "O(rows × cols)"
+    },
+    "code": {
+      "javascript": [
+        "function rottingOranges(grid) {",
+        "  queue all rotten at minute 0",
+        "  while (queue.length) {",
+        "    cell = queue.shift()",
+        "    for (const nb of neighbours(cell)) {",
+        "      if (nb is fresh) { rot it, minute = cell.minute + 1 }",
+        "    }",
+        "  }",
+        "  return fresh remain ? -1 : last minute",
+        "}"
+      ],
+      "typescript": [
+        "function rottingOranges(grid) {",
+        "  queue all rotten at minute 0",
+        "  while (queue.length) {",
+        "    cell = queue.shift()",
+        "    for (const nb of neighbours(cell)) {",
+        "      if (nb is fresh) { rot it, minute = cell.minute + 1 }",
+        "    }",
+        "  }",
+        "  return fresh remain ? -1 : last minute",
+        "}"
+      ],
+      "python": [
+        "function rottingOranges(grid) {",
+        "  queue all rotten at minute 0",
+        "  while (queue.length) {",
+        "    cell = queue.shift()",
+        "    for (const nb of neighbours(cell)) {",
+        "      if (nb is fresh) { rot it, minute = cell.minute + 1 }",
+        "    }",
+        "  }",
+        "  return fresh remain ? -1 : last minute",
+        "}"
+      ],
+      "java": [
+        "function rottingOranges(grid) {",
+        "  queue all rotten at minute 0",
+        "  while (queue.length) {",
+        "    cell = queue.shift()",
+        "    for (const nb of neighbours(cell)) {",
+        "      if (nb is fresh) { rot it, minute = cell.minute + 1 }",
+        "    }",
+        "  }",
+        "  return fresh remain ? -1 : last minute",
+        "}"
+      ],
+      "cpp": [
+        "function rottingOranges(grid) {",
+        "  queue all rotten at minute 0",
+        "  while (queue.length) {",
+        "    cell = queue.shift()",
+        "    for (const nb of neighbours(cell)) {",
+        "      if (nb is fresh) { rot it, minute = cell.minute + 1 }",
+        "    }",
+        "  }",
+        "  return fresh remain ? -1 : last minute",
+        "}"
+      ]
+    }
+  },
+  "word-search": {
+    "pseudocode": [
+      "FUNCTION exist(board, word)",
+      "    FOR each cell as a start",
+      "        DFS letter by letter through unvisited neighbours",
+      "        MARK the path; UNMARK on dead ends",
+      "        IF every letter matched: RETURN true",
+      "    END FOR",
+      "    RETURN false",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(rows × cols × 4^L)",
+      "space": "O(L)"
+    },
+    "code": {
+      "javascript": [
+        "function exist(board, word) {",
+        "  for (let r = 0; r < rows; r++) {",
+        "    for (let c = 0; c < cols; c++) if (dfs(r, c, 0)) return true",
+        "  }",
+        "  return false",
+        "}",
+        "function dfs(r, c, k) {",
+        "  if (board[r][c] !== word[k]) return false",
+        "  mark (r, c) visited",
+        "  if (k === word.length - 1) return true",
+        "  for (const [nr, nc] of neighbours(r, c)) {",
+        "    if (!visited && dfs(nr, nc, k + 1)) return true",
+        "  }",
+        "  unmark (r, c)",
+        "  return false",
+        "}"
+      ],
+      "typescript": [
+        "function exist(board, word) {",
+        "  for (let r = 0; r < rows; r++) {",
+        "    for (let c = 0; c < cols; c++) if (dfs(r, c, 0)) return true",
+        "  }",
+        "  return false",
+        "}",
+        "function dfs(r, c, k) {",
+        "  if (board[r][c] !== word[k]) return false",
+        "  mark (r, c) visited",
+        "  if (k === word.length - 1) return true",
+        "  for (const [nr, nc] of neighbours(r, c)) {",
+        "    if (!visited && dfs(nr, nc, k + 1)) return true",
+        "  }",
+        "  unmark (r, c)",
+        "  return false",
+        "}"
+      ],
+      "python": [
+        "function exist(board, word) {",
+        "  for (let r = 0; r < rows; r++) {",
+        "    for (let c = 0; c < cols; c++) if (dfs(r, c, 0)) return true",
+        "  }",
+        "  return false",
+        "}",
+        "function dfs(r, c, k) {",
+        "  if (board[r][c] !== word[k]) return false",
+        "  mark (r, c) visited",
+        "  if (k === word.length - 1) return true",
+        "  for (const [nr, nc] of neighbours(r, c)) {",
+        "    if (!visited && dfs(nr, nc, k + 1)) return true",
+        "  }",
+        "  unmark (r, c)",
+        "  return false",
+        "}"
+      ],
+      "java": [
+        "function exist(board, word) {",
+        "  for (let r = 0; r < rows; r++) {",
+        "    for (let c = 0; c < cols; c++) if (dfs(r, c, 0)) return true",
+        "  }",
+        "  return false",
+        "}",
+        "function dfs(r, c, k) {",
+        "  if (board[r][c] !== word[k]) return false",
+        "  mark (r, c) visited",
+        "  if (k === word.length - 1) return true",
+        "  for (const [nr, nc] of neighbours(r, c)) {",
+        "    if (!visited && dfs(nr, nc, k + 1)) return true",
+        "  }",
+        "  unmark (r, c)",
+        "  return false",
+        "}"
+      ],
+      "cpp": [
+        "function exist(board, word) {",
+        "  for (let r = 0; r < rows; r++) {",
+        "    for (let c = 0; c < cols; c++) if (dfs(r, c, 0)) return true",
+        "  }",
+        "  return false",
+        "}",
+        "function dfs(r, c, k) {",
+        "  if (board[r][c] !== word[k]) return false",
+        "  mark (r, c) visited",
+        "  if (k === word.length - 1) return true",
+        "  for (const [nr, nc] of neighbours(r, c)) {",
+        "    if (!visited && dfs(nr, nc, k + 1)) return true",
+        "  }",
+        "  unmark (r, c)",
+        "  return false",
+        "}"
+      ]
+    }
+  },
+  "union-find-connect": {
+    "pseudocode": [
+      "FUNCTION components(n, edges)",
+      "    parent[i] <- i, comps <- n",
+      "    FOR each edge (u, v)",
+      "        ru <- FIND(u); rv <- FIND(v)",
+      "        IF ru != rv: parent[ru] <- rv, comps <- comps - 1",
+      "    END FOR",
+      "    RETURN comps",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n α(n))",
+      "space": "O(n)"
+    },
+    "code": {
+      "javascript": [
+        "function components(n, edges) {",
+        "  parent = [0..n-1]",
+        "  let comps = n",
+        "  for (const [u, v] of edges) {",
+        "    ru = find(u); rv = find(v)",
+        "    if (ru !== rv) {",
+        "      parent[ru] = rv",
+        "      comps--",
+        "    }",
+        "  }",
+        "  return comps",
+        "}",
+        "function find(x) {",
+        "  while (parent[x] !== x) x = parent[x]",
+        "  return x",
+        "}"
+      ],
+      "typescript": [
+        "function components(n, edges) {",
+        "  parent = [0..n-1]",
+        "  let comps = n",
+        "  for (const [u, v] of edges) {",
+        "    ru = find(u); rv = find(v)",
+        "    if (ru !== rv) {",
+        "      parent[ru] = rv",
+        "      comps--",
+        "    }",
+        "  }",
+        "  return comps",
+        "}",
+        "function find(x) {",
+        "  while (parent[x] !== x) x = parent[x]",
+        "  return x",
+        "}"
+      ],
+      "python": [
+        "function components(n, edges) {",
+        "  parent = [0..n-1]",
+        "  let comps = n",
+        "  for (const [u, v] of edges) {",
+        "    ru = find(u); rv = find(v)",
+        "    if (ru !== rv) {",
+        "      parent[ru] = rv",
+        "      comps--",
+        "    }",
+        "  }",
+        "  return comps",
+        "}",
+        "function find(x) {",
+        "  while (parent[x] !== x) x = parent[x]",
+        "  return x",
+        "}"
+      ],
+      "java": [
+        "function components(n, edges) {",
+        "  parent = [0..n-1]",
+        "  let comps = n",
+        "  for (const [u, v] of edges) {",
+        "    ru = find(u); rv = find(v)",
+        "    if (ru !== rv) {",
+        "      parent[ru] = rv",
+        "      comps--",
+        "    }",
+        "  }",
+        "  return comps",
+        "}",
+        "function find(x) {",
+        "  while (parent[x] !== x) x = parent[x]",
+        "  return x",
+        "}"
+      ],
+      "cpp": [
+        "function components(n, edges) {",
+        "  parent = [0..n-1]",
+        "  let comps = n",
+        "  for (const [u, v] of edges) {",
+        "    ru = find(u); rv = find(v)",
+        "    if (ru !== rv) {",
+        "      parent[ru] = rv",
+        "      comps--",
+        "    }",
+        "  }",
+        "  return comps",
+        "}",
+        "function find(x) {",
+        "  while (parent[x] !== x) x = parent[x]",
+        "  return x",
+        "}"
+      ]
+    }
+  },
+  "network-delay-time": {
+    "pseudocode": [
+      "FUNCTION networkDelay(n, edges, source)",
+      "    dist[source] <- 0, rest <- ∞",
+      "    REPEAT n times",
+      "        u <- closest UNSETTLED node; SETTLE it",
+      "        FOR each edge u -> v with weight w",
+      "            IF dist[u] + w < dist[v]: dist[v] <- dist[u] + w",
+      "    END REPEAT",
+      "    RETURN max(dist)",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(E log V)",
+      "space": "O(V)"
+    },
+    "code": {
+      "javascript": [
+        "function networkDelay(n, edges, source) {",
+        "  dist = [0, ∞, ...]; settled = none",
+        "  repeat n times:",
+        "    u = the closest unsettled node",
+        "    settle u",
+        "    for each edge u -> v with weight w:",
+        "      if dist[u] + w < dist[v]:",
+        "        dist[v] = dist[u] + w",
+        "  return max(dist)",
+        "}"
+      ],
+      "typescript": [
+        "function networkDelay(n, edges, source) {",
+        "  dist = [0, ∞, ...]; settled = none",
+        "  repeat n times:",
+        "    u = the closest unsettled node",
+        "    settle u",
+        "    for each edge u -> v with weight w:",
+        "      if dist[u] + w < dist[v]:",
+        "        dist[v] = dist[u] + w",
+        "  return max(dist)",
+        "}"
+      ],
+      "python": [
+        "function networkDelay(n, edges, source) {",
+        "  dist = [0, ∞, ...]; settled = none",
+        "  repeat n times:",
+        "    u = the closest unsettled node",
+        "    settle u",
+        "    for each edge u -> v with weight w:",
+        "      if dist[u] + w < dist[v]:",
+        "        dist[v] = dist[u] + w",
+        "  return max(dist)",
+        "}"
+      ],
+      "java": [
+        "function networkDelay(n, edges, source) {",
+        "  dist = [0, ∞, ...]; settled = none",
+        "  repeat n times:",
+        "    u = the closest unsettled node",
+        "    settle u",
+        "    for each edge u -> v with weight w:",
+        "      if dist[u] + w < dist[v]:",
+        "        dist[v] = dist[u] + w",
+        "  return max(dist)",
+        "}"
+      ],
+      "cpp": [
+        "function networkDelay(n, edges, source) {",
+        "  dist = [0, ∞, ...]; settled = none",
+        "  repeat n times:",
+        "    u = the closest unsettled node",
+        "    settle u",
+        "    for each edge u -> v with weight w:",
+        "      if dist[u] + w < dist[v]:",
+        "        dist[v] = dist[u] + w",
+        "  return max(dist)",
+        "}"
+      ]
+    }
+  },
+  "kruskal-mst": {
+    "pseudocode": [
+      "FUNCTION minCost(n, edges)",
+      "    SORT edges lightest-first; parent[i] <- i, total <- 0",
+      "    FOR each edge (u, v, w) in order",
+      "        ru <- FIND(u); rv <- FIND(v)",
+      "        IF ru != rv: parent[ru] <- rv, total <- total + w",
+      "    END FOR",
+      "    RETURN total",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(E log E)",
+      "space": "O(V)"
+    },
+    "code": {
+      "javascript": [
+        "function minCost(n, edges) {",
+        "  sort edges by weight, lightest first",
+        "  parent = [0..n-1]; total = 0",
+        "  for each edge in order {",
+        "    u, v, w = edge",
+        "    ru = find(u); rv = find(v)",
+        "    if (ru !== rv) {",
+        "      parent[ru] = rv",
+        "      total += w",
+        "    }",
+        "  }",
+        "  return total",
+        "}",
+        "function find(x) {",
+        "  while (parent[x] !== x) x = parent[x]",
+        "  return x",
+        "}"
+      ],
+      "typescript": [
+        "function minCost(n, edges) {",
+        "  sort edges by weight, lightest first",
+        "  parent = [0..n-1]; total = 0",
+        "  for each edge in order {",
+        "    u, v, w = edge",
+        "    ru = find(u); rv = find(v)",
+        "    if (ru !== rv) {",
+        "      parent[ru] = rv",
+        "      total += w",
+        "    }",
+        "  }",
+        "  return total",
+        "}",
+        "function find(x) {",
+        "  while (parent[x] !== x) x = parent[x]",
+        "  return x",
+        "}"
+      ],
+      "python": [
+        "function minCost(n, edges) {",
+        "  sort edges by weight, lightest first",
+        "  parent = [0..n-1]; total = 0",
+        "  for each edge in order {",
+        "    u, v, w = edge",
+        "    ru = find(u); rv = find(v)",
+        "    if (ru !== rv) {",
+        "      parent[ru] = rv",
+        "      total += w",
+        "    }",
+        "  }",
+        "  return total",
+        "}",
+        "function find(x) {",
+        "  while (parent[x] !== x) x = parent[x]",
+        "  return x",
+        "}"
+      ],
+      "java": [
+        "function minCost(n, edges) {",
+        "  sort edges by weight, lightest first",
+        "  parent = [0..n-1]; total = 0",
+        "  for each edge in order {",
+        "    u, v, w = edge",
+        "    ru = find(u); rv = find(v)",
+        "    if (ru !== rv) {",
+        "      parent[ru] = rv",
+        "      total += w",
+        "    }",
+        "  }",
+        "  return total",
+        "}",
+        "function find(x) {",
+        "  while (parent[x] !== x) x = parent[x]",
+        "  return x",
+        "}"
+      ],
+      "cpp": [
+        "function minCost(n, edges) {",
+        "  sort edges by weight, lightest first",
+        "  parent = [0..n-1]; total = 0",
+        "  for each edge in order {",
+        "    u, v, w = edge",
+        "    ru = find(u); rv = find(v)",
+        "    if (ru !== rv) {",
+        "      parent[ru] = rv",
+        "      total += w",
+        "    }",
+        "  }",
+        "  return total",
+        "}",
+        "function find(x) {",
+        "  while (parent[x] !== x) x = parent[x]",
+        "  return x",
+        "}"
+      ]
+    }
+  },
+  "unique-paths": {
+    "pseudocode": [
+      "FUNCTION uniquePaths(grid)",
+      "    dp[start] <- 1 when open",
+      "    FOR each cell row by row",
+      "        IF blocked: dp <- 0",
+      "        ELSE: dp <- paths from above + paths from the left",
+      "    END FOR",
+      "    RETURN dp at the finish",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(rows × cols)",
+      "space": "O(rows × cols)"
+    },
+    "code": {
+      "javascript": [
+        "function uniquePaths(grid) {",
+        "  dp = zero table; dp[0][0] = open start ? 1 : 0",
+        "  for each cell row by row, after the start:",
+        "    if the cell is blocked: dp = 0",
+        "    else: dp = paths from above + paths from the left",
+        "    record dp for this cell",
+        "  return dp at the finish",
+        "}"
+      ],
+      "typescript": [
+        "function uniquePaths(grid) {",
+        "  dp = zero table; dp[0][0] = open start ? 1 : 0",
+        "  for each cell row by row, after the start:",
+        "    if the cell is blocked: dp = 0",
+        "    else: dp = paths from above + paths from the left",
+        "    record dp for this cell",
+        "  return dp at the finish",
+        "}"
+      ],
+      "python": [
+        "function uniquePaths(grid) {",
+        "  dp = zero table; dp[0][0] = open start ? 1 : 0",
+        "  for each cell row by row, after the start:",
+        "    if the cell is blocked: dp = 0",
+        "    else: dp = paths from above + paths from the left",
+        "    record dp for this cell",
+        "  return dp at the finish",
+        "}"
+      ],
+      "java": [
+        "function uniquePaths(grid) {",
+        "  dp = zero table; dp[0][0] = open start ? 1 : 0",
+        "  for each cell row by row, after the start:",
+        "    if the cell is blocked: dp = 0",
+        "    else: dp = paths from above + paths from the left",
+        "    record dp for this cell",
+        "  return dp at the finish",
+        "}"
+      ],
+      "cpp": [
+        "function uniquePaths(grid) {",
+        "  dp = zero table; dp[0][0] = open start ? 1 : 0",
+        "  for each cell row by row, after the start:",
+        "    if the cell is blocked: dp = 0",
+        "    else: dp = paths from above + paths from the left",
+        "    record dp for this cell",
+        "  return dp at the finish",
+        "}"
+      ]
+    }
+  },
+  "lcs-length": {
+    "pseudocode": [
+      "FUNCTION lcs(s, t)",
+      "    borders <- 0",
+      "    FOR each cell row by row",
+      "        IF match: dp <- diagonal + 1",
+      "        ELSE: dp <- larger of above and left",
+      "    END FOR",
+      "    RETURN dp at the finish",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(m × n)",
+      "space": "O(m × n)"
+    },
+    "code": {
+      "javascript": [
+        "function lcs(s, t) {",
+        "  dp = zero table; borders stay 0",
+        "  for each cell row by row, after the borders:",
+        "    if letters match: best = diagonal + 1",
+        "    else: best = larger of above and left",
+        "    dp = best",
+        "  return dp at the finish",
+        "}"
+      ],
+      "typescript": [
+        "function lcs(s, t) {",
+        "  dp = zero table; borders stay 0",
+        "  for each cell row by row, after the borders:",
+        "    if letters match: best = diagonal + 1",
+        "    else: best = larger of above and left",
+        "    dp = best",
+        "  return dp at the finish",
+        "}"
+      ],
+      "python": [
+        "function lcs(s, t) {",
+        "  dp = zero table; borders stay 0",
+        "  for each cell row by row, after the borders:",
+        "    if letters match: best = diagonal + 1",
+        "    else: best = larger of above and left",
+        "    dp = best",
+        "  return dp at the finish",
+        "}"
+      ],
+      "java": [
+        "function lcs(s, t) {",
+        "  dp = zero table; borders stay 0",
+        "  for each cell row by row, after the borders:",
+        "    if letters match: best = diagonal + 1",
+        "    else: best = larger of above and left",
+        "    dp = best",
+        "  return dp at the finish",
+        "}"
+      ],
+      "cpp": [
+        "function lcs(s, t) {",
+        "  dp = zero table; borders stay 0",
+        "  for each cell row by row, after the borders:",
+        "    if letters match: best = diagonal + 1",
+        "    else: best = larger of above and left",
+        "    dp = best",
+        "  return dp at the finish",
+        "}"
+      ]
+    }
+  },
+  "edit-distance": {
+    "pseudocode": [
+      "FUNCTION editDistance(s, t)",
+      "    borders <- count deletions and insertions",
+      "    FOR each cell row by row",
+      "        IF match: dp <- diagonal",
+      "        ELSE: dp <- 1 + smallest of above, left, diagonal",
+      "    END FOR",
+      "    RETURN dp at the finish",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(m × n)",
+      "space": "O(m × n)"
+    },
+    "code": {
+      "javascript": [
+        "function editDistance(s, t) {",
+        "  dp borders count deletions and insertions",
+        "  for each cell row by row, after the borders:",
+        "    if letters match: best = diagonal",
+        "    else compare above vs left, winner vs diagonal:",
+        "      best = 1 + smallest of the three",
+        "    dp = best",
+        "  return dp at the finish",
+        "}"
+      ],
+      "typescript": [
+        "function editDistance(s, t) {",
+        "  dp borders count deletions and insertions",
+        "  for each cell row by row, after the borders:",
+        "    if letters match: best = diagonal",
+        "    else compare above vs left, winner vs diagonal:",
+        "      best = 1 + smallest of the three",
+        "    dp = best",
+        "  return dp at the finish",
+        "}"
+      ],
+      "python": [
+        "function editDistance(s, t) {",
+        "  dp borders count deletions and insertions",
+        "  for each cell row by row, after the borders:",
+        "    if letters match: best = diagonal",
+        "    else compare above vs left, winner vs diagonal:",
+        "      best = 1 + smallest of the three",
+        "    dp = best",
+        "  return dp at the finish",
+        "}"
+      ],
+      "java": [
+        "function editDistance(s, t) {",
+        "  dp borders count deletions and insertions",
+        "  for each cell row by row, after the borders:",
+        "    if letters match: best = diagonal",
+        "    else compare above vs left, winner vs diagonal:",
+        "      best = 1 + smallest of the three",
+        "    dp = best",
+        "  return dp at the finish",
+        "}"
+      ],
+      "cpp": [
+        "function editDistance(s, t) {",
+        "  dp borders count deletions and insertions",
+        "  for each cell row by row, after the borders:",
+        "    if letters match: best = diagonal",
+        "    else compare above vs left, winner vs diagonal:",
+        "      best = 1 + smallest of the three",
+        "    dp = best",
+        "  return dp at the finish",
+        "}"
+      ]
+    }
+  },
+  "climbing-stairs": {
+    "pseudocode": [
+      "FUNCTION climbStairs(n)",
+      "    dp[0] <- 1, dp[1] <- 1",
+      "    FOR i FROM 2 TO n",
+      "        dp[i] <- dp[i-1] + dp[i-2]",
+      "    END FOR",
+      "    RETURN dp[n]",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(1)"
+    },
+    "code": {
+      "javascript": [
+        "function climbStairs(n) {",
+        "  let a = 1, b = 1",
+        "  for (let i = 2; i <= n; i++) {",
+        "    const c = a + b",
+        "    a = b; b = c",
+        "  }",
+        "  return n === 0 ? 1 : b",
+        "}"
+      ],
+      "typescript": [
+        "function climbStairs(n) {",
+        "  let a = 1, b = 1",
+        "  for (let i = 2; i <= n; i++) {",
+        "    const c = a + b",
+        "    a = b; b = c",
+        "  }",
+        "  return n === 0 ? 1 : b",
+        "}"
+      ],
+      "python": [
+        "function climbStairs(n) {",
+        "  let a = 1, b = 1",
+        "  for (let i = 2; i <= n; i++) {",
+        "    const c = a + b",
+        "    a = b; b = c",
+        "  }",
+        "  return n === 0 ? 1 : b",
+        "}"
+      ],
+      "java": [
+        "function climbStairs(n) {",
+        "  let a = 1, b = 1",
+        "  for (let i = 2; i <= n; i++) {",
+        "    const c = a + b",
+        "    a = b; b = c",
+        "  }",
+        "  return n === 0 ? 1 : b",
+        "}"
+      ],
+      "cpp": [
+        "function climbStairs(n) {",
+        "  let a = 1, b = 1",
+        "  for (let i = 2; i <= n; i++) {",
+        "    const c = a + b",
+        "    a = b; b = c",
+        "  }",
+        "  return n === 0 ? 1 : b",
+        "}"
+      ]
+    }
+  },
+  "house-robber": {
+    "pseudocode": [
+      "FUNCTION rob(nums)",
+      "    prev2 <- 0, prev1 <- 0",
+      "    FOR each house i",
+      "        take <- money[i] + prev2",
+      "        skip <- prev1",
+      "        cur <- max(take, skip); shift prev2, prev1",
+      "    END FOR",
+      "    RETURN prev1",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(1)"
+    },
+    "code": {
+      "javascript": [
+        "function rob(nums) {",
+        "  let prev2 = 0, prev1 = 0",
+        "  for (let i = 0; i < nums.length; i++) {",
+        "    const take = nums[i] + prev2",
+        "    const skip = prev1",
+        "    const cur = Math.max(take, skip)",
+        "    prev2 = prev1; prev1 = cur",
+        "  }",
+        "  return prev1",
+        "}"
+      ],
+      "typescript": [
+        "function rob(nums) {",
+        "  let prev2 = 0, prev1 = 0",
+        "  for (let i = 0; i < nums.length; i++) {",
+        "    const take = nums[i] + prev2",
+        "    const skip = prev1",
+        "    const cur = Math.max(take, skip)",
+        "    prev2 = prev1; prev1 = cur",
+        "  }",
+        "  return prev1",
+        "}"
+      ],
+      "python": [
+        "function rob(nums) {",
+        "  let prev2 = 0, prev1 = 0",
+        "  for (let i = 0; i < nums.length; i++) {",
+        "    const take = nums[i] + prev2",
+        "    const skip = prev1",
+        "    const cur = Math.max(take, skip)",
+        "    prev2 = prev1; prev1 = cur",
+        "  }",
+        "  return prev1",
+        "}"
+      ],
+      "java": [
+        "function rob(nums) {",
+        "  let prev2 = 0, prev1 = 0",
+        "  for (let i = 0; i < nums.length; i++) {",
+        "    const take = nums[i] + prev2",
+        "    const skip = prev1",
+        "    const cur = Math.max(take, skip)",
+        "    prev2 = prev1; prev1 = cur",
+        "  }",
+        "  return prev1",
+        "}"
+      ],
+      "cpp": [
+        "function rob(nums) {",
+        "  let prev2 = 0, prev1 = 0",
+        "  for (let i = 0; i < nums.length; i++) {",
+        "    const take = nums[i] + prev2",
+        "    const skip = prev1",
+        "    const cur = Math.max(take, skip)",
+        "    prev2 = prev1; prev1 = cur",
+        "  }",
+        "  return prev1",
+        "}"
+      ]
+    }
+  },
+  "coin-change": {
+    "pseudocode": [
+      "FUNCTION coinChange(coins, amount)",
+      "    dp[0] <- 0, rest <- ∞",
+      "    FOR x FROM 1 TO amount",
+      "        best <- min over coins c <= x of (dp[x-c] + 1)",
+      "        dp[x] <- best",
+      "    END FOR",
+      "    RETURN dp[amount]",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(amount × coins)",
+      "space": "O(amount)"
+    },
+    "code": {
+      "javascript": [
+        "function coinChange(coins, amount) {",
+        "  dp = new Array(amount + 1).fill(∞); dp[0] = 0",
+        "  for (let x = 1; x <= amount; x++) {",
+        "    let best = ∞",
+        "    for (const c of coins) if (c <= x) best = Math.min(best, dp[x - c] + 1)",
+        "    dp[x] = best",
+        "  }",
+        "  return dp[amount]",
+        "}"
+      ],
+      "typescript": [
+        "function coinChange(coins, amount) {",
+        "  dp = new Array(amount + 1).fill(∞); dp[0] = 0",
+        "  for (let x = 1; x <= amount; x++) {",
+        "    let best = ∞",
+        "    for (const c of coins) if (c <= x) best = Math.min(best, dp[x - c] + 1)",
+        "    dp[x] = best",
+        "  }",
+        "  return dp[amount]",
+        "}"
+      ],
+      "python": [
+        "function coinChange(coins, amount) {",
+        "  dp = new Array(amount + 1).fill(∞); dp[0] = 0",
+        "  for (let x = 1; x <= amount; x++) {",
+        "    let best = ∞",
+        "    for (const c of coins) if (c <= x) best = Math.min(best, dp[x - c] + 1)",
+        "    dp[x] = best",
+        "  }",
+        "  return dp[amount]",
+        "}"
+      ],
+      "java": [
+        "function coinChange(coins, amount) {",
+        "  dp = new Array(amount + 1).fill(∞); dp[0] = 0",
+        "  for (let x = 1; x <= amount; x++) {",
+        "    let best = ∞",
+        "    for (const c of coins) if (c <= x) best = Math.min(best, dp[x - c] + 1)",
+        "    dp[x] = best",
+        "  }",
+        "  return dp[amount]",
+        "}"
+      ],
+      "cpp": [
+        "function coinChange(coins, amount) {",
+        "  dp = new Array(amount + 1).fill(∞); dp[0] = 0",
+        "  for (let x = 1; x <= amount; x++) {",
+        "    let best = ∞",
+        "    for (const c of coins) if (c <= x) best = Math.min(best, dp[x - c] + 1)",
+        "    dp[x] = best",
+        "  }",
+        "  return dp[amount]",
+        "}"
+      ]
+    }
+  },
+  "subsets": {
+    "pseudocode": [
+      "FUNCTION subsets(a)",
+      "    dfs(0, [])",
+      "    FUNCTION dfs(i, path)",
+      "        IF i = LENGTH(a): EMIT path; RETURN",
+      "        INCLUDE a[i]: mark, recurse",
+      "        EXCLUDE a[i]: unmark, recurse",
+      "    END FUNCTION",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n × 2^n)",
+      "space": "O(n)"
+    },
+    "code": {
+      "javascript": [
+        "function subsets(a) {",
+        "  const out = []",
+        "  function dfs(i, path) {",
+        "    if (i === a.length) { out.push([...path]); return }",
+        "    path.push(a[i]); dfs(i + 1, path)",
+        "    path.pop(); dfs(i + 1, path)",
+        "    // the pop above is the backtrack: un-choose, then continue",
+        "  }",
+        "  dfs(0, []); return out",
+        "}"
+      ],
+      "typescript": [
+        "function subsets(a) {",
+        "  const out = []",
+        "  function dfs(i, path) {",
+        "    if (i === a.length) { out.push([...path]); return }",
+        "    path.push(a[i]); dfs(i + 1, path)",
+        "    path.pop(); dfs(i + 1, path)",
+        "    // the pop above is the backtrack: un-choose, then continue",
+        "  }",
+        "  dfs(0, []); return out",
+        "}"
+      ],
+      "python": [
+        "function subsets(a) {",
+        "  const out = []",
+        "  function dfs(i, path) {",
+        "    if (i === a.length) { out.push([...path]); return }",
+        "    path.push(a[i]); dfs(i + 1, path)",
+        "    path.pop(); dfs(i + 1, path)",
+        "    // the pop above is the backtrack: un-choose, then continue",
+        "  }",
+        "  dfs(0, []); return out",
+        "}"
+      ],
+      "java": [
+        "function subsets(a) {",
+        "  const out = []",
+        "  function dfs(i, path) {",
+        "    if (i === a.length) { out.push([...path]); return }",
+        "    path.push(a[i]); dfs(i + 1, path)",
+        "    path.pop(); dfs(i + 1, path)",
+        "    // the pop above is the backtrack: un-choose, then continue",
+        "  }",
+        "  dfs(0, []); return out",
+        "}"
+      ],
+      "cpp": [
+        "function subsets(a) {",
+        "  const out = []",
+        "  function dfs(i, path) {",
+        "    if (i === a.length) { out.push([...path]); return }",
+        "    path.push(a[i]); dfs(i + 1, path)",
+        "    path.pop(); dfs(i + 1, path)",
+        "    // the pop above is the backtrack: un-choose, then continue",
+        "  }",
+        "  dfs(0, []); return out",
+        "}"
+      ]
+    }
+  },
+  "permutations": {
+    "pseudocode": [
+      "FUNCTION permute(a)",
+      "    dfs([])",
+      "    FUNCTION dfs(path)",
+      "        IF path is full: EMIT path; RETURN",
+      "        FOR each unused value in order",
+      "            MARK used, recurse, UNMARK",
+      "    END FOR",
+      "    END FUNCTION",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n × n!)",
+      "space": "O(n)"
+    },
+    "code": {
+      "javascript": [
+        "function permute(a) {",
+        "  const out = [], used = new Array(a.length).fill(false)",
+        "  function dfs(path) {",
+        "    if (path.length === a.length) { out.push([...path]); return }",
+        "    for (let j = 0; j < a.length; j++) {",
+        "      if (used[j]) continue",
+        "      used[j] = true; path.push(a[j]); dfs(path)",
+        "      used[j] = false; path.pop()",
+        "    }",
+        "  }",
+        "  dfs([]); return out",
+        "}"
+      ],
+      "typescript": [
+        "function permute(a) {",
+        "  const out = [], used = new Array(a.length).fill(false)",
+        "  function dfs(path) {",
+        "    if (path.length === a.length) { out.push([...path]); return }",
+        "    for (let j = 0; j < a.length; j++) {",
+        "      if (used[j]) continue",
+        "      used[j] = true; path.push(a[j]); dfs(path)",
+        "      used[j] = false; path.pop()",
+        "    }",
+        "  }",
+        "  dfs([]); return out",
+        "}"
+      ],
+      "python": [
+        "function permute(a) {",
+        "  const out = [], used = new Array(a.length).fill(false)",
+        "  function dfs(path) {",
+        "    if (path.length === a.length) { out.push([...path]); return }",
+        "    for (let j = 0; j < a.length; j++) {",
+        "      if (used[j]) continue",
+        "      used[j] = true; path.push(a[j]); dfs(path)",
+        "      used[j] = false; path.pop()",
+        "    }",
+        "  }",
+        "  dfs([]); return out",
+        "}"
+      ],
+      "java": [
+        "function permute(a) {",
+        "  const out = [], used = new Array(a.length).fill(false)",
+        "  function dfs(path) {",
+        "    if (path.length === a.length) { out.push([...path]); return }",
+        "    for (let j = 0; j < a.length; j++) {",
+        "      if (used[j]) continue",
+        "      used[j] = true; path.push(a[j]); dfs(path)",
+        "      used[j] = false; path.pop()",
+        "    }",
+        "  }",
+        "  dfs([]); return out",
+        "}"
+      ],
+      "cpp": [
+        "function permute(a) {",
+        "  const out = [], used = new Array(a.length).fill(false)",
+        "  function dfs(path) {",
+        "    if (path.length === a.length) { out.push([...path]); return }",
+        "    for (let j = 0; j < a.length; j++) {",
+        "      if (used[j]) continue",
+        "      used[j] = true; path.push(a[j]); dfs(path)",
+        "      used[j] = false; path.pop()",
+        "    }",
+        "  }",
+        "  dfs([]); return out",
+        "}"
+      ]
+    }
+  },
+  "jump-game": {
+    "pseudocode": [
+      "FUNCTION canJump(nums)",
+      "    reach <- 0",
+      "    FOR i FROM 0 TO LENGTH(nums) - 1",
+      "        IF i > reach: RETURN false",
+      "        reach <- max(reach, i + nums[i])",
+      "    END FOR",
+      "    RETURN true",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(1)"
+    },
+    "code": {
+      "javascript": [
+        "function canJump(nums) {",
+        "  let reach = 0",
+        "  for (let i = 0; i < nums.length; i++) {",
+        "    if (i > reach) return false",
+        "    reach = Math.max(reach, i + nums[i])",
+        "  }",
+        "  return true",
+        "}"
+      ],
+      "typescript": [
+        "function canJump(nums) {",
+        "  let reach = 0",
+        "  for (let i = 0; i < nums.length; i++) {",
+        "    if (i > reach) return false",
+        "    reach = Math.max(reach, i + nums[i])",
+        "  }",
+        "  return true",
+        "}"
+      ],
+      "python": [
+        "function canJump(nums) {",
+        "  let reach = 0",
+        "  for (let i = 0; i < nums.length; i++) {",
+        "    if (i > reach) return false",
+        "    reach = Math.max(reach, i + nums[i])",
+        "  }",
+        "  return true",
+        "}"
+      ],
+      "java": [
+        "function canJump(nums) {",
+        "  let reach = 0",
+        "  for (let i = 0; i < nums.length; i++) {",
+        "    if (i > reach) return false",
+        "    reach = Math.max(reach, i + nums[i])",
+        "  }",
+        "  return true",
+        "}"
+      ],
+      "cpp": [
+        "function canJump(nums) {",
+        "  let reach = 0",
+        "  for (let i = 0; i < nums.length; i++) {",
+        "    if (i > reach) return false",
+        "    reach = Math.max(reach, i + nums[i])",
+        "  }",
+        "  return true",
+        "}"
+      ]
+    }
+  },
+  "single-number": {
+    "pseudocode": [
+      "FUNCTION singleNumber(nums)",
+      "    acc <- 0",
+      "    FOR each value v",
+      "        acc <- acc XOR v (pairs cancel to zero)",
+      "    END FOR",
+      "    RETURN acc",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(n)",
+      "space": "O(1)"
+    },
+    "code": {
+      "javascript": [
+        "function singleNumber(nums) {",
+        "  let acc = 0",
+        "  for (const v of nums) {",
+        "    acc ^= v",
+        "  }",
+        "  return acc",
+        "}"
+      ],
+      "typescript": [
+        "function singleNumber(nums) {",
+        "  let acc = 0",
+        "  for (const v of nums) {",
+        "    acc ^= v",
+        "  }",
+        "  return acc",
+        "}"
+      ],
+      "python": [
+        "function singleNumber(nums) {",
+        "  let acc = 0",
+        "  for (const v of nums) {",
+        "    acc ^= v",
+        "  }",
+        "  return acc",
+        "}"
+      ],
+      "java": [
+        "function singleNumber(nums) {",
+        "  let acc = 0",
+        "  for (const v of nums) {",
+        "    acc ^= v",
+        "  }",
+        "  return acc",
+        "}"
+      ],
+      "cpp": [
+        "function singleNumber(nums) {",
+        "  let acc = 0",
+        "  for (const v of nums) {",
+        "    acc ^= v",
+        "  }",
+        "  return acc",
+        "}"
+      ]
+    }
+  },
+  "trie-prefix-search": {
+    "pseudocode": [
+      "FUNCTION prefixSearch(root, query)",
+      "    node <- root",
+      "    FOR each letter of query",
+      "        FOLLOW the link for that letter (missing: no completions)",
+      "    END FOR",
+      "    RETURN every word-end in the landed subtree",
+      "END FUNCTION"
+    ],
+    "complexity": {
+      "time": "O(L + C)",
+      "space": "O(1)"
+    },
+    "code": {
+      "javascript": [
+        "function prefixSearch(root, query) {",
+        "  let node = root",
+        "  for (const ch of query) {",
+        "    node = node.children[ch]",
+        "    if (!node) return []",
+        "  }",
+        "  return collectWords(node)",
+        "}"
+      ],
+      "typescript": [
+        "function prefixSearch(root, query) {",
+        "  let node = root",
+        "  for (const ch of query) {",
+        "    node = node.children[ch]",
+        "    if (!node) return []",
+        "  }",
+        "  return collectWords(node)",
+        "}"
+      ],
+      "python": [
+        "function prefixSearch(root, query) {",
+        "  let node = root",
+        "  for (const ch of query) {",
+        "    node = node.children[ch]",
+        "    if (!node) return []",
+        "  }",
+        "  return collectWords(node)",
+        "}"
+      ],
+      "java": [
+        "function prefixSearch(root, query) {",
+        "  let node = root",
+        "  for (const ch of query) {",
+        "    node = node.children[ch]",
+        "    if (!node) return []",
+        "  }",
+        "  return collectWords(node)",
+        "}"
+      ],
+      "cpp": [
+        "function prefixSearch(root, query) {",
+        "  let node = root",
+        "  for (const ch of query) {",
+        "    node = node.children[ch]",
+        "    if (!node) return []",
+        "  }",
+        "  return collectWords(node)",
+        "}"
+      ]
+    }
+  }
+}

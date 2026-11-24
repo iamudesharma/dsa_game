@@ -1,0 +1,1126 @@
+{
+  "INFLECTIONS": [
+    "",
+    "s",
+    "es",
+    "ed",
+    "d",
+    "ing",
+    "er",
+    "ers",
+    "ger",
+    "iest",
+    "ly",
+    "ise",
+    "ize"
+  ],
+  "KEYWORDS": {
+    "binary-search": {
+      "specific": [
+        "binary",
+        "binary search",
+        "halve",
+        "halving",
+        "midpoint",
+        "mid point",
+        "logarithmic",
+        "log n",
+        "bisect"
+      ],
+      "topic": [
+        "search",
+        "lookup",
+        "sorted",
+        "target",
+        "find",
+        "index of"
+      ]
+    },
+    "array-max-min": {
+      "specific": [
+        "max",
+        "maximum",
+        "min",
+        "minimum",
+        "biggest",
+        "largest",
+        "smallest",
+        "highest",
+        "lowest",
+        "greatest",
+        "running best",
+        "max value",
+        "min value",
+        "biggest number",
+        "largest number"
+      ],
+      "topic": [
+        "scan",
+        "array",
+        "value",
+        "running",
+        "best",
+        "find"
+      ]
+    },
+    "two-sum": {
+      "specific": [
+        "two sum",
+        "pair sum",
+        "two numbers",
+        "complement",
+        "hash set",
+        "hash map",
+        "hashmap",
+        "seen set",
+        "add up to",
+        "sum to",
+        "target sum"
+      ],
+      "topic": [
+        "sum",
+        "pair",
+        "add",
+        "target",
+        "numbers",
+        "complement"
+      ]
+    },
+    "move-zeroes": {
+      "specific": [
+        "zeroes",
+        "zeros",
+        "move zero",
+        "move zeros",
+        "non zero",
+        "nonzero",
+        "write pointer",
+        "read pointer",
+        "two pointer",
+        "to the end",
+        "partition",
+        "in place"
+      ],
+      "topic": [
+        "move",
+        "relocate",
+        "shift",
+        "compact",
+        "tail",
+        "stable"
+      ]
+    },
+    "bubble-sort": {
+      "specific": [
+        "bubble",
+        "bubble sort",
+        "adjacent",
+        "adjacent pair",
+        "inversion",
+        "bubbles up"
+      ],
+      "topic": [
+        "sort",
+        "sorting",
+        "sorted",
+        "order",
+        "ascending",
+        "descending"
+      ]
+    },
+    "selection-sort": {
+      "specific": [
+        "selection sort",
+        "selection",
+        "unsorted suffix",
+        "n 1 swaps",
+        "min into place",
+        "smallest into",
+        "select the min",
+        "select the minimum",
+        "select the smallest",
+        "scan for the min"
+      ],
+      "topic": [
+        "sort",
+        "sorting",
+        "sorted",
+        "order",
+        "ascending",
+        "descending"
+      ]
+    },
+    "valid-parentheses": {
+      "specific": [
+        "parentheses",
+        "parenthesis",
+        "brackets",
+        "bracket",
+        "balanced",
+        "balance",
+        "matching pairs",
+        "matching pair",
+        "nesting",
+        "mismatched",
+        "opening bracket",
+        "closing bracket",
+        "braces",
+        "curly",
+        "square bracket"
+      ],
+      "topic": [
+        "stack",
+        "pop",
+        "push",
+        "lifo",
+        "last in first out",
+        "pairs"
+      ]
+    },
+    "stack-push-pop": {
+      "specific": [
+        "stack push",
+        "stack pop",
+        "push pop",
+        "push and pop",
+        "pushes and pops",
+        "underflow",
+        "overflow",
+        "stack operation",
+        "stack simulation",
+        "capacity",
+        "top of the stack"
+      ],
+      "topic": [
+        "stack",
+        "pop",
+        "push",
+        "lifo",
+        "last in",
+        "pushes",
+        "pops"
+      ]
+    },
+    "queue-operations": {
+      "specific": [
+        "queue",
+        "fifo",
+        "first in first out",
+        "enqueue",
+        "dequeue",
+        "circular buffer",
+        "circular queue",
+        "rear pointer",
+        "front pointer",
+        "rear",
+        "enqueue dequeue"
+      ],
+      "topic": [
+        "queue",
+        "fifo",
+        "order",
+        "wrap",
+        "buffer"
+      ]
+    },
+    "linked-list-traversal": {
+      "specific": [
+        "traversal",
+        "traverse",
+        "traversing",
+        "walk the list",
+        "next pointer",
+        "follow pointers",
+        "no indexing",
+        "reach position",
+        "from the head"
+      ],
+      "topic": [
+        "linked list",
+        "list",
+        "node",
+        "pointer",
+        "head",
+        "position"
+      ]
+    },
+    "reverse-linked-list": {
+      "specific": [
+        "reverse a linked list",
+        "reverse the list",
+        "reverse linked list",
+        "reverse the linked list",
+        "reverse",
+        "reversing",
+        "flipping pointers",
+        "rewire",
+        "new head",
+        "prev and next"
+      ],
+      "topic": [
+        "linked list",
+        "list",
+        "node",
+        "pointer",
+        "reverse",
+        "head"
+      ]
+    },
+    "sliding-window-max-sum": {
+      "specific": [
+        "sliding window",
+        "window sum",
+        "window of size k",
+        "maximum sum subarray of size k",
+        "fixed window",
+        "slide the window"
+      ],
+      "topic": [
+        "window",
+        "subarray",
+        "contiguous",
+        "sum",
+        "slide"
+      ]
+    },
+    "two-pointers-pair": {
+      "specific": [
+        "two pointers",
+        "two pointers pair",
+        "sorted array pair",
+        "two sum sorted",
+        "converging pointers",
+        "opposite ends"
+      ],
+      "topic": [
+        "pair",
+        "sorted",
+        "sum",
+        "target",
+        "pointers"
+      ]
+    },
+    "prefix-sum-range": {
+      "specific": [
+        "prefix sum",
+        "prefix array",
+        "range sum",
+        "range query",
+        "cumulative sum",
+        "subarray sum query"
+      ],
+      "topic": [
+        "prefix",
+        "range",
+        "sum",
+        "query",
+        "cumulative"
+      ]
+    },
+    "kadane-max-subarray": {
+      "specific": [
+        "kadane",
+        "maximum subarray",
+        "max subarray",
+        "extend or restart",
+        "maximum subarray sum"
+      ],
+      "topic": [
+        "subarray",
+        "maximum",
+        "contiguous",
+        "sum"
+      ]
+    },
+    "merge-intervals": {
+      "specific": [
+        "merge intervals",
+        "overlapping intervals",
+        "interval overlap",
+        "meeting rooms",
+        "insert interval"
+      ],
+      "topic": [
+        "interval",
+        "overlap",
+        "merge",
+        "schedule"
+      ]
+    },
+    "next-greater-element": {
+      "specific": [
+        "next greater",
+        "next greater element",
+        "monotonic stack",
+        "monotone stack",
+        "decreasing stack",
+        "daily temperatures"
+      ],
+      "topic": [
+        "greater",
+        "stack",
+        "monotonic",
+        "next"
+      ]
+    },
+    "rotated-search": {
+      "specific": [
+        "rotated",
+        "rotated array",
+        "rotated sorted",
+        "search in rotated",
+        "pivot",
+        "find minimum in rotated"
+      ],
+      "topic": [
+        "search",
+        "rotated",
+        "sorted",
+        "target",
+        "pivot"
+      ]
+    },
+    "linked-list-cycle": {
+      "specific": [
+        "cycle detection",
+        "linked list cycle",
+        "tortoise and hare",
+        "fast and slow pointers",
+        "floyd",
+        "cycle in linked list",
+        "has cycle"
+      ],
+      "topic": [
+        "cycle",
+        "linked list",
+        "node",
+        "pointer",
+        "slow",
+        "fast"
+      ]
+    },
+    "frequency-count": {
+      "specific": [
+        "frequency",
+        "frequency count",
+        "most frequent",
+        "count occurrences",
+        "hash map count",
+        "top k frequent"
+      ],
+      "topic": [
+        "frequency",
+        "count",
+        "hash",
+        "map",
+        "occurrences"
+      ]
+    },
+    "valid-anagram": {
+      "specific": [
+        "anagram",
+        "valid anagram",
+        "group anagrams",
+        "letter counts match",
+        "same letters"
+      ],
+      "topic": [
+        "anagram",
+        "letters",
+        "string",
+        "count",
+        "characters"
+      ]
+    },
+    "valid-palindrome": {
+      "specific": [
+        "palindrome",
+        "valid palindrome",
+        "symmetric string",
+        "reads the same",
+        "outside in"
+      ],
+      "topic": [
+        "palindrome",
+        "string",
+        "symmetric",
+        "mirror"
+      ]
+    },
+    "tree-traversals": {
+      "specific": [
+        "tree traversal",
+        "traverse a tree",
+        "preorder",
+        "pre order",
+        "inorder",
+        "in order traversal",
+        "postorder",
+        "post order",
+        "dfs tree",
+        "visit left"
+      ],
+      "topic": [
+        "tree",
+        "traversal",
+        "binary tree",
+        "root",
+        "child",
+        "subtree"
+      ]
+    },
+    "bst-validate": {
+      "specific": [
+        "validate bst",
+        "validate binary search tree",
+        "is bst",
+        "is valid bst",
+        "inorder sorted",
+        "bst property",
+        "kth smallest"
+      ],
+      "topic": [
+        "bst",
+        "binary search tree",
+        "valid",
+        "sorted",
+        "inorder"
+      ]
+    },
+    "tree-level-order": {
+      "specific": [
+        "level order",
+        "level order traversal",
+        "breadth first",
+        "breadth first search",
+        "bfs",
+        "bfs tree",
+        "queue traversal",
+        "level by level"
+      ],
+      "topic": [
+        "level",
+        "breadth",
+        "queue",
+        "tree",
+        "levels"
+      ]
+    },
+    "bst-search": {
+      "specific": [
+        "search bst",
+        "search binary search tree",
+        "bst search",
+        "bst lookup",
+        "find in bst",
+        "search a tree"
+      ],
+      "topic": [
+        "search",
+        "bst",
+        "tree",
+        "target",
+        "descend"
+      ]
+    },
+    "kth-largest-heap": {
+      "specific": [
+        "kth largest",
+        "k largest",
+        "min heap",
+        "size k heap",
+        "top k",
+        "heap",
+        "heapify",
+        "sift down"
+      ],
+      "topic": [
+        "heap",
+        "largest",
+        "kth",
+        "top",
+        "minimum"
+      ]
+    },
+    "num-islands": {
+      "specific": [
+        "number of islands",
+        "islands",
+        "island count",
+        "grid dfs",
+        "flood fill island",
+        "connected ones",
+        "surrounded regions"
+      ],
+      "topic": [
+        "island",
+        "grid",
+        "land",
+        "water",
+        "flood",
+        "matrix"
+      ]
+    },
+    "max-area-island": {
+      "specific": [
+        "max area",
+        "maximum area",
+        "largest island",
+        "biggest island",
+        "area of island"
+      ],
+      "topic": [
+        "area",
+        "island",
+        "grid",
+        "land",
+        "largest",
+        "matrix"
+      ]
+    },
+    "rotting-oranges": {
+      "specific": [
+        "rotting oranges",
+        "rotten oranges",
+        "rotting",
+        "minutes to rot",
+        "multi source bfs",
+        "walls and gates",
+        "oranges rotting"
+      ],
+      "topic": [
+        "rot",
+        "orange",
+        "minute",
+        "fresh",
+        "grid",
+        "bfs",
+        "wave"
+      ]
+    },
+    "word-search": {
+      "specific": [
+        "word search",
+        "find the word",
+        "word in grid",
+        "backtracking grid",
+        "letter path",
+        "search a 2d board"
+      ],
+      "topic": [
+        "word",
+        "search",
+        "grid",
+        "letters",
+        "board",
+        "path",
+        "backtrack"
+      ]
+    },
+    "union-find-connect": {
+      "specific": [
+        "union find",
+        "disjoint set",
+        "dsu",
+        "connected components",
+        "number of provinces",
+        "find root",
+        "union operation",
+        "path compression"
+      ],
+      "topic": [
+        "union",
+        "find",
+        "components",
+        "connected",
+        "sets",
+        "root",
+        "parent"
+      ]
+    },
+    "climbing-stairs": {
+      "specific": [
+        "climbing stairs",
+        "climb stairs",
+        "fibonacci dp",
+        "ways to climb",
+        "steps 1 or 2"
+      ],
+      "topic": [
+        "stairs",
+        "climb",
+        "dp",
+        "dynamic",
+        "ways",
+        "fibonacci"
+      ]
+    },
+    "house-robber": {
+      "specific": [
+        "house robber",
+        "rob houses",
+        "take or skip",
+        "maximum loot",
+        "robber",
+        "non adjacent sum"
+      ],
+      "topic": [
+        "rob",
+        "houses",
+        "loot",
+        "dp",
+        "maximum",
+        "adjacent"
+      ]
+    },
+    "subsets": {
+      "specific": [
+        "subsets",
+        "all subsets",
+        "power set",
+        "include exclude",
+        "choose unchoose",
+        "generate subsets"
+      ],
+      "topic": [
+        "subset",
+        "backtrack",
+        "enumerate",
+        "include",
+        "exclude",
+        "combinations"
+      ]
+    },
+    "permutations": {
+      "specific": [
+        "permutations",
+        "all permutations",
+        "arrangements",
+        "used flag",
+        "permute",
+        "ordering"
+      ],
+      "topic": [
+        "permutation",
+        "backtrack",
+        "arrange",
+        "order",
+        "used"
+      ]
+    },
+    "jump-game": {
+      "specific": [
+        "jump game",
+        "can jump",
+        "reachable",
+        "farthest reach",
+        "jump lengths",
+        "gas station"
+      ],
+      "topic": [
+        "jump",
+        "reach",
+        "greedy",
+        "reachable",
+        "farthest"
+      ]
+    },
+    "single-number": {
+      "specific": [
+        "single number",
+        "xor",
+        "xor accumulate",
+        "unpaired",
+        "appears once",
+        "bit manipulation",
+        "twice except one"
+      ],
+      "topic": [
+        "xor",
+        "single",
+        "bits",
+        "accumulate",
+        "cancel",
+        "unique"
+      ]
+    },
+    "trie-prefix-search": {
+      "specific": [
+        "trie",
+        "prefix tree",
+        "prefix search",
+        "autocomplete",
+        "starts with",
+        "shared prefix",
+        "implement trie"
+      ],
+      "topic": [
+        "trie",
+        "prefix",
+        "words",
+        "letters",
+        "completions",
+        "dictionary"
+      ]
+    },
+    "network-delay-time": {
+      "specific": [
+        "network delay",
+        "network delay time",
+        "dijkstra",
+        "shortest path weighted",
+        "minimum distance",
+        "settle closest",
+        "signal delay"
+      ],
+      "topic": [
+        "delay",
+        "network",
+        "distance",
+        "shortest",
+        "weighted",
+        "settle",
+        "signal"
+      ]
+    },
+    "coin-change": {
+      "specific": [
+        "coin change",
+        "fewest coins",
+        "minimum coins",
+        "coin denominations",
+        "change amount"
+      ],
+      "topic": [
+        "coins",
+        "change",
+        "amount",
+        "denomination",
+        "fewest",
+        "dp",
+        "minimum"
+      ]
+    },
+    "kruskal-mst": {
+      "specific": [
+        "kruskal",
+        "minimum spanning tree",
+        "mst",
+        "minimum connection cost",
+        "connect all points",
+        "lightest edge",
+        "union by weight"
+      ],
+      "topic": [
+        "spanning",
+        "tree",
+        "minimum",
+        "connect",
+        "edges",
+        "weight",
+        "union"
+      ]
+    },
+    "unique-paths": {
+      "specific": [
+        "unique paths",
+        "paths through obstacles",
+        "grid dp",
+        "paths from above",
+        "robot grid",
+        "ways to reach"
+      ],
+      "topic": [
+        "paths",
+        "grid",
+        "obstacles",
+        "unique",
+        "dp",
+        "finish",
+        "blocked"
+      ]
+    },
+    "lcs-length": {
+      "specific": [
+        "longest common subsequence",
+        "lcs",
+        "common subsequence",
+        "subsequence match",
+        "diagonal plus one",
+        "larger neighbour"
+      ],
+      "topic": [
+        "subsequence",
+        "common",
+        "strings",
+        "match",
+        "diagonal",
+        "dp",
+        "table"
+      ]
+    },
+    "edit-distance": {
+      "specific": [
+        "edit distance",
+        "levenshtein",
+        "minimum edits",
+        "string transformation",
+        "insert delete replace",
+        "cheapest neighbour"
+      ],
+      "topic": [
+        "edit",
+        "distance",
+        "transform",
+        "convert",
+        "operations",
+        "dp",
+        "strings"
+      ]
+    }
+  },
+  "STOPWORDS": [
+    "a",
+    "about",
+    "all",
+    "an",
+    "and",
+    "any",
+    "are",
+    "as",
+    "at",
+    "be",
+    "both",
+    "by",
+    "can",
+    "did",
+    "does",
+    "each",
+    "every",
+    "for",
+    "from",
+    "get",
+    "had",
+    "has",
+    "have",
+    "how",
+    "i",
+    "if",
+    "in",
+    "into",
+    "is",
+    "it",
+    "its",
+    "keep",
+    "let",
+    "like",
+    "make",
+    "makes",
+    "me",
+    "more",
+    "most",
+    "my",
+    "need",
+    "new",
+    "no",
+    "not",
+    "now",
+    "of",
+    "off",
+    "on",
+    "one",
+    "only",
+    "or",
+    "other",
+    "our",
+    "out",
+    "over",
+    "per",
+    "read",
+    "repeat",
+    "report",
+    "set",
+    "so",
+    "start",
+    "stop",
+    "such",
+    "than",
+    "that",
+    "the",
+    "their",
+    "them",
+    "then",
+    "there",
+    "these",
+    "they",
+    "this",
+    "to",
+    "up",
+    "us",
+    "use",
+    "used",
+    "using",
+    "via",
+    "want",
+    "was",
+    "we",
+    "were",
+    "what",
+    "when",
+    "where",
+    "which",
+    "while",
+    "who",
+    "why",
+    "will",
+    "with",
+    "would",
+    "you",
+    "your"
+  ],
+  "TOPIC_ENTRY": {
+    "binary-search": "binary-search",
+    "arrays": "array-max-min",
+    "sorting": "bubble-sort",
+    "stack": "valid-parentheses",
+    "queue": "queue-operations",
+    "linked-list": "linked-list-traversal",
+    "hash-table": "frequency-count",
+    "strings": "valid-palindrome",
+    "trees": "tree-traversals",
+    "heap": "kth-largest-heap",
+    "graphs": "num-islands",
+    "dp": "climbing-stairs",
+    "backtracking": "subsets",
+    "greedy": "jump-game",
+    "bit-manip": "single-number",
+    "trie": "trie-prefix-search"
+  },
+  "DSA_OP_HINT_WORDS": {
+    "compare": [
+      "compare",
+      "comparison",
+      "less",
+      "greater",
+      "bigger",
+      "smaller",
+      "lt",
+      "gt"
+    ],
+    "choose-path": [
+      "half",
+      "left",
+      "right",
+      "mid",
+      "discard",
+      "narrow",
+      "search space"
+    ],
+    "swap": [
+      "swap",
+      "exchange",
+      "positions",
+      "order"
+    ],
+    "move": [
+      "move",
+      "relocate",
+      "write pointer",
+      "read pointer",
+      "shift"
+    ],
+    "insert": [
+      "insert",
+      "add",
+      "inserted"
+    ],
+    "push": [
+      "push",
+      "stack",
+      "top"
+    ],
+    "pop": [
+      "pop",
+      "stack",
+      "top",
+      "underflow"
+    ],
+    "traverse": [
+      "next",
+      "node",
+      "traverse",
+      "head",
+      "pointer"
+    ],
+    "link": [
+      "next",
+      "prev",
+      "link",
+      "pointer",
+      "rewire"
+    ],
+    "unlink": [
+      "next",
+      "prev",
+      "unlink",
+      "cut",
+      "pointer"
+    ],
+    "assign": [
+      "assign",
+      "write",
+      "value",
+      "complement",
+      "best",
+      "max",
+      "sum"
+    ],
+    "read": [
+      "read",
+      "index",
+      "value",
+      "position",
+      "inspect"
+    ],
+    "terminate": [
+      "answer",
+      "submit",
+      "final",
+      "result",
+      "report"
+    ]
+  },
+  "MISCONCEPTION_LABELS": [
+    "off-by-one-halving",
+    "wrong-comparison",
+    "unstable-ordering",
+    "stack-discipline",
+    "pointer-confusion",
+    "value-vs-index",
+    "no-mistakes"
+  ],
+  "OP_TO_LABEL": {
+    "choose-path": "off-by-one-halving",
+    "compare": "wrong-comparison",
+    "swap": "unstable-ordering",
+    "move": "unstable-ordering",
+    "insert": "unstable-ordering",
+    "push": "stack-discipline",
+    "pop": "stack-discipline",
+    "traverse": "pointer-confusion",
+    "link": "pointer-confusion",
+    "unlink": "pointer-confusion",
+    "assign": "value-vs-index",
+    "terminate": "value-vs-index",
+    "read": "value-vs-index"
+  },
+  "LABEL_PRIORITY": {
+    "no-mistakes": 0,
+    "wrong-comparison": 1,
+    "value-vs-index": 2,
+    "off-by-one-halving": 3,
+    "stack-discipline": 4,
+    "unstable-ordering": 5,
+    "pointer-confusion": 6
+  }
+}

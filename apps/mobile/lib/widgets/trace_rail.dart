@@ -185,14 +185,16 @@ class _TraceRow extends StatelessWidget {
                             style: TextStyle(fontSize: 11, color: colors.accent),
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            actionLabel,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w800,
-                              color: colors.onSurface,
+                          Expanded(
+                            child: Text(
+                              actionLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                                color: colors.onSurface,
+                              ),
                             ),
                           ),
                           if (frame.codeLine > 0) ...[
