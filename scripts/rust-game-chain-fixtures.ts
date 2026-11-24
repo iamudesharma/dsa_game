@@ -1,4 +1,4 @@
-import {writeFile} from 'node:fs/promises'
+import {readFile,writeFile} from 'node:fs/promises'
 import {PROBLEMS} from '../packages/game-schema/src/index.js'
 import {ORACLES} from '../packages/dsa-oracles/src/index.js'
 import {buildTemplateSpec} from '../packages/provider-chain/src/providers/template.js'
@@ -17,5 +17,14 @@ for(const scenario of scenarios){
  result.attempts=result.attempts.map(a=>({...a,ms:0}))
  cases.push({scenario,input,result})
 }
-await writeFile(new URL('../services/api-rust/tests/fixtures/game-chain.json',import.meta.url),JSON.stringify(cases)+'\n')
-console.log(`Captured ${cases.length} Node generation chains`)
+const output = new URL('../services/api-rust/tests/fixtures/game-chain.json', import.meta.url)
+const encoded = JSON.stringify(cases) + '\n'
+if (process.argv.includes('--check')) {
+  if (await readFile(output, 'utf8') !== encoded) {
+    throw new Error('Rust generation-chain fixtures drifted; regenerate with scripts/rust-game-chain-fixtures.ts')
+  }
+  console.log(`Verified ${cases.length} Node generation chains`)
+} else {
+  await writeFile(output, encoded)
+  console.log(`Captured ${cases.length} Node generation chains`)
+}

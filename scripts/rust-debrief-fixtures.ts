@@ -1,4 +1,4 @@
-import { writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { PROBLEMS } from '../packages/game-schema/src/index.js'
 import { ORACLES } from '../packages/dsa-oracles/src/index.js'
@@ -17,5 +17,14 @@ for(const problem of PROBLEMS)for(let seed=0;seed<30;seed++)for(const difficulty
  state.progress.hintsUsed=2
  cases.push({id:problem.id,seed,difficulty,initial,terminal:await hash()})
 }
-await writeFile(new URL('../services/api-rust/tests/fixtures/debriefs.json',import.meta.url),JSON.stringify(cases)+'\n')
-console.log(`Captured ${cases.length} Node debrief pairs`)
+const output = new URL('../services/api-rust/tests/fixtures/debriefs.json', import.meta.url)
+const encoded = JSON.stringify(cases) + '\n'
+if (process.argv.includes('--check')) {
+  if (await readFile(output, 'utf8') !== encoded) {
+    throw new Error('Rust debrief fixtures drifted; regenerate with scripts/rust-debrief-fixtures.ts')
+  }
+  console.log(`Verified ${cases.length} Node debrief pairs`)
+} else {
+  await writeFile(output, encoded)
+  console.log(`Captured ${cases.length} Node debrief pairs`)
+}

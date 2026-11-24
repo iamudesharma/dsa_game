@@ -20,6 +20,9 @@ importers:
 
   apps/web:
     dependencies:
+      effect:
+        specifier: ^4.0.2
+        version: 4.0.2
       '@dsa/account':
         specifier: workspace:*
         version: link:../../packages/account
@@ -146,6 +149,9 @@ importers:
 
   packages/provider-chain:
     dependencies:
+      effect:
+        specifier: ^4.0.2
+        version: 4.0.2
       '@dsa/game-schema':
         specifier: workspace:*
         version: link:../game-schema
@@ -1360,6 +1366,9 @@ packages:
 
   duck@0.1.12:
     resolution: {integrity: sha512-wkctla1O6VfP89gQ+J/yDesM0S7B7XLXjKGzXxMDVFg7uEn706niAtyYovKbyq1oT9YwDcly721/iUWoc8MVRg==}
+
+  effect@4.0.2:
+    resolution: {integrity: sha512-YeYnLqSFrL4+tCOXRrfNP03w8FILoF/wDl+ukraJAGzXrjcS383W7LAAvGBbLatEyktmLxRq+9xJinx7QzXW5A==}
 
   enhanced-resolve@5.25.1:
     resolution: {integrity: sha512-nGXts5znJzmWPu+mIE9izCOzdg63oJca2mDzGWWTth7sr4aCToKcoyFVBQwN75Ij5Pf6p510EwkTqViTRzDV+w==}
@@ -2964,6 +2973,8 @@ snapshots:
   duck@0.1.12:
     dependencies:
       underscore: 1.13.8
+
+  effect@4.0.2: {}
 
   enhanced-resolve@5.25.1:
     dependencies:

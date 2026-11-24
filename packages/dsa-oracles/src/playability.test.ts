@@ -24,7 +24,10 @@ import { linearSlots } from '@dsa/game-schema'
 
 import { ORACLES, unimplementedProblemIds } from './registry.js'
 
-const SEEDS = 30
+const SEEDS = Number(process.env.PLAYABILITY_SEEDS ?? 30)
+if (!Number.isInteger(SEEDS) || SEEDS < 1 || SEEDS > 1000) {
+  throw new Error('PLAYABILITY_SEEDS must be an integer from 1 to 1000')
+}
 const MAX_STEPS = 500
 
 /**
