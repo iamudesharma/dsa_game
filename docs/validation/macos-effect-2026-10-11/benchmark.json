@@ -1,0 +1,36 @@
+{
+  "mode": "profile",
+  "rss_before_bytes": 148242432,
+  "raw_http": {
+    "n": 200,
+    "p50_ms": 0.134,
+    "p95_ms": 0.186,
+    "mean_ms": 0.13813999999999999
+  },
+  "effect_api": {
+    "n": 200,
+    "p50_ms": 0.19,
+    "p95_ms": 0.263,
+    "mean_ms": 0.19682
+  },
+  "rss_after_bytes": 149274624,
+  "simple_effect_shared_runtime": {
+    "n": 1000,
+    "p50_ms": 0.012,
+    "p95_ms": 0.014,
+    "mean_ms": 0.012962999999999999
+  },
+  "simple_effect_owned_runtime": {
+    "n": 1000,
+    "p50_ms": 0.013,
+    "p95_ms": 0.015,
+    "mean_ms": 0.013344
+  },
+  "recovery_ms": 757,
+  "retry_intervals_ms": [
+    254,
+    503
+  ],
+  "deadline_50ms_observed_ms": 53,
+  "abort_after_10ms_observed_ms": 11
+}

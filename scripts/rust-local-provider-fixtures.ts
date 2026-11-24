@@ -1,5 +1,5 @@
 /** Offline Node reference: no provider requests or local model processes. */
-import {writeFile} from 'node:fs/promises'
+import {readFile,writeFile} from 'node:fs/promises'
 import {createHash} from 'node:crypto'
 import {PROBLEMS} from '../packages/game-schema/src/index.js'
 import {ORACLES} from '../packages/dsa-oracles/src/index.js'
@@ -21,5 +21,13 @@ for(const problem of PROBLEMS)for(const difficulty of ['easy','medium','hard'] a
  const modes=(provider as any).responseFormats(input).map((m:any)=>m.body)
  cases.push({input,modes:hash(modes),salvage:partials.map(partial=>({partial,hash:hash(salvageSpec(partial,input))}))})
 }
-await writeFile(new URL('../services/api-rust/tests/fixtures/local-provider.json',import.meta.url),JSON.stringify(cases)+'\n')
-console.log(`Captured ${cases.length} mode cases and ${cases.length*partials.length} salvage cases`)
+const output = new URL('../services/api-rust/tests/fixtures/local-provider.json', import.meta.url)
+const encoded = JSON.stringify(cases) + '\n'
+if (process.argv.includes('--check')) {
+  if (await readFile(output, 'utf8') !== encoded) {
+    throw new Error('Rust local-provider fixtures drifted; regenerate with scripts/rust-local-provider-fixtures.ts')
+  }
+} else {
+  await writeFile(output, encoded)
+}
+console.log(`${process.argv.includes('--check') ? 'Verified' : 'Captured'} ${cases.length} mode cases and ${cases.length*partials.length} salvage cases`)

@@ -9,8 +9,8 @@
  *      is reachable only if the problem registry itself is malformed.
  */
 
+import { Effect } from 'effect'
 import { type GameSpec, type ProviderAttempt, type ProviderTier } from '@dsa/game-schema'
-import { repairPrompt } from './prompt.js'
 import {
   errorText,
   isSpecValidationError,
@@ -39,24 +39,31 @@ function chainTimeoutFromEnv(env: NodeJS.ProcessEnv = process.env): number {
   return Number.isFinite(n) && n > 0 ? n : DEFAULT_TIMEOUT_MS
 }
 
-/**
- * Races a promise against a timer. `AbortSignal.timeout` only helps promises
- * that were built on `fetch`, and a provider may be doing subprocess work.
- */
-function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
-    p.then(
-      (v) => {
-        clearTimeout(timer)
-        resolve(v)
-      },
-      (e: unknown) => {
-        clearTimeout(timer)
-        reject(e instanceof Error ? e : new Error(String(e)))
-      },
-    )
-  })
+/** Lazy operations receive the owning fiber's abort signal, including timeout. */
+async function withDeadline<T>(run: (signal: AbortSignal) => Promise<T>, ms: number,
+  label: string, signal?: AbortSignal): Promise<T> {
+  signal?.throwIfAborted()
+  const program = Effect.tryPromise({
+    try: run,
+    catch: error => error instanceof Error ? error : new Error(String(error)),
+  }).pipe(
+    Effect.timeoutOrElse({ duration: ms, orElse: () => Effect.fail(new Error(`${label} timed out after ${ms}ms`)) }),
+    Effect.match({ onSuccess: value => ({ ok: true as const, value }), onFailure: error => ({ ok: false as const, error }) }),
+  )
+  try {
+    const result = await Effect.runPromise(program, { signal })
+    if (!result.ok) throw result.error
+    return result.value
+  } catch (error) {
+    signal?.throwIfAborted()
+    throw error
+  }
+}
+
+function probeTimeoutFromEnv(): number {
+  const raw = process.env.CHAIN_PROBE_TIMEOUT_MS
+  const value = raw?.trim() ? Number(raw) : NaN
+  return Number.isInteger(value) && value > 0 && value <= 300_000 ? value : 5_000
 }
 
 export async function chainGenerateSpec(
@@ -65,6 +72,10 @@ export async function chainGenerateSpec(
 ): Promise<GenerateSpecResult> {
   const maxRepairs = opts.maxRepairsPerTier ?? DEFAULT_REPAIRS
   const timeoutMs = opts.timeoutMs ?? chainTimeoutFromEnv()
+  const probeTimeoutMs = opts.probeTimeoutMs ?? probeTimeoutFromEnv()
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || !Number.isFinite(probeTimeoutMs) || probeTimeoutMs <= 0) {
+    throw new RangeError('Provider deadlines must be positive finite milliseconds')
+  }
 
   // `forceTemplate` is a user-facing switch ("I want it fast and offline"), so
   // it hard-filters the list rather than merely skipping unavailable tiers.
@@ -88,8 +99,9 @@ export async function chainGenerateSpec(
     let available = false
     const probeStart = Date.now()
     try {
-      available = await provider.isAvailable()
+      available = await withDeadline(signal => provider.isAvailable(signal), probeTimeoutMs, `${provider.tier}.isAvailable`, input.signal)
     } catch (e) {
+      input.signal?.throwIfAborted()
       // A probe that throws is a broken probe, not a broken tier.
       report({
         tier: provider.tier,
@@ -114,7 +126,7 @@ export async function chainGenerateSpec(
     const start = Date.now()
     let spec: GameSpec | null = null
     try {
-      spec = await withTimeout(provider.generate(input), timeoutMs, `${provider.tier}.generate`)
+      spec = await withDeadline(signal => provider.generate({ ...input, signal }), timeoutMs, `${provider.tier}.generate`, input.signal)
     } catch (e) {
       input.signal?.throwIfAborted()
       const attempt: ProviderAttempt = {
@@ -131,10 +143,12 @@ export async function chainGenerateSpec(
       if (maxRepairs > 0 && provider.repair && isSpecValidationError(e)) {
         const repairStart = Date.now()
         try {
-          const fixed = await withTimeout(
-            provider.repair(input, e.issues),
+          const repair = provider.repair.bind(provider)
+          const fixed = await withDeadline(
+            signal => repair({ ...input, signal }, e.issues),
             timeoutMs,
             `${provider.tier}.repair`,
+            input.signal,
           )
           // `ProviderAttempt` has no dedicated "was repaired" flag, so the note
           // rides in `error` alongside `ok: true`. Recording the repair as its
@@ -153,6 +167,7 @@ export async function chainGenerateSpec(
             notes: [...notes, `spec repaired by ${provider.tier}`],
           }
         } catch (re) {
+          input.signal?.throwIfAborted()
           const rAttempt: ProviderAttempt = {
             tier: provider.tier,
             ok: false,

@@ -32,16 +32,14 @@ import type {
   HintResponse,
   ProviderTier,
 } from '@dsa/game-schema'
+import { Effect, Schedule } from 'effect'
+import { API_POLICY, type ApiPolicy } from './api-policy'
+import { runClientEffect } from './run-effect'
 import { API_ERRORS } from '@dsa/game-schema'
 
 const RAW_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8787'
 /** Trailing slashes would produce `//api/...` and some servers 404 on that. */
 export const API_BASE_URL = RAW_BASE.replace(/\/+$/, '')
-
-const TIMEOUT_MS = (() => {
-  const parsed = Number(process.env.NEXT_PUBLIC_API_TIMEOUT_MS ?? '')
-  return Number.isFinite(parsed) && parsed > 1000 ? parsed : 30_000
-})()
 
 /**
  * Deadline for `/api/generate`, the one call that can reach an LLM.
@@ -173,110 +171,91 @@ function readErrorBody(body: unknown): { code: string; message: string; details:
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   body?: unknown
-  signal?: AbortSignal
-  /** Overrides the default timeout (generation gets longer). */
+  rawBody?: BodyInit | null
+  headers?: HeadersInit
+  signal?: AbortSignal | null
   timeoutMs?: number
-  /** Human label used in the timeout message. */
   label?: string
+  policy?: Readonly<ApiPolicy>
 }
 
-async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+/** Reads follow the configured retry policy; mutations always run once. */
+export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const signal = options.signal ?? undefined
+  const policy = options.policy ?? API_POLICY
+  const program = Effect.tryPromise({
+    try: (effectSignal) => requestOnce<T>(path, { ...options, timeoutMs: options.timeoutMs ?? policy.requestTimeoutMs, signal: effectSignal }),
+    catch: (cause) => cause instanceof DsaApiError ? cause : new DsaApiError({
+      kind: 'network', code: 'NETWORK_ERROR', message: 'Could not read the API response.', details: cause,
+    }),
+  }).pipe(
+    Effect.retry({
+      times: (options.method ?? 'GET') === 'GET' ? policy.readRetries : 0,
+      schedule: Schedule.exponential(policy.retryDelayMs),
+      while: (error) => !signal?.aborted && error.retryable && (
+        error.kind === 'network' || error.kind === 'timeout' ||
+        (error.kind === 'http' && [502, 503, 504].includes(error.status))
+      ),
+    }),
+  )
+  return runClientEffect(program, signal)
+}
+
+async function requestOnce<T>(path: string, options: RequestOptions): Promise<T> {
   const { method = 'GET', body, signal, label = 'request' } = options
-  const url = `${API_BASE_URL}${path}`
   const controller = new AbortController()
-  const timeoutMs = options.timeoutMs ?? TIMEOUT_MS
-
-  // Respect an upstream abort (component unmount, superseded action) while
-  // still enforcing our own deadline.
-  const onUpstreamAbort = (): void => controller.abort(signal?.reason)
-  if (signal) {
-    if (signal.aborted) controller.abort(signal.reason)
-    else signal.addEventListener('abort', onUpstreamAbort, { once: true })
-  }
-
+  const timeoutMs = options.timeoutMs ?? API_POLICY.requestTimeoutMs
+  const onAbort = () => controller.abort(signal?.reason)
+  if (signal?.aborted) onAbort()
+  else signal?.addEventListener('abort', onAbort, { once: true })
   let timedOut = false
   const timer = setTimeout(() => {
     timedOut = true
-    controller.abort(new Error('timeout'))
+    controller.abort()
   }, timeoutMs)
-
-  let response: Response
   try {
-    response = await fetch(url, {
-      method,
-      signal: controller.signal,
-      headers: {
-        accept: 'application/json',
-        ...authHeaders(),
-        ...(body === undefined ? {} : { 'content-type': 'application/json' }),
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-      // The API is stateful (it owns the game); never let a cached response be
-      // treated as truth. `include` carries the httpOnly session cookie on
-      // same-host runs; the bearer header covers cross-host loopback.
-      cache: 'no-store',
-      credentials: 'include',
+    const headers = new Headers({ accept: 'application/json', ...authHeaders() })
+    if (body !== undefined || options.rawBody != null) headers.set('content-type', 'application/json')
+    new Headers(options.headers).forEach((value, key) => headers.set(key, value))
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      method, headers, signal: controller.signal,
+      body: options.rawBody ?? (body === undefined ? undefined : JSON.stringify(body)),
+      cache: 'no-store', credentials: 'include',
     })
-  } catch (cause) {
-    if (timedOut) {
+    // The deadline covers body consumption as well as response headers.
+    const rawText = await response.text()
+    let parsed: unknown = null
+    try { parsed = JSON.parse(rawText) } catch { /* classified below */ }
+    if (!response.ok) {
+      const shaped = readErrorBody(parsed)
       throw new DsaApiError({
-        kind: 'timeout',
-        code: 'TIMEOUT',
-        message: `The ${label} did not finish within ${Math.round(timeoutMs / 1000)}s.`,
-        retryable: true,
+        kind: 'http', code: shaped?.code ?? `HTTP_${response.status}`,
+        message: response.status === 401 ? 'Your session expired. Sign in again to continue.' :
+          shaped?.message ?? `${method} ${path} failed with ${response.status}.`,
+        status: response.status,
+        retryable: (response.status >= 500 || response.status === 429) && shaped?.code !== API_ERRORS.problemNotPlayable,
+        details: shaped?.details ?? (parsed ?? rawText.slice(0, 400)),
       })
     }
-    if (signal?.aborted) throw cause
+    if (parsed === null) throw new DsaApiError({
+      kind: 'contract', code: 'EMPTY_BODY', message: 'The server returned a response that was not JSON.',
+      status: response.status, retryable: false,
+    })
+    return parsed as T
+  } catch (cause) {
+    if (timedOut) throw new DsaApiError({
+      kind: 'timeout', code: 'TIMEOUT',
+      message: `The ${label} did not finish within ${Math.round(timeoutMs / 1000)}s.`,
+    })
+    if (signal?.aborted || cause instanceof DsaApiError) throw cause
     throw new DsaApiError({
-      kind: 'network',
-      code: 'NETWORK_ERROR',
-      message: `Could not reach ${API_BASE_URL}. Is the API running?`,
-      details: cause,
-      retryable: true,
+      kind: 'network', code: 'NETWORK_ERROR',
+      message: `Could not reach ${API_BASE_URL}. Is the API running?`, details: cause,
     })
   } finally {
     clearTimeout(timer)
-    if (signal) signal.removeEventListener('abort', onUpstreamAbort)
+    signal?.removeEventListener('abort', onAbort)
   }
-
-  const rawText = await response.text()
-  let parsed: unknown = null
-  if (rawText.length > 0) {
-    try {
-      parsed = JSON.parse(rawText)
-    } catch {
-      parsed = null
-    }
-  }
-
-  if (!response.ok) {
-    const shaped = readErrorBody(parsed)
-    throw new DsaApiError({
-      kind: 'http',
-      code: shaped?.code ?? `HTTP_${response.status}`,
-      message: shaped?.message ?? `${method} ${path} failed with ${response.status}.`,
-      status: response.status,
-      // A problem that is listed but not implemented is a permanent fact about
-      // the catalogue, not a transient fault. It must NOT be retryable: the
-      // generic rule is `status >= 500`, and this used to come back as a 500,
-      // so the debrief screen offered "Try again" for a request that could never
-      // succeed however many times it was sent.
-      retryable: response.status < 500 && shaped?.code !== API_ERRORS.problemNotPlayable,
-      details: shaped?.details ?? (parsed ?? rawText.slice(0, 400)),
-    })
-  }
-
-  if (parsed === null) {
-    throw new DsaApiError({
-      kind: 'contract',
-      code: 'EMPTY_BODY',
-      message: 'The server returned a response that was not JSON.',
-      status: response.status,
-      retryable: true,
-    })
-  }
-
-  return parsed as T
 }
 
 // --------------------------------------------------------------- guards
@@ -369,7 +348,7 @@ export async function postAction(
       body,
       signal,
       label: 'action',
-      timeoutMs: Math.max(TIMEOUT_MS, 60_000),
+      timeoutMs: Math.max(API_POLICY.requestTimeoutMs, 60_000),
     }),
     'action response',
   )
@@ -492,7 +471,7 @@ export async function postCoachAsk(body: CoachRequest, signal?: AbortSignal): Pr
       body,
       signal,
       label: 'coach',
-      timeoutMs: Math.max(TIMEOUT_MS, 60_000),
+      timeoutMs: Math.max(API_POLICY.requestTimeoutMs, GENERATE_TIMEOUT_MS),
     })
   } catch (cause) {
     if (signal?.aborted) throw cause
@@ -711,7 +690,7 @@ export async function postInterviewGenerate(
       body,
       signal,
       label: 'interview prep',
-      timeoutMs: Math.max(TIMEOUT_MS, 120_000),
+      timeoutMs: Math.max(API_POLICY.requestTimeoutMs, GENERATE_TIMEOUT_MS),
     }),
     'interview response',
   )
@@ -739,5 +718,7 @@ export async function getInterviewKit(kitId: string, signal?: AbortSignal): Prom
     'kit response',
   )
   if (!Array.isArray(res.questions)) throw contractError('kit response', res)
-  return res as unknown as InterviewKitResult
+  // Saved kits omit the generation-only diagnostics. Keep the UI contract
+  // consistent with newly generated kits when reopening account history.
+  return { ...res, notes: Array.isArray(res.notes) ? res.notes : [] } as unknown as InterviewKitResult
 }

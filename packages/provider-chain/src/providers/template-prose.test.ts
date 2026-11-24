@@ -167,3 +167,18 @@ describe('template tier hints cannot leak the algorithm', () => {
     }
   })
 })
+
+describe('shared hints do not invent algorithm preconditions', () => {
+  it('does not teach binary search for the reported unsorted minimum scan', () => {
+    const problem = PROBLEMS.find(p => p.id === 'array-max-min')!
+    const input = inputFor(problem, 161905812)
+    const spec = buildTemplateSpec({...input, instance: {...input.instance, values: [5, 58, 86, 65, 26, 35]}})
+    expect(spec.narration.hintPool.join(' ')).not.toMatch(/everything.*in order|begin.*middle|half|rules out the most/i)
+  })
+  it('avoids stack-only, linked-list-only and sorting claims across the catalogue', () => {
+    for (const problem of PROBLEMS) {
+      const hints = buildTemplateSpec(inputFor(problem, 0)).narration.hintPool.join(' ')
+      expect(hints, problem.id).not.toMatch(/last in, first out|only.*top|cannot look back|everything else is already|puts both right|whole side.*ruled out/i)
+    }
+  })
+})

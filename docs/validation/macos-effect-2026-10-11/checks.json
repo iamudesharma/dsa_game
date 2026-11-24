@@ -1,0 +1,13 @@
+{
+  "flutter_unit_widget_tests": 406,
+  "focused_api_policy_tests": 15,
+  "native_transport": "passed",
+  "native_live_journey": "passed",
+  "native_profile_benchmark": "passed",
+  "native_profile_catalogue_boards": 135,
+  "native_profile_catalogue": "passed",
+  "native_profile_accessibility_bridge_warnings_final_run": 0,
+  "published_effect_core_version": "0.0.1",
+  "separate_package_probe": "timeout cleanup defect lost from Cause",
+  "manual_native_hint_content": "failed domain correctness; open app issue"
+}
